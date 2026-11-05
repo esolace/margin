@@ -1,0 +1,17 @@
+name: Bug report
+description: Report a reproducible Margin issue.
+body:
+  - type: input
+    id: host
+    attributes:
+      label: Environment
+      description: OS, Rhino build, GH1 or GH2, Margin version, display scaling.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: What happened?
+      description: Steps, expected behavior and actual behavior. Remove private project data from screenshots or example files.
+    validations:
+      required: true

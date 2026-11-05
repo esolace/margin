@@ -1,0 +1,24 @@
+name: Margin
+version: 0.4.0-alpha.2
+authors:
+  - Solace
+description: >
+  Designed component labels for Grasshopper 1 and 2. Open Display > Margin >
+  Open Label Studio to style labels with installed fonts, colours, backgrounds,
+  borders and spacing. Includes five starting styles and a personal preset
+  library shared across GH1 and GH2. No canvas component is required.
+
+  Experimental Rhino 9 / .NET 10 preview. macOS Apple Silicon has been tested
+  live. Windows builds are available for evaluation; interactive Windows Rhino
+  behavior remains unverified. Use Rhino 9.0.26300 or newer. Rhino 8 is not
+  supported. Labels start off; enable them under Display > Margin.
+url: https://github.com/esolace/margin
+icon: icon.png
+keywords:
+  - grasshopper
+  - grasshopper2
+  - labels
+  - typography
+  - presets
+  - canvas
+  - appearance

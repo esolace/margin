@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <MarginPlatform Condition="'$(MarginPlatform)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">win</MarginPlatform>
+    <MarginPlatform Condition="'$(MarginPlatform)' == ''">mac</MarginPlatform>
+    <TargetFramework Condition="'$(MarginPlatform)' == 'mac'">net10.0</TargetFramework>
+    <TargetFramework Condition="'$(MarginPlatform)' == 'win'">net10.0-windows</TargetFramework>
+    <UseWindowsForms Condition="'$(MarginPlatform)' == 'win'">true</UseWindowsForms>
+    <EnableWindowsTargeting Condition="'$(MarginPlatform)' == 'win'">true</EnableWindowsTargeting>
+    <DefineConstants Condition="'$(MarginPlatform)' == 'mac'">$(DefineConstants);MARGIN_MAC</DefineConstants>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <AssemblyName>Margin.Native</AssemblyName><Version>0.4.0-alpha.2</Version><AssemblyVersion>0.4.0.2</AssemblyVersion>
+    <RhinoResources Condition="'$(RhinoResources)' == ''">/Applications/Rhino 9.app/Contents/Frameworks/RhCore.framework/Versions/A/Resources</RhinoResources>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <EmbeddedResource Include="../../design/Studio.html" LogicalName="Margin.Studio.html" />
+    <ProjectReference Include="../Margin.Core/Margin.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MarginPlatform)' == 'win'">
+    <PackageReference Include="Grasshopper" Version="9.0.26300.9401" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MarginPlatform)' == 'mac'">
+    <Reference Include="RhinoCommon"><HintPath>$(RhinoResources)/RhinoCommon.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Rhino.UI"><HintPath>$(RhinoResources)/Rhino.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Microsoft.macOS"><HintPath>$(RhinoResources)/Microsoft.macOS.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Grasshopper"><HintPath>$(RhinoResources)/ManagedPlugIns/GrasshopperPlugin.rhp/Grasshopper.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GH_IO"><HintPath>$(RhinoResources)/ManagedPlugIns/GrasshopperPlugin.rhp/GH_IO.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Eto"><HintPath>$(RhinoResources)/Eto.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="System.Drawing.Common"><HintPath>$(RhinoResources)/System.Drawing.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="System.Windows.Forms"><HintPath>$(RhinoResources)/System.Windows.Forms.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <Target Name="PackageGha" AfterTargets="Build"><Copy SourceFiles="$(TargetPath)" DestinationFiles="$(TargetDir)Margin.gha" /></Target>
+</Project>

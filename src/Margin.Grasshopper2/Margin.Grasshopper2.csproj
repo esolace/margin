@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <MarginPlatform Condition="'$(MarginPlatform)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">win</MarginPlatform>
+    <MarginPlatform Condition="'$(MarginPlatform)' == ''">mac</MarginPlatform>
+    <TargetFramework Condition="'$(MarginPlatform)' == 'mac'">net10.0</TargetFramework>
+    <TargetFramework Condition="'$(MarginPlatform)' == 'win'">net10.0-windows</TargetFramework>
+    <UseWindowsForms Condition="'$(MarginPlatform)' == 'win'">true</UseWindowsForms>
+    <EnableWindowsTargeting Condition="'$(MarginPlatform)' == 'win'">true</EnableWindowsTargeting>
+    <DefineConstants Condition="'$(MarginPlatform)' == 'mac'">$(DefineConstants);MARGIN_MAC</DefineConstants>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <AssemblyName>Margin.GH2</AssemblyName><Version>0.4.0-alpha.2</Version><AssemblyVersion>0.4.0.2</AssemblyVersion>
+    <DefineConstants>$(DefineConstants);MARGIN_GH2</DefineConstants>
+    <RhinoResources Condition="'$(RhinoResources)' == ''">/Applications/Rhino 9.app/Contents/Frameworks/RhCore.framework/Versions/A/Resources</RhinoResources>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+    <Compile Include="../Margin.Grasshopper/Inspector.cs" Link="Studio/Inspector.cs" />
+    <Compile Include="../Margin.Grasshopper/StudioWindow.cs" Link="Studio/StudioWindow.cs" />
+    <Compile Include="../Margin.Grasshopper/InstalledFonts.cs" Link="Studio/InstalledFonts.cs" />
+    <Compile Include="../Margin.Grasshopper/PresetStore.cs" Link="Studio/PresetStore.cs" />
+    <EmbeddedResource Include="../../design/Studio.html" LogicalName="Margin.Studio.html" />
+    <ProjectReference Include="../Margin.Core/Margin.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MarginPlatform)' == 'win'">
+    <PackageReference Include="Grasshopper2" Version="9.0.26300.9401" ExcludeAssets="runtime" PrivateAssets="all" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(MarginPlatform)' == 'mac'">
+    <Reference Include="RhinoCommon"><HintPath>$(RhinoResources)/RhinoCommon.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Rhino.UI"><HintPath>$(RhinoResources)/Rhino.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Microsoft.macOS"><HintPath>$(RhinoResources)/Microsoft.macOS.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Grasshopper2"><HintPath>$(RhinoResources)/ManagedPlugIns/Grasshopper2Plugin.rhp/Grasshopper2.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GrasshopperIO"><HintPath>$(RhinoResources)/ManagedPlugIns/Grasshopper2Plugin.rhp/GrasshopperIO.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Eto"><HintPath>$(RhinoResources)/Eto.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="System.Drawing.Common"><HintPath>$(RhinoResources)/System.Drawing.Common.dll</HintPath><Private>false</Private></Reference>
+
+  </ItemGroup>
+  <Target Name="PackageRhp" AfterTargets="Build"><Copy SourceFiles="$(TargetPath)" DestinationFiles="$(TargetDir)Margin.GH2.rhp" /></Target>
+</Project>

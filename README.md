@@ -43,6 +43,9 @@ required GH2 APIs. Rhino 8, .NET Framework mode and Linux are not supported.
 This is an **experimental preview**, not a stable release. Windows testers are
 welcome; an automated Windows build is not an interactive Rhino test.
 See [testing status](docs/TESTING.md) for coverage and remaining limits.
+A native Rhino/GH2 font-processing crash was reproduced on a large migrated
+definition with Margin removed; the testing notes describe the evidence and
+recovery workaround.
 
 Your presets stay in your user account:
 

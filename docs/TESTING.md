@@ -22,6 +22,22 @@ with a regression check that preserves a memory-mapped original or refuses the
 replacement safely. Subsequent tests passed. This does not establish long-term
 stability.
 
+## Known Rhino / GH2 crash during computation
+
+On the tested Mac Rhino build, restoring and computing a large migrated GH2
+definition reproduced a native OpenNURBS font-list crash. The crash stacks
+involve `ON_FontList::Internal_UpdateSortedLists`, PostScript font-name
+comparison and font-characteristic hashing. The same definition reproduced
+this fault after the entire Margin package was removed from plugin discovery.
+This establishes that Margin is not required to trigger this failure; it does
+not establish the exact underlying defect or rule out other host/plugin factors.
+
+Fresh startup with an empty GH2 document loaded both packaged Margin adapters
+once, with labels initially disabled, as intended. The working definition was
+recovered with its object IDs intact and computation paused. This is a recovery
+workaround, not a fix for the native crash. Save work before testing GH2, and
+avoid repeatedly reopening a definition that crashes during computation.
+
 ## Windows
 
 Both adapters compile against the pinned Rhino 9 SDK. Static assembly checks

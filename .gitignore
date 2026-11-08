@@ -11,6 +11,7 @@
 !src/**/*.csproj
 !tests/
 !tests/Program.cs
+!tests/GroupEditingChecks.cs
 !tests/Margin.Tests.csproj
 !design/
 !design/Studio.html

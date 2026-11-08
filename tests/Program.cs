@@ -1,6 +1,8 @@
 using Margin.Core;
 int passed=0;
 void Check(bool ok,string message) {if(!ok)throw new Exception(message);passed++;Console.WriteLine("PASS "+message);}
+GroupEditingChecks.Run(Check);
+if (args.Contains("--group-editing")) { Console.WriteLine($"{passed} group editing checks passed."); return; }
 var theme=new Theme();
 foreach(var preset in Theme.Presets) Check(Theme.FromJson(preset.ToJson())==preset.Normalize(),preset.Name+" round-trips");
 var safe=(theme with {FontSize=double.NaN,PaddingX=-100,Fill="bad",Opacity=10000,Radius=double.PositiveInfinity}).Normalize();

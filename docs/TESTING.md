@@ -81,6 +81,26 @@ heading treatment and corner radius. The group movement regression still passes.
 GH2 and Windows renderers compile; these new appearance controls have not had
 interactive Windows or GH2 host verification. This remains a local preview.
 
+## 0.5.0-alpha.4 group editing
+
+The group-editing regression checks run through `GroupEditSession.Save`, with an
+in-memory Grasshopper document adapter and real temporary preference files.
+Run only these checks with `dotnet run --project tests -c Release -- --group-editing`.
+They cover partial saves, retry, stale edits, finishing without defaults and
+invalid appearance. The full shared suite has 43 checks.
+
+Mac GH1 verification used a separately named verification assembly and a disposable
+GH document that was never assigned to the user's canvas. A failed preferences
+save was followed by a successful retry. One native undo restored the original
+name and full appearance; redo restored the edit. Membership, stale-edit guards
+and document identity guards passed. The original active canvas and its object
+identities remained unchanged. The installed running plugin was not overwritten.
+
+Studio browser checks also confirm that saving future defaults and changing
+canvas selection preserve an unfinished name draft. Revert then follows the
+latest selection. Windows and GH2 builds are checked, but this workflow has not
+had interactive verification in those hosts.
+
 ## Windows
 
 Both adapters compile against the pinned Rhino 9 SDK. Static assembly checks

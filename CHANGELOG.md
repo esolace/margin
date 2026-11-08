@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0-alpha.4 — local preview
+
+- Share the group edit session between Studio and the native title editor.
+- Retain the acknowledged group revision if saving future defaults fails, so Save can be retried.
+- Report partial success clearly and allow finishing without saving defaults.
+- Avoid duplicate undo records caused by native opacity rounding.
+- Keep stale-edit guards and preserve native group membership.
+
 ## 0.5.0-alpha.3 — local preview
 
 - Add eight vivid group presets with coordinated title, fill, accent and border colours; retain the eight classic colours.

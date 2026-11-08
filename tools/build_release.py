@@ -10,7 +10,7 @@ import zipfile
 from build_gh2 import atomic_copy
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = '0.5.0-alpha.3'
+VERSION = '0.5.0-alpha.4'
 
 def public_files():
     fixed = ['.gitignore', 'LICENSE', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',

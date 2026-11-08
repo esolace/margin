@@ -1,6 +1,5 @@
 using Margin.Core;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 #if MARGIN_GH2
 using Grasshopper2.Doc;
 using Grasshopper2.SpecialObjects;
@@ -19,22 +18,6 @@ using System.Drawing.Drawing2D;
 
 namespace Margin.Native;
 
-public sealed record GroupStyle(string Fill, double Opacity, bool Designed = true)
-{
-    public GroupAppearance Appearance { get; init; } = new();
-    public GroupStyle Validate()
-    {
-        if (!Regex.IsMatch(Fill ?? "", "^#[0-9a-fA-F]{6}$") || !double.IsFinite(Opacity) || Opacity < 0 || Opacity > 100)
-            throw new InvalidDataException("Choose a valid colour and an opacity between 0 and 100.");
-        return this with { Fill = Fill!.ToUpperInvariant(), Appearance = (Appearance ?? new()).Validate() };
-    }
-    public static GroupStyle? Parse(string json)
-    {
-        try { return string.IsNullOrEmpty(json) ? null : JsonSerializer.Deserialize<GroupStyle>(json)?.Validate(); }
-        catch { return null; }
-    }
-}
-public sealed record GroupEntry(string Id, string Name, int Members, bool Selected, GroupStyle Style, string Revision);
 public sealed record GroupSnapshot(string? Document, string Host, GroupEntry[] Items)
 { public GroupStyle Defaults => Groups.Defaults; }
 
@@ -88,24 +71,63 @@ public static class Groups
     public static GroupSnapshot Snapshot() => Active is { } d ? Snapshot(d) : new(null, "Grasshopper", []);
     public static GroupSnapshot Snapshot(GH_Document d) => new(Identity(d), "Grasshopper", Items(d).Select(Entry).ToArray());
 #endif
+    public static GroupEditSession BeginEdit(string document, string id, string revision)
+    {
+        var d = Active ?? throw new InvalidOperationException("Open a Grasshopper definition first.");
+        return new(Entry(FindForEdit(d, document, id, revision)),
+            (currentRevision, name, style) => ApplyEdit(Active ?? throw new InvalidOperationException("Open a Grasshopper definition first."),
+                document, id, currentRevision, name, style), SaveDefaults);
+    }
+#if MARGIN_GH2
+    public static GroupEditSession BeginEdit(Document d, string document, string id, string revision)
+#else
+    public static GroupEditSession BeginEdit(GH_Document d, string document, string id, string revision)
+#endif
+        => new(Entry(FindForEdit(d, document, id, revision)),
+            (currentRevision, name, style) => ApplyEdit(d, document, id, currentRevision, name, style), SaveDefaults);
+
+#if MARGIN_GH2
+    static GroupObject FindForEdit(Document d, string document, string id, string revision)
+#else
+    static GH_Group FindForEdit(GH_Document d, string document, string id, string revision)
+#endif
+    {
+        if (Identity(d) != document) throw new InvalidOperationException("The active definition changed. Reload the group before editing.");
+        var group = Items(d).FirstOrDefault(g => Entry(g).Id == id)
+            ?? throw new InvalidOperationException("That group was removed. Select another group.");
+        if (Entry(group).Revision != revision) throw new InvalidOperationException("This group changed in Grasshopper. Reload it before applying your edit.");
+        return group;
+    }
     public static void Apply(string document, string id, string revision, string name, GroupStyle style)
     {
         var d = Active ?? throw new InvalidOperationException("Open a Grasshopper definition first.");
-        Apply(d, document, id, revision, name, style);
+        ApplyEdit(d, document, id, revision, name, style);
     }
 #if MARGIN_GH2
     public static void Apply(Document d, string document, string id, string revision, string name, GroupStyle style)
 #else
     public static void Apply(GH_Document d, string document, string id, string revision, string name, GroupStyle style)
 #endif
+        => ApplyEdit(d, document, id, revision, name, style);
+
+#if MARGIN_GH2
+    static GroupEntry ApplyEdit(Document d, string document, string id, string revision, string name, GroupStyle style)
+#else
+    static GroupEntry ApplyEdit(GH_Document d, string document, string id, string revision, string name, GroupStyle style)
+#endif
     {
         style = style.Validate(); name = name.Trim();
         if (name.Length > 120 || name.Any(char.IsControl)) throw new InvalidDataException("Use a single-line group name of up to 120 characters.");
-        if (Identity(d) != document) throw new InvalidOperationException("The active definition changed. Refresh the groups before editing.");
-        var g = Items(d).FirstOrDefault(g => Entry(g).Id == id) ?? throw new InvalidOperationException("That group was removed. Refresh the group list.");
-        if (Entry(g).Revision != revision) throw new InvalidOperationException("This group changed in Grasshopper. Refresh before applying your edit.");
+        var g = FindForEdit(d, document, id, revision);
         var old = Entry(g);
-        if (old.Name == name && old.Style == style) return;
+#if MARGIN_GH2
+        if (old.Name == name && old.Style == style) return old;
+#else
+        // GH1 stores alpha in a byte; compare against the value it can represent.
+        var alpha = (int)Math.Round(style.Opacity * 2.55);
+        var displayedStyle = style with { Opacity = Math.Round(alpha / 255d * 100, 1) };
+        if (old.Name == name && old.Style == displayedStyle) return old;
+#endif
 #if MARGIN_GH2
         var actions = new Grasshopper2.Undo.Action[] { new RenameAction(g), new CustomValueAction(g, Key, Effects.ExpireLayout), new PropertyAction(g, nameof(GroupObject.GroupColour), Effects.ExpireLayout, false) };
         g.AddUndoRecord(new Record(new VerbNoun("Edit", "group"), actions));
@@ -115,12 +137,13 @@ public static class Groups
         g.Attributes.InvalidateLayout();
         g.OnLayoutChanged();
 #else
-        var next = Color.FromArgb((int)Math.Round(style.Opacity * 2.55), Convert.ToInt32(style.Fill[1..3],16), Convert.ToInt32(style.Fill[3..5],16), Convert.ToInt32(style.Fill[5..7],16));
+        var next = Color.FromArgb(alpha, Convert.ToInt32(style.Fill[1..3],16), Convert.ToInt32(style.Fill[3..5],16), Convert.ToInt32(style.Fill[5..7],16));
         g.RecordUndoEvent("Margin: edit group", new EditGroupAction(g, name, next, JsonSerializer.Serialize(style)));
         Set(g, name, next, JsonSerializer.Serialize(style));
 #endif
         Attach(d);
         Refresh();
+        return Entry(g);
     }
 #if !MARGIN_GH2
     static void Set(GH_Group g, string name, Color colour, string value)

@@ -13,6 +13,7 @@ internal static class GroupEditor
         if (doc is null) return;
         var snapshot = Groups.Snapshot(doc);
         var entry = snapshot.Items.First(g => g.Id == group.InstanceGuid.ToString());
+        var edit = Groups.BeginEdit(doc, snapshot.Document!, entry.Id, entry.Revision);
         using var dialog = new Dialog<bool> { Title = "Edit group", Padding = new Padding(20), Resizable = false };
         var name = new TextBox { Text = entry.Name, PlaceholderText = "Group name", Width = 320 };
         var colour = new ColorPicker { Value = Color.Parse(entry.Style.Fill) };
@@ -31,9 +32,10 @@ internal static class GroupEditor
             {
                 var style = entry.Style with { Fill = colour.Value.ToHex(false), Opacity = opacity.Value, Designed = designed.Checked == true,
                     Appearance = entry.Style.Appearance with { Text = autoText.Checked == true ? null : textColour.Value.ToHex(false) } };
-                Groups.Apply(doc, snapshot.Document!, entry.Id, entry.Revision, name.Text, style);
-                if (defaults.Checked == true) Groups.SaveDefaults(style);
-                dialog.Close(true);
+                var result = edit.Save(name.Text, style, defaults.Checked == true);
+                if (result.Complete) dialog.Close(true);
+                else error.Text = "Group updated. Future defaults could not be saved: " + result.DefaultsError
+                    + " Retry Save, or turn off the future-groups option to finish.";
             }
             catch (Exception ex) { error.Text = ex.Message; }
         };

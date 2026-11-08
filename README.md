@@ -45,7 +45,7 @@ fill colours without Margin; the designed heading requires Margin. GH1 style
 metadata is document-scoped, so copied groups retain native colour but not custom
 Margin metadata.
 
-0.5.0-alpha.3 is a local preview. The public Package Manager version remains
+0.5.0-alpha.4 is a local preview. The public Package Manager version remains
 0.4.0-alpha.2 until separately approved for publication. Windows packages compile;
 interactive Windows Rhino testing remains outstanding.
 

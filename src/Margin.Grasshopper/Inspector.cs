@@ -96,8 +96,8 @@ public sealed class Inspector : Form
                     await GroupReply("Appearance saved for future groups, including Cmd/Ctrl+G.", preserveDraft: true); break;
 #endif
                 case "group-apply":
-                    Groups.Apply(root.GetProperty("document").GetString()!, root.GetProperty("id").GetString()!,
-                        root.GetProperty("revision").GetString()!, root.GetProperty("name").GetString() ?? "",
+                    Groups.BeginEdit(root.GetProperty("document").GetString()!, root.GetProperty("id").GetString()!,
+                        root.GetProperty("revision").GetString()!).Save(root.GetProperty("name").GetString() ?? "",
                         JsonSerializer.Deserialize<GroupStyle>(root.GetProperty("style").GetRawText()) ?? throw new InvalidDataException("Missing group style."));
                     await GroupReply("Group updated. Save your Grasshopper file to keep it.");
                     break;

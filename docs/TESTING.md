@@ -120,3 +120,40 @@ For a host smoke test: use a disposable definition, open Studio, apply each
 preset, switch fonts, toggle labels, zoom, move nodes, test visibility settings,
 save/rename/update/delete a preset, close/reopen Studio, then save work and
 restart Rhino. Confirm that the plugin loads once and presets persist.
+
+## Current development: appearance/session boundaries and pasted groups
+
+The appearance rules now live in `design/group-appearance-policy.json`. Studio's
+small colour adapter and the C# resolver are compared over 384 combinations,
+including opacity, both backgrounds, heading treatment and manual overrides.
+`tools/sync_studio_policy.py --check` rejects stale embedded Studio assets.
+`tools/test_studio_appearance.mjs` compares actual C# outputs with the browser
+resolver. CI and the release build run these checks.
+
+Label session checks cover desired versus effective visibility, saved ON/OFF,
+canvas replacement, failed rendering/attachment, explicit recovery, failed
+preferences saves and repeated cleanup. These portable tests do not stand in
+for native host restart or Windows UI verification.
+
+The pasted-group regression uses GH_Document.DuplicateDocument (native local
+Copy/Paste serialization), ID mutation and document merge. The previous build
+fails to pick the pasted heading: the document's attribute table still contains
+the replaced native attributes. Margin now invalidates that table after
+replacement and restoration. Title editing computes its current hit rectangle
+rather than relying on a previous paint.
+
+`tools/test_gh1_group_workflow.py` runs on disposable definitions without assigning
+the user's active canvas or changing the system clipboard. A separately named
+Mac verification assembly passes 17 checks: heading picking/selection/menu,
+independent rename, undo/redo, member movement, the actual native Ungroup handler,
+component preservation, undo, save/reopen and active-document identity checks.
+The test invokes the native Ungroup handler after verifying picking; it does not
+simulate physical mouse or keyboard input. Local reports are under
+`artifacts/group-workflow/`. This does not claim the updated build is loaded in
+the user's running session or that Windows received interactive testing.
+
+Release evidence must distinguish completed checks from missing ones. A native
+restart, interactive Windows tests and copying custom group typography are not
+covered by the workflow above. Group fill/name/membership travel with native
+copy/paste; GH1 custom appearance is document-keyed and its transfer to a new
+copied identity remains a known limitation.

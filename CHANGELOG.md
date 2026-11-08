@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0-alpha.5 — local development
+
+- Fix pasted native groups retaining stale click/selection attributes, restoring heading editing and native ungroup behavior.
+- Resolve group colours and heading treatments from shared policy, checked against Studio across light/dark backgrounds, opacity and overrides.
+- Share label-session ownership across hosts; retain saved visibility through canvas changes and failures, with explicit retry in Studio.
+- Add native copy/paste/rename/ungroup/undo/reopen regression coverage and a workflow-based release checklist.
+
+
 ## 0.5.0-alpha.4 — 2026-11-08
 
 - Share the group edit session between Studio and the native title editor.

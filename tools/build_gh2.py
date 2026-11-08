@@ -9,7 +9,7 @@ import tempfile
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = '0.5.0-alpha.4'
+VERSION = '0.5.0-alpha.5'
 
 def atomic_copy(source, destination):
     # A running host can memory-map this file. Truncating it in place can corrupt

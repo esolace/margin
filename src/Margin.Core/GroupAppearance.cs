@@ -23,10 +23,10 @@ public sealed record GroupAppearance
             : throw new InvalidDataException("Choose a valid six-digit colour.");
         static bool Range(double value, double min, double max) => double.IsFinite(value) && value >= min && value <= max;
         if (!Range(TitleSize, 10, 30) || !Range(Radius, 0, 24) || !Range(BorderWidth, 0, 4)
-            || Heading is not ("Rule" or "Band" or "Plain"))
+            || !GroupAppearancePolicy.IsHeading(Heading))
             throw new InvalidDataException("Choose a valid group title and frame appearance.");
         return this with { Text = Colour(Text), Accent = Colour(Accent), Border = Colour(Border) };
     }
     [System.Text.Json.Serialization.JsonIgnore]
-    public double ExtraHeaderSpace => Math.Max(0, (TitleSize - 15) * 1.5) + (Heading == "Band" ? 12 : 0);
+    public double ExtraHeaderSpace => GroupAppearancePolicy.ExtraHeaderSpace(this);
 }

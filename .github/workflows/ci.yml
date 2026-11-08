@@ -11,6 +11,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
@@ -22,8 +25,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - uses: actions/setup-dotnet@v5
         with:
           dotnet-version: '10.0.x'
       - run: dotnet run --project tests -c Release
       - run: python3 tools/test_gh2_staging.py
+      - run: python3 tools/sync_studio_policy.py --check
+      - run: node tools/test_studio_appearance.mjs

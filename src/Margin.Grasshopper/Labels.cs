@@ -6,7 +6,7 @@ using Margin.Core;
 
 namespace Margin.Native;
 
-public sealed class Labels : IDisposable
+public sealed class Labels : ILabelRenderer
 {
     readonly GH_Canvas canvas;
     public Theme Theme { get; set; } = new();

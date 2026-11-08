@@ -20,6 +20,7 @@ public sealed class Inspector : Form
     bool groupsVisible;
     bool syncingGroups;
     string? lastGroupSnapshot;
+    string? lastSessionSnapshot;
     readonly UITimer groupSelectionTimer = new() { Interval = .4 };
     static string PresetsPath => Path.Combine(Path.GetDirectoryName(Runtime.SettingsPath)!, "presets.json");
     public bool Ready { get; private set; }
@@ -57,7 +58,7 @@ public sealed class Inspector : Form
             List<SavedPreset> userPresets;
             try { userPresets = PresetStore.Load(PresetsPath); }
             catch (Exception ex) { userPresets = new(); libraryError = ex.Message; }
-            var data = new { userPresets, libraryError, theme = Runtime.Current, presets = Theme.Presets.Select(InstalledFonts.Resolve), fonts = ReadInstalledFonts(), enabled = Runtime.Enabled, groups = Groups.Snapshot(), native = true };
+            var data = new { userPresets, libraryError, theme = Runtime.Current, presets = Theme.Presets.Select(InstalledFonts.Resolve), fonts = ReadInstalledFonts(), enabled = Runtime.DesiredEnabled, session = SessionSnapshot(), groups = Groups.Snapshot(), native = true };
             await web.ExecuteScriptAsync("window.MarginStudio.connect(" + JsonSerializer.Serialize(data) + ")");
             Ready = true;
         }
@@ -101,7 +102,7 @@ public sealed class Inspector : Form
                         JsonSerializer.Deserialize<GroupStyle>(root.GetProperty("style").GetRawText()) ?? throw new InvalidDataException("Missing group style."));
                     await GroupReply("Group updated. Save your Grasshopper file to keep it.");
                     break;
-                case "enabled": Runtime.SetEnabled(root.GetProperty("enabled").GetBoolean()); break;
+                case "enabled": Runtime.SetEnabled(root.GetProperty("enabled").GetBoolean()); await SessionReply(true); break;
                 case "save": Runtime.Save(); await Reply("Theme saved on this computer."); break;
                 case "preset-save":
                     var saved = PresetStore.Save(PresetsPath, root.GetProperty("name").GetString() ?? "",
@@ -146,16 +147,19 @@ public sealed class Inspector : Form
         catch (Exception ex)
         {
             LastError = ex.Message;
+            await SessionReply(true);
             if (!closed) await web.ExecuteScriptAsync("window.MarginStudio.reportError(" + JsonSerializer.Serialize(ex.Message) + ")");
             await Reply("Couldn’t apply that change: " + ex.Message);
         }
     }
     async void SyncGroupSelection(object? sender, EventArgs e)
     {
-        if (closed || !Ready || !Visible || !groupsVisible || syncingGroups) return;
+        if (closed || !Ready || !Visible || syncingGroups) return;
         syncingGroups = true;
         try
         {
+            await SessionReply();
+            if (!groupsVisible) return;
             var snapshot = JsonSerializer.Serialize(Groups.Snapshot());
             if (snapshot == lastGroupSnapshot) return;
             await web.ExecuteScriptAsync("window.MarginStudio.setGroups(" + snapshot + ",null,true)");
@@ -163,6 +167,16 @@ public sealed class Inspector : Form
         }
         catch (Exception ex) { LastError = ex.Message; }
         finally { syncingGroups = false; }
+    }
+    static object SessionSnapshot() => new { desired = Runtime.DesiredEnabled, effective = Runtime.Enabled,
+        state = Runtime.SessionState.ToString(), error = Runtime.LastError };
+    async Task SessionReply(bool force = false)
+    {
+        if (closed) return;
+        var snapshot = JsonSerializer.Serialize(SessionSnapshot());
+        if (!force && snapshot == lastSessionSnapshot) return;
+        await web.ExecuteScriptAsync("window.MarginStudio.setSession(" + snapshot + ")");
+        lastSessionSnapshot = snapshot;
     }
     async Task GroupReply(string message = "Groups refreshed.", bool preserveDraft = false)
     {

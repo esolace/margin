@@ -19,66 +19,62 @@ public sealed class PluginInfo : Grasshopper2.Framework.Plugin
 }
 public static class Runtime
 {
-    static bool started;
-    static bool preferredEnabled;
-    static Canvas? attached;
-    static Labels? labels;
     static Inspector? inspector;
     static ButtonMenuItem? menu;
     static ButtonMenuItem? displayMenu;
     static CheckMenuItem? toggle;
     public static readonly string SettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Margin", "theme.json");
     public static string PreferencesPath => Path.Combine(Path.GetDirectoryName(SettingsPath)!, "preferences.json");
-    public static Theme Current { get; private set; } = new();
-    public static bool Enabled => labels?.Enabled ?? false;
+    static readonly LabelSession<Canvas> session = new(PreferencesPath, canvas => new Labels(canvas), Groups.Start, Groups.Stop);
+    public static Theme Current => session.Theme;
+    public static bool Enabled => session.EffectiveEnabled;
+    public static bool DesiredEnabled => session.DesiredEnabled;
+    public static LabelSessionState SessionState => session.State;
+    public static string? LastError => session.LastError;
     public static Window Owner => Editor.ThisOrRhino;
     public static void Start()
     {
-        if (started) return;
-        started = true; Groups.Start();
-        try { if (File.Exists(SettingsPath)) Current = ThemeStore.Load(SettingsPath); }
+        if (session.Started) return;
+        var theme = new Theme();
+        try { if (File.Exists(SettingsPath)) theme = ThemeStore.Load(SettingsPath); }
         catch (Exception ex) { Rhino.RhinoApp.WriteLine("Margin: using Paper. " + ex.Message); }
-        try { preferredEnabled = PreferencesStore.Load(PreferencesPath).LabelsEnabled; }
-        catch (Exception ex) { Rhino.RhinoApp.WriteLine("Margin preferences: " + ex.Message); }
-        Current = InstalledFonts.Resolve(Current);
+        session.Start(InstalledFonts.Resolve(theme));
+        if (session.LastError is not null) Rhino.RhinoApp.WriteLine("Margin preferences: " + session.LastError);
         Rhino.RhinoApp.Idle += Ready;
     }
     static void Ready(object? sender, EventArgs e)
     {
         var editor = Editor.Instance;
+        session.Attach(editor?.Canvas);
         if (editor?.Canvas is null || editor.Menu is null) return;
-        if (!ReferenceEquals(attached, editor.Canvas))
-        {
-            labels?.Dispose(); attached = editor.Canvas;
-            labels = new Labels(attached) { Theme = Current, Enabled = preferredEnabled };
-        }
-        if (menu is not null) return;
-        displayMenu = editor.Menu.Items.OfType<ButtonMenuItem>()
+        var display = editor.Menu.Items.OfType<ButtonMenuItem>()
             .FirstOrDefault(i => i.Text.Replace("&", "").Equals("Display", StringComparison.OrdinalIgnoreCase));
-        if (displayMenu is null) return;
+        if (display is null) return;
+        if (menu is not null && !ReferenceEquals(displayMenu, display)) RemoveMenu();
+        if (menu is not null) { if (toggle is not null) toggle.Checked = DesiredEnabled; return; }
+        displayMenu = display;
         menu = new ButtonMenuItem { Text = "Margin", ID = "MarginMenu" };
         var open = new ButtonMenuItem { Text = "Open Studio…" };
         open.Click += (_, _) => Show();
-        toggle = new CheckMenuItem { Text = "Show component labels", Checked = Enabled };
-        toggle.Click += (_, _) => SetEnabled(toggle.Checked);
+        toggle = new CheckMenuItem { Text = "Show component labels", Checked = DesiredEnabled };
+        toggle.Click += (_, _) =>
+        {
+            try { SetEnabled(toggle.Checked); }
+            catch (Exception ex) { toggle.Checked = DesiredEnabled; Rhino.RhinoApp.WriteLine("Margin preferences: " + ex.Message); }
+        };
         menu.Items.Add(open); menu.Items.Add(toggle);
         displayMenu.Items.Add(menu);
     }
     public static void SetEnabled(bool value)
     {
-        PreferencesStore.Update(PreferencesPath, p => p with { LabelsEnabled = value });
-        preferredEnabled = value;
-        if (labels is null || attached is null) return;
-        if (labels.LastError is not null) { labels.Dispose(); labels = new Labels(attached) { Theme = Current, Enabled = preferredEnabled }; }
-        labels.Enabled = value;
-        if (toggle is not null) toggle.Checked = value;
-        attached.Invalidate();
+        session.SetEnabled(value);
+        if (toggle is not null) toggle.Checked = DesiredEnabled;
+        Editor.Instance?.Canvas?.Invalidate();
     }
     public static void Apply(Theme theme)
     {
-        Current = InstalledFonts.Resolve(theme.Normalize());
-        if (labels is not null) labels.Theme = Current;
-        attached?.Invalidate();
+        session.Apply(InstalledFonts.Resolve(theme.Normalize()));
+        Editor.Instance?.Canvas?.Invalidate();
     }
     public static void Save() => ThemeStore.Save(SettingsPath, Current);
     public static void Show()
@@ -86,13 +82,15 @@ public static class Runtime
         if (inspector is null) { inspector = new Inspector(); inspector.Closed += (_, _) => inspector = null; }
         inspector.Present();
     }
+    static void RemoveMenu()
+    {
+        if (menu is not null) { displayMenu?.Items.Remove(menu); menu.Dispose(); }
+        menu = null; toggle = null; displayMenu = null;
+    }
     public static void Stop()
     {
-        Groups.Stop();
         Rhino.RhinoApp.Idle -= Ready;
-        labels?.Dispose(); labels = null; attached = null;
-        inspector?.Close(); inspector = null;
-        if (menu is not null) { displayMenu?.Items.Remove(menu); menu.Dispose(); }
-        menu = null; toggle = null; displayMenu = null; started = false;
+        try { session.Stop(); }
+        finally { inspector?.Close(); inspector = null; RemoveMenu(); }
     }
 }

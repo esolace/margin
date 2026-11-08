@@ -1,0 +1,13 @@
+{
+  "luminanceWeights": [0.2126, 0.7152, 0.0722],
+  "lightThreshold": 0.55,
+  "lightEdgeScale": 0.65,
+  "darkEdgeOffset": 69,
+  "darkInk": "#23282C",
+  "lightInk": "#F4F3F0",
+  "headings": {
+    "Rule": { "band": false, "divider": true, "extraSpace": 0 },
+    "Band": { "band": true, "divider": false, "extraSpace": 12 },
+    "Plain": { "band": false, "divider": false, "extraSpace": 0 }
+  }
+}

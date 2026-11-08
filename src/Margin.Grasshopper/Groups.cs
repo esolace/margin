@@ -250,7 +250,15 @@ public static class Groups
         documents.RemoveAll(w => !w.TryGetTarget(out _));
         if (!documents.Any(w => w.TryGetTarget(out var target) && ReferenceEquals(target, d)))
         { documents.Add(new(d)); d.ObjectsAdded += Added; }
-        foreach (var g in Items(d)) if (g.Attributes?.GetType() == typeof(GH_GroupAttributes)) g.Attributes = new StyledGroup(g) { Selected = g.Attributes.Selected };
+        var replaced = false;
+        foreach (var g in Items(d)) if (g.Attributes?.GetType() == typeof(GH_GroupAttributes))
+        {
+            g.Attributes = new StyledGroup(g) { Selected = g.Attributes.Selected };
+            replaced = true;
+        }
+        // Paste can build the document's pick/selection table before ObjectsAdded.
+        // Replacing attributes must invalidate that table as well as the drawing.
+        if (replaced) d.DestroyAttributeCache();
     }
     static void Refresh() => Instances.ActiveCanvas?.Invalidate();
 #endif
@@ -270,6 +278,7 @@ public static class Groups
             g.OverrideAttributes(new GroupAttributes(g));
 #else
             g.Attributes = new GH_GroupAttributes(g) { Selected = g.Attributes.Selected };
+            d.DestroyAttributeCache();
 #endif
         }
         documents.Clear();

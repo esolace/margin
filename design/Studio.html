@@ -72,7 +72,7 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 @media(max-width:920px){.group-palette{grid-template-columns:repeat(2,1fr)}#groupStudio{grid-template-columns:minmax(0,1fr) 310px}}
 </style></head><body>
 <header><div class="brand"><div class="mark" aria-hidden="true"></div><div><h1>Margin</h1><p>Labels & groups, with character.</p></div></div><nav class="studio-tabs" aria-label="Studio section"><button id="labelsTab" aria-pressed="true">Labels</button><button id="groupsTab" aria-pressed="false">Groups</button></nav><button id="reset">Reset to Paper</button></header>
-<main id="labelStudio"><section class="workspace"><div class="canvas-head"><div class="breadcrumb">Preview &nbsp; / &nbsp; <strong>A surface from curves</strong></div><div class="toolbar"><button id="background">Dark canvas</button><button id="toggle" aria-pressed="true">Labels on</button></div></div>
+<main id="labelStudio"><section class="workspace"><div class="canvas-head"><div class="breadcrumb">Preview &nbsp; / &nbsp; <strong>A surface from curves</strong></div><div class="toolbar"><button id="background">Dark canvas</button><button id="retryLabels" hidden>Retry labels</button><button id="toggle" aria-pressed="true">Labels on</button></div></div>
 <div class="canvas no-category" id="canvas"><div class="diagram"><svg class="wires" viewBox="0 0 780 410" aria-hidden="true"><path d="M138 176 C205 176 192 176 260 176 M342 176 C395 176 407 109 465 109 M342 176 C395 176 407 275 465 275 M547 109 C610 109 591 176 650 176 M547 275 C610 275 591 176 650 176"/></svg>
 <div class="node" style="left:56px;top:153px">Crv<div class="badge"><div>Curve<small>Params</small></div></div></div>
 <div class="node" style="left:260px;top:153px" data-selected>Divide<div class="badge"><div>Divide Curve<small>Curve</small></div></div></div>
@@ -120,11 +120,64 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 <input id="fontSearch" type="search" placeholder="Search font families…" aria-label="Search installed fonts" autocomplete="off" aria-controls="fontResults" role="combobox" aria-expanded="true" aria-autocomplete="list">
 <div class="font-meta"><span id="fontCount"></span><button id="refreshFonts">Refresh</button></div>
 <div id="fontResults" role="listbox" aria-label="Font families"></div><p id="fontEmpty" hidden>No matching fonts. Try a different name.</p>
-</div><dialog id="presetDialog" aria-labelledby="presetTitle"><form id="presetForm"><h2 id="presetTitle">Save preset</h2><p id="presetDescription">Keep this style in your personal collection.</p><div id="presetNameField"><label for="presetName">Preset name</label><input id="presetName" maxlength="48" autocomplete="off" required></div><p id="presetError" role="alert" hidden></p><div class="dialog-actions"><button type="button" id="presetCancel">Cancel</button><button type="submit" id="presetSubmit">Save preset</button></div></form></dialog><script id="fontCatalog" type="application/json">["Arial","Consolas","Courier New","Georgia","Helvetica Neue","Menlo","Segoe UI","Times New Roman","Verdana"]</script><script>
+</div><dialog id="presetDialog" aria-labelledby="presetTitle"><form id="presetForm"><h2 id="presetTitle">Save preset</h2><p id="presetDescription">Keep this style in your personal collection.</p><div id="presetNameField"><label for="presetName">Preset name</label><input id="presetName" maxlength="48" autocomplete="off" required></div><p id="presetError" role="alert" hidden></p><div class="dialog-actions"><button type="button" id="presetCancel">Cancel</button><button type="submit" id="presetSubmit">Save preset</button></div></form></dialog><script id="fontCatalog" type="application/json">["Arial","Consolas","Courier New","Georgia","Helvetica Neue","Menlo","Segoe UI","Times New Roman","Verdana"]</script><script id="groupAppearanceResolver">
+// Browser adapter for the shared policy. Native adapters are checked against it.
+globalThis.MarginGroupAppearance = Object.freeze({
+  resolve(style, canvas, policy) {
+    const a = style.Appearance;
+    const rgb = hex => hex.slice(1).match(/../g).map(x => parseInt(x, 16));
+    const hex = channels => '#' + channels.map(x => Math.floor(x).toString(16).padStart(2, '0')).join('').toUpperCase();
+    const luminance = channels => channels.reduce((sum, x, i) => sum + x * policy.luminanceWeights[i], 0) / 255;
+    const fill = rgb(style.Fill), background = rgb(canvas), alpha = style.Opacity / 100;
+    const edge = hex(fill.map(x => luminance(fill) > policy.lightThreshold
+      ? x * policy.lightEdgeScale : Math.min(255, x + policy.darkEdgeOffset)));
+    const accent = a.Accent || edge, heading = policy.headings[a.Heading];
+    const behind = heading.band ? rgb(accent) : fill.map((x, i) => x * alpha + background[i] * (1 - alpha));
+    return {
+      rgb: fill, accent, border: a.Border || edge,
+      ink: a.Text || (luminance(behind) > policy.lightThreshold ? policy.darkInk : policy.lightInk),
+      band: heading.band, divider: heading.divider && a.ShowDivider
+    };
+  }
+});
+</script>
+<script type="application/json" id="groupAppearancePolicy">
+{
+  "luminanceWeights": [
+    0.2126,
+    0.7152,
+    0.0722
+  ],
+  "lightThreshold": 0.55,
+  "lightEdgeScale": 0.65,
+  "darkEdgeOffset": 69,
+  "darkInk": "#23282C",
+  "lightInk": "#F4F3F0",
+  "headings": {
+    "Rule": {
+      "band": false,
+      "divider": true,
+      "extraSpace": 0
+    },
+    "Band": {
+      "band": true,
+      "divider": false,
+      "extraSpace": 12
+    },
+    "Plain": {
+      "band": false,
+      "divider": false,
+      "extraSpace": 0
+    }
+  }
+}
+</script>
+<script>
 'use strict';
 const $ = id => document.getElementById(id);
 const defaults = {Name:'Paper',FontFamily:'Helvetica Neue',FontSize:12,Bold:true,Text:'#28313B',Fill:'#F8FAFC',Border:'#BCC6D2',Accent:'#547DA6',Opacity:96,Radius:6,BorderWidth:1,PaddingX:10,PaddingY:6,Gap:12,MinZoom:.55,Below:false,ShowCategory:false,ShowAccent:true,UseNickname:false,SelectedOnly:false,AvoidOverlap:true};
 let presets = [defaults,{...defaults,Name:'Ink',Fill:'#273644',Text:'#F1F5F9',Border:'#43576A',Accent:'#97BADC'},{...defaults,Name:'Outline',Opacity:0,Text:'#334C62',Border:'#6986A1',Radius:3,ShowAccent:false},{...defaults,Name:'Signal',Fill:'#DCECF7',Text:'#173C57',Border:'#84AFCB',Accent:'#286A9B',Radius:12},{...defaults,Name:'Petal',Fill:'#F5E5EF',Text:'#642D4C',Border:'#D6B2C6',Accent:'#AF6187',Radius:10}];
+let sessionState = null;
 let theme = {...defaults}, native = false, enabled = true, applyTimer, fontIndex = 0;
 let userPresets = [], presetCollection = 'studio', selectedPresetId = null, presetMode = 'new', presetPending = false;
 let fonts = JSON.parse($('fontCatalog').textContent);
@@ -164,6 +217,14 @@ function setEnabled(value,notify=false) {
   $('toggle').textContent = enabled?'Labels on':'Labels off';
   $('toggle').setAttribute('aria-pressed',String(enabled));
   if (notify) send('enabled',{enabled});
+}
+function setSession(session) {
+  sessionState = session;
+  setEnabled(session.desired);
+  const paused = session.state === 'Paused';
+  $('retryLabels').hidden = !paused;
+  $('connection').textContent = paused ? 'Labels paused — retry to resume' : session.state === 'WaitingForCanvas' ? 'Waiting for a Grasshopper canvas' : 'Connected to Grasshopper';
+  $('connection').title = session.error || '';
 }
 function render(sync=false) {
   const s = document.documentElement.style;
@@ -320,6 +381,7 @@ inputs.forEach(el=>el.addEventListener('input',()=>{
 $('reset').onclick=()=>{selectedPresetId=null;theme=clean(presets[0]);render(true);apply();status('Paper restored.');};
 $('background').onclick=()=>{$('canvas').classList.toggle('dark');$('background').textContent=$('canvas').classList.contains('dark')?'Light canvas':'Dark canvas';};
 $('toggle').onclick=()=>setEnabled(!enabled,true);
+$('retryLabels').onclick=()=>send('enabled',{enabled:true});
 $('save').onclick=()=>{
   if(commit('save'))return;
   try{localStorage.setItem('margin-theme',JSON.stringify(theme));status('Saved in this browser. Export to use in Grasshopper.');}
@@ -351,17 +413,13 @@ const groupPresets=[
  groupPreset('Ultraviolet','#25163E','#1C102C','#BD88FF','#8454BC',{Heading:'Band',ShowAccent:false,TitleSize:18,Radius:12})
 ];
 function visibleGroupPresets(){return $('groupCollection').value==='classic'?groupColours.map(([Name,Fill])=>({Name,Fill,Opacity:85,Designed:true,Appearance:{...groupAppearanceDefaults}})):groupPresets;}
+const groupPolicy=JSON.parse(document.getElementById('groupAppearancePolicy').textContent);
 function groupResolved(t,dark=false){
- const a={...groupAppearanceDefaults,...t.Appearance},rgb=t.Fill.slice(1).match(/../g).map(x=>parseInt(x,16));
- const hex=c=>'#'+c.map(x=>Math.round(x).toString(16).padStart(2,'0')).join('').toUpperCase();
- const lum=c=>c[0]*.2126+c[1]*.7152+c[2]*.0722;
- const edge=hex(rgb.map(x=>lum(rgb)/255>.55?Math.floor(x*.65):Math.min(255,x+69)));
- const accent=a.Accent||edge, bg=dark?[23,28,34]:[212,208,200],alpha=t.Opacity/100;
- const behind=a.Heading==='Band'?accent.slice(1).match(/../g).map(x=>parseInt(x,16)):rgb.map((x,i)=>x*alpha+bg[i]*(1-alpha));
- return {a,rgb,accent,border:a.Border||edge,ink:a.Text||(lum(behind)/255>.55?'#23282C':'#F4F3F0')};
+ const a={...groupAppearanceDefaults,...t.Appearance};
+ return {a,...MarginGroupAppearance.resolve({...t,Appearance:a},dark?'#171C22':'#D4D0C8',groupPolicy)};
 }
-function groupVariables(node,t,dark=false){const {a,rgb,accent,border,ink}=groupResolved(t,dark),st=node.style;
- const vars={'fill':'rgba('+rgb+','+t.Opacity/100+')','accent':accent,'border':border,'ink':ink,'size':a.TitleSize*1.3+'px','weight':a.Bold?700:400,'radius':a.Radius*1.3+'px','border-width':a.BorderWidth*1.3+'px','title-fill':a.Heading==='Band'?accent:'transparent','accent-display':a.ShowAccent?'block':'none','divider-display':a.Heading==='Rule'&&a.ShowDivider?'block':'none'};
+function groupVariables(node,t,dark=false){const {a,rgb,accent,border,ink,band,divider}=groupResolved(t,dark),st=node.style;
+ const vars={'fill':'rgba('+rgb+','+t.Opacity/100+')','accent':accent,'border':border,'ink':ink,'size':a.TitleSize*1.3+'px','weight':a.Bold?700:400,'radius':a.Radius*1.3+'px','border-width':a.BorderWidth*1.3+'px','title-fill':band?accent:'transparent','accent-display':a.ShowAccent?'block':'none','divider-display':divider?'block':'none'};
  for(const [key,value] of Object.entries(vars))st.setProperty('--g-'+key,value);
  st.setProperty('--mini-radius',Math.min(8,a.Radius)+'px');
 }
@@ -443,9 +501,9 @@ $('applyGroup').onclick=applyGroup;$('groupForm').onsubmit=e=>{e.preventDefault(
 groupPreview();
 
 window.MarginStudio={
-  setGroups,
+  setGroups, setSession,
   reportError(message){presetError(message);groupPending=false;groupPreview();groupStatus(message,true);},
-  connect(data){if(data.groups)setGroups(data.groups);native=!!data.native;clearTimeout(applyTimer);presets=data.presets.map(clean);userPresets=data.userPresets||[];theme=clean(data.theme);selectedPresetId=userPresets.find(p=>p.Theme.Name===theme.Name&&sameStyle(p.Theme,theme))?.Id||null;if(selectedPresetId)presetCollection='user';this.setFonts(data.fonts);buildPresets();render(true);setEnabled(data.enabled);$('connection').textContent='Connected to Grasshopper';status(data.libraryError||'Changes apply live. Save a preset to keep a style in your collection.');},
+  connect(data){if(data.groups)setGroups(data.groups);native=!!data.native;clearTimeout(applyTimer);presets=data.presets.map(clean);userPresets=data.userPresets||[];theme=clean(data.theme);selectedPresetId=userPresets.find(p=>p.Theme.Name===theme.Name&&sameStyle(p.Theme,theme))?.Id||null;if(selectedPresetId)presetCollection='user';this.setFonts(data.fonts);buildPresets();render(true);setEnabled(data.enabled);$('connection').textContent='Connected to Grasshopper';if(data.session)setSession(data.session);status(data.libraryError||'Changes apply live. Save a preset to keep a style in your collection.');},
   setUserPresets:finishPresets,
   presetError,
   setFonts(names){fonts=[...new Set(names)].filter(n=>typeof n==='string'&&n.trim()).sort((a,b)=>a.localeCompare(b));if(!$('fontPopover').hidden)drawFonts();},

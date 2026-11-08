@@ -12,9 +12,13 @@
 !tests/
 !tests/Program.cs
 !tests/GroupEditingChecks.cs
+!tests/AppearanceChecks.cs
+!tests/SessionChecks.cs
 !tests/Margin.Tests.csproj
 !design/
 !design/Studio.html
+!design/group-appearance-policy.json
+!design/group-appearance.js
 !docs/
 !docs/TESTING.md
 !docs/images/
@@ -27,6 +31,8 @@
 !release/icon.svg
 !tools/
 !tools/build_release.py
+!tools/sync_studio_policy.py
+!tools/test_studio_appearance.mjs
 !tools/build_gh2.py
 !tools/test_gh2_staging.py
 !tools/test_gh1_group_movement.py
@@ -42,3 +48,5 @@
 **/obj/
 **/__pycache__/
 .DS_Store
+
+!tools/test_gh1_group_workflow.py

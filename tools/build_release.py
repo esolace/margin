@@ -10,14 +10,14 @@ import zipfile
 from build_gh2 import atomic_copy
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = '0.5.0-alpha.4'
+VERSION = '0.5.0-alpha.5'
 
 def public_files():
     fixed = ['.gitignore', 'LICENSE', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
-             'design/Studio.html', 'docs/TESTING.md', 'docs/images/studio.png',
+             'design/Studio.html', 'design/group-appearance-policy.json', 'design/group-appearance.js', 'tools/sync_studio_policy.py', 'tools/test_studio_appearance.mjs', 'docs/TESTING.md', 'docs/images/studio.png',
              'release/BUILDING.md', 'release/README.md', 'release/manifest.yml',
              'release/icon.png', 'release/icon.svg', 'tools/build_release.py',
-             'tools/build_gh2.py', 'tools/test_gh2_staging.py', 'tools/test_gh1_group_movement.py',
+             'tools/build_gh2.py', 'tools/test_gh2_staging.py', 'tools/test_gh1_group_movement.py', 'tools/test_gh1_group_workflow.py',
              '.github/workflows/ci.yml', '.github/ISSUE_TEMPLATE/bug_report.yml']
     result = [ROOT / name for name in fixed]
     for folder in ['src', 'tests', 'tools/PackageAudit']:
@@ -41,6 +41,7 @@ def main():
         candidate = Path('/Applications/Rhino 9.app/Contents/Resources/bin/yak') if sys.platform != 'win32' else Path(os.environ.get('ProgramFiles', 'C:/Program Files')) / 'Rhino 9/System/Yak.exe'
         if candidate.is_file(): yak = str(candidate)
     if args.package and not yak: raise SystemExit('Install Rhino 9 or set MARGIN_YAK.')
+    subprocess.run([sys.executable, str(ROOT / 'tools/sync_studio_policy.py'), '--check'], check=True)
     subprocess.run([sys.executable, str(ROOT / 'tools/test_gh2_staging.py')], check=True)
     packages = []
     platforms = ['win', 'mac'] if args.platform == 'all' else [args.platform]
@@ -74,6 +75,10 @@ def main():
         else:
             subprocess.run([dotnet, 'run', '--project', str(ROOT / 'tools/PackageAudit'), '-c', 'Release', '--', '--gh2', str(payload / 'Margin.GH2.rhp')], check=True)
     subprocess.run([dotnet, 'run', '--project', str(ROOT / 'tests'), '-c', 'Release', '--no-launch-profile'], check=True)
+    node = os.environ.get('MARGIN_NODE') or shutil.which('node') or shutil.which('bun')
+    if not node and (Path.home() / '.bun/bin/bun').is_file(): node = str(Path.home() / '.bun/bin/bun')
+    if not node: raise SystemExit('Install Node.js to verify Studio appearance parity.')
+    subprocess.run([node, str(ROOT / 'tools/test_studio_appearance.mjs')], env={**os.environ, 'MARGIN_DOTNET': dotnet}, check=True)
     if packages:
         subprocess.run([dotnet, 'run', '--project', str(ROOT / 'tools/PackageAudit'), '-c', 'Release', '--', *packages], check=True)
         for package in packages: print('PACKAGE:', package)

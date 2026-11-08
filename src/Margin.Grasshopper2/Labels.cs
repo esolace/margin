@@ -6,7 +6,7 @@ using Margin.Core;
 
 namespace Margin.GH2;
 
-public sealed class Labels : IDisposable
+public sealed class Labels : ILabelRenderer
 {
 #if MARGIN_MAC
     // Eto's Mac graphics use one logical pixel per point. Windows uses 96/72.

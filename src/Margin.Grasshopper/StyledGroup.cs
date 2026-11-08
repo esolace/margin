@@ -63,6 +63,7 @@ public sealed class StyledGroup : GroupAttributes
 #endif
             using var font = new Font(SystemFonts.Default().Family, (float)appearance.TitleSize * scale, appearance.Bold ? FontStyle.Bold : FontStyle.None);
             string name = string.IsNullOrWhiteSpace(group.UserName) ? "Untitled group" : group.UserName;
+            name = GroupAppearancePolicy.FormatTitle(name, appearance.TitleCase);
             while (name.Length > 2 && g.MeasureString(font,name).Width > b.Width - 34) name = name[..^2] + "…";
             var ink = Color.Parse(resolved.Text);
             using var text = new SolidBrush(ink); g.DrawText(font,text,b.X+18,b.Y+12,name);
@@ -144,6 +145,7 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
             { using var accent = new SolidBrush(accentColour);g.FillRectangle(accent,b.X+1,b.Y+10,4,b.Height-20); }
             using var font = new Font(SystemFonts.DefaultFont.FontFamily,(float)appearance.TitleSize,appearance.Bold ? FontStyle.Bold : FontStyle.Regular,GraphicsUnit.Pixel);
             string name = string.IsNullOrWhiteSpace(group.NickName)?"Untitled group":group.NickName;
+            name = GroupAppearancePolicy.FormatTitle(name, appearance.TitleCase);
             var ink = ColorTranslator.FromHtml(resolved.Text);
             using var text = new SolidBrush(ink);
             using var format = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };

@@ -14,6 +14,7 @@ public sealed record GroupAppearance
     public double BorderWidth { get; init; } = 1;
     public bool ShowAccent { get; init; } = true;
     public bool ShowDivider { get; init; } = true;
+    public string TitleCase { get; init; } = "AsTyped";
     public string Heading { get; init; } = "Rule";
 
     public GroupAppearance Validate()
@@ -23,7 +24,7 @@ public sealed record GroupAppearance
             : throw new InvalidDataException("Choose a valid six-digit colour.");
         static bool Range(double value, double min, double max) => double.IsFinite(value) && value >= min && value <= max;
         if (!Range(TitleSize, 10, 30) || !Range(Radius, 0, 24) || !Range(BorderWidth, 0, 4)
-            || !GroupAppearancePolicy.IsHeading(Heading))
+            || !GroupAppearancePolicy.IsHeading(Heading) || !GroupAppearancePolicy.TitleCases.ContainsKey(TitleCase ?? ""))
             throw new InvalidDataException("Choose a valid group title and frame appearance.");
         return this with { Text = Colour(Text), Accent = Colour(Accent), Border = Colour(Border) };
     }

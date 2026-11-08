@@ -1,13 +1,68 @@
 {
-  "luminanceWeights": [0.2126, 0.7152, 0.0722],
+  "luminanceWeights": [
+    0.2126,
+    0.7152,
+    0.0722
+  ],
   "lightThreshold": 0.55,
   "lightEdgeScale": 0.65,
   "darkEdgeOffset": 69,
   "darkInk": "#23282C",
   "lightInk": "#F4F3F0",
   "headings": {
-    "Rule": { "band": false, "divider": true, "extraSpace": 0 },
-    "Band": { "band": true, "divider": false, "extraSpace": 12 },
-    "Plain": { "band": false, "divider": false, "extraSpace": 0 }
+    "Rule": {
+      "band": false,
+      "divider": true,
+      "extraSpace": 0
+    },
+    "Band": {
+      "band": true,
+      "divider": false,
+      "extraSpace": 12
+    },
+    "Plain": {
+      "band": false,
+      "divider": false,
+      "extraSpace": 0
+    }
+  },
+  "titleCases": {
+    "AsTyped": "As typed",
+    "Uppercase": "UPPERCASE",
+    "TitleCase": "Title Case",
+    "SentenceCase": "Sentence case",
+    "Lowercase": "lowercase"
+  },
+  "browserSimpleCaseOverrides": {
+    "upper": {
+      "ᾀ": "ᾈ",
+      "ᾁ": "ᾉ",
+      "ᾂ": "ᾊ",
+      "ᾃ": "ᾋ",
+      "ᾄ": "ᾌ",
+      "ᾅ": "ᾍ",
+      "ᾆ": "ᾎ",
+      "ᾇ": "ᾏ",
+      "ᾐ": "ᾘ",
+      "ᾑ": "ᾙ",
+      "ᾒ": "ᾚ",
+      "ᾓ": "ᾛ",
+      "ᾔ": "ᾜ",
+      "ᾕ": "ᾝ",
+      "ᾖ": "ᾞ",
+      "ᾗ": "ᾟ",
+      "ᾠ": "ᾨ",
+      "ᾡ": "ᾩ",
+      "ᾢ": "ᾪ",
+      "ᾣ": "ᾫ",
+      "ᾤ": "ᾬ",
+      "ᾥ": "ᾭ",
+      "ᾦ": "ᾮ",
+      "ᾧ": "ᾯ",
+      "ᾳ": "ᾼ",
+      "ῃ": "ῌ",
+      "ῳ": "ῼ"
+    },
+    "lower": {}
   }
 }

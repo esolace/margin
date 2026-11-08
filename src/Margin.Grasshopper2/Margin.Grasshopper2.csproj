@@ -8,7 +8,7 @@
     <EnableWindowsTargeting Condition="'$(MarginPlatform)' == 'win'">true</EnableWindowsTargeting>
     <DefineConstants Condition="'$(MarginPlatform)' == 'mac'">$(DefineConstants);MARGIN_MAC</DefineConstants>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
-    <AssemblyName>Margin.GH2</AssemblyName><Version>0.5.0-alpha.5</Version><AssemblyVersion>0.5.0.5</AssemblyVersion>
+    <AssemblyName>Margin.GH2</AssemblyName><Version>0.5.0-alpha.6</Version><AssemblyVersion>0.5.0.6</AssemblyVersion>
     <DefineConstants>$(DefineConstants);MARGIN_GH2</DefineConstants>
     <RhinoResources Condition="'$(RhinoResources)' == ''">/Applications/Rhino 9.app/Contents/Frameworks/RhCore.framework/Versions/A/Resources</RhinoResources>
     <NoWarn>$(NoWarn);CA1416</NoWarn>

@@ -1,5 +1,21 @@
 // Browser adapter for the shared policy. Native adapters are checked against it.
 globalThis.MarginGroupAppearance = Object.freeze({
+  formatTitle(name, casing, policy) {
+    if (!Object.hasOwn(policy.titleCases, casing)) throw new Error('Choose a valid title case.');
+    if (casing === 'AsTyped') return name;
+    // Greek full-uppercase expansions need their Unicode simple-case counterparts.
+    const simple = (letter, upper) => {const override=policy.browserSimpleCaseOverrides[upper?'upper':'lower'][letter];if(override)return override;const mapped = upper ? letter.toUpperCase() : letter.toLowerCase();return [...mapped].length === 1 ? mapped : letter;};
+    let initial = true, result = '';
+    for (const letter of name) {
+      let value = simple(letter, casing === 'Uppercase');
+      if (casing === 'TitleCase' || casing === 'SentenceCase') {
+        if (/\p{L}/u.test(letter)) {if(initial)value=simple(value,true);initial=false;}
+        else if(casing === 'TitleCase' && !/[\p{N}\p{M}'’]/u.test(letter)) initial=true;
+      }
+      result += value;
+    }
+    return result;
+  },
   resolve(style, canvas, policy) {
     const a = style.Appearance;
     const rgb = hex => hex.slice(1).match(/../g).map(x => parseInt(x, 16));

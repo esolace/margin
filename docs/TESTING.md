@@ -157,3 +157,37 @@ restart, interactive Windows tests and copying custom group typography are not
 covered by the workflow above. Group fill/name/membership travel with native
 copy/paste; GH1 custom appearance is document-keyed and its transfer to a new
 copied identity remains a known limitation.
+
+
+## 0.5.0-alpha.6 title controls and completion checks
+
+Group titles support As typed (the backward-compatible default), UPPERCASE,
+Title Case, Sentence case and lowercase. This transforms display text only;
+native group names are unchanged. Unicode simple casing is checked across Studio and GH1/GH2: 60 title scenarios
+and all 2,987 mapped Unicode scalars agree. The browser compatibility table
+covers the 27 Greek mappings where JavaScript full casing differs from simple casing. As typed preserves intentional acronyms. Colour remains
+editable in Auto mode: selecting a colour creates a custom override, and Auto
+restores calculated contrast. Studio labels the control explicitly as Title colour.
+
+The committed browser suite in `tools/browser/studio.mjs` reproduces the disabled
+picker before the change and passes afterward. It covers casing preview/payload,
+custom/automatic colour, defaults and draft preservation, selection/revert,
+paused-label retry/off/save rollback, and minimum window width. CI runs it in a
+separate job with pinned dependencies. Browser bridge replies are simulated;
+this does not replace real native save tests. Screenshots at 1080x760 and 900x600
+were inspected locally.
+
+`tools/test_gh1_group_editor.py` exercises actual Eto controls without displaying
+a window. Thirteen native checks pass in a separate verification assembly: custom
+colour, restoration of Auto, casing, Save, undo/redo, reopening the editor and
+saving/reopening the GH definition. The previous 17 copy/paste/rename/ungroup
+checks also pass against the new implementation. Neither test changes the working
+canvas or its objects. Test files are disposable and excluded from public source.
+
+A separate Rhino launch was attempted for fresh-process verification. Rhino
+blocked it in its native `checkForOtherRhinos` modal check; the extra test process
+was closed, leaving the working session running. Fresh-process verification is
+therefore still unverified. Interactive Windows and GH2 verification remain
+separate limitations; both adapters are built and audited for both platforms.
+The native GH1 custom-appearance transfer limitation on copy/paste noted above
+also applies to casing; saving and reopening an existing group preserves it.

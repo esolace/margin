@@ -1,0 +1,11 @@
+{
+  "name": "margin-studio-checks",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node studio.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.65.0"
+  }
+}

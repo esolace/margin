@@ -98,10 +98,12 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 <div id="groupIdentity"><label for="groupName">Group name</label><input type="text" id="groupName" maxlength="120" placeholder="Untitled group" autocomplete="off"></div>
 <div class="field"><label for="groupDesigned">Margin styling</label><input type="checkbox" id="groupDesigned" checked></div>
 <h3>Title</h3>
+<div class="field"><label for="groupTitleCase">Letter case</label><select id="groupTitleCase" aria-describedby="groupCaseHint"></select></div>
+<div class="field"><label for="groupText">Title colour</label><div class="color-value"><label class="auto-colour"><input id="groupAutoText" type="checkbox" checked>Auto</label><input type="color" id="groupText" value="#F4F3F0" aria-label="Group title colour"></div></div>
 <div class="field"><label for="groupHeading">Treatment</label><select id="groupHeading"><option value="Rule">Editorial rule</option><option value="Band">Colour band</option><option value="Plain">Clean title</option></select></div>
-<div class="field"><label for="groupText">Text colour</label><div class="color-value"><label class="auto-colour"><input id="groupAutoText" type="checkbox" checked>Auto</label><input type="color" id="groupText" value="#F4F3F0" aria-label="Group title colour"></div></div>
 <div class="field"><label for="groupTitleSize">Title size</label><input id="groupTitleSize" type="number" min="10" max="30" step="1" value="15"></div>
 <div class="field"><label for="groupBold">Bold title</label><input id="groupBold" type="checkbox" checked></div>
+<p id="groupCaseHint" class="group-help">Styles the title; your group name stays as typed.</p>
 <h3>Surface & frame</h3>
 <div class="field"><label for="groupFill">Fill colour</label><div class="color-value"><span id="groupHex" class="mono"></span><input type="color" id="groupFill" value="#253e56"></div></div>
 <div class="field"><label for="groupOpacity">Opacity</label><input type="range" id="groupOpacity" min="0" max="100" value="85"><output id="groupOpacityOut">85%</output></div>
@@ -111,7 +113,7 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 <div class="field"><label for="groupRadius">Corners</label><input id="groupRadius" type="number" min="0" max="24" step="1" value="8"></div>
 <div class="field"><label for="groupShowAccent">Accent edge</label><input id="groupShowAccent" type="checkbox" checked></div>
 <div class="field"><label for="groupShowDivider">Title divider</label><input id="groupShowDivider" type="checkbox" checked></div>
-<p class="group-help">Auto keeps colours in balance as the fill changes. Turn it off to choose your own. Component labels stay independent.</p>
+<p class="group-help">Choose a colour to make it custom. Auto restores contrast as the fill changes. Component labels stay independent.</p>
 </fieldset></form>
 <div class="footer"><div class="actions"><button class="primary" id="applyGroup" disabled>Apply to group</button><button id="revertGroup" disabled>Revert edits</button></div><button id="saveGroupDefaults" type="button">Use appearance for future groups</button><p id="groupStatus" role="status">Group edits are saved with your Grasshopper file.</p></div></aside>
 </main>
@@ -123,6 +125,22 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 </div><dialog id="presetDialog" aria-labelledby="presetTitle"><form id="presetForm"><h2 id="presetTitle">Save preset</h2><p id="presetDescription">Keep this style in your personal collection.</p><div id="presetNameField"><label for="presetName">Preset name</label><input id="presetName" maxlength="48" autocomplete="off" required></div><p id="presetError" role="alert" hidden></p><div class="dialog-actions"><button type="button" id="presetCancel">Cancel</button><button type="submit" id="presetSubmit">Save preset</button></div></form></dialog><script id="fontCatalog" type="application/json">["Arial","Consolas","Courier New","Georgia","Helvetica Neue","Menlo","Segoe UI","Times New Roman","Verdana"]</script><script id="groupAppearanceResolver">
 // Browser adapter for the shared policy. Native adapters are checked against it.
 globalThis.MarginGroupAppearance = Object.freeze({
+  formatTitle(name, casing, policy) {
+    if (!Object.hasOwn(policy.titleCases, casing)) throw new Error('Choose a valid title case.');
+    if (casing === 'AsTyped') return name;
+    // Greek full-uppercase expansions need their Unicode simple-case counterparts.
+    const simple = (letter, upper) => {const override=policy.browserSimpleCaseOverrides[upper?'upper':'lower'][letter];if(override)return override;const mapped = upper ? letter.toUpperCase() : letter.toLowerCase();return [...mapped].length === 1 ? mapped : letter;};
+    let initial = true, result = '';
+    for (const letter of name) {
+      let value = simple(letter, casing === 'Uppercase');
+      if (casing === 'TitleCase' || casing === 'SentenceCase') {
+        if (/\p{L}/u.test(letter)) {if(initial)value=simple(value,true);initial=false;}
+        else if(casing === 'TitleCase' && !/[\p{N}\p{M}'’]/u.test(letter)) initial=true;
+      }
+      result += value;
+    }
+    return result;
+  },
   resolve(style, canvas, policy) {
     const a = style.Appearance;
     const rgb = hex => hex.slice(1).match(/../g).map(x => parseInt(x, 16));
@@ -169,6 +187,45 @@ globalThis.MarginGroupAppearance = Object.freeze({
       "divider": false,
       "extraSpace": 0
     }
+  },
+  "titleCases": {
+    "AsTyped": "As typed",
+    "Uppercase": "UPPERCASE",
+    "TitleCase": "Title Case",
+    "SentenceCase": "Sentence case",
+    "Lowercase": "lowercase"
+  },
+  "browserSimpleCaseOverrides": {
+    "upper": {
+      "\u1f80": "\u1f88",
+      "\u1f81": "\u1f89",
+      "\u1f82": "\u1f8a",
+      "\u1f83": "\u1f8b",
+      "\u1f84": "\u1f8c",
+      "\u1f85": "\u1f8d",
+      "\u1f86": "\u1f8e",
+      "\u1f87": "\u1f8f",
+      "\u1f90": "\u1f98",
+      "\u1f91": "\u1f99",
+      "\u1f92": "\u1f9a",
+      "\u1f93": "\u1f9b",
+      "\u1f94": "\u1f9c",
+      "\u1f95": "\u1f9d",
+      "\u1f96": "\u1f9e",
+      "\u1f97": "\u1f9f",
+      "\u1fa0": "\u1fa8",
+      "\u1fa1": "\u1fa9",
+      "\u1fa2": "\u1faa",
+      "\u1fa3": "\u1fab",
+      "\u1fa4": "\u1fac",
+      "\u1fa5": "\u1fad",
+      "\u1fa6": "\u1fae",
+      "\u1fa7": "\u1faf",
+      "\u1fb3": "\u1fbc",
+      "\u1fc3": "\u1fcc",
+      "\u1ff3": "\u1ffc"
+    },
+    "lower": {}
   }
 }
 </script>
@@ -399,7 +456,7 @@ $('themeFile').onchange=async()=>{
 };
 
 let groupData={Document:null,Host:'Grasshopper',Items:[]}, latestGroupData=groupData, groupId=null, groupDirty=false, groupPending=false;
-const groupAppearanceDefaults={Text:null,Accent:null,Border:null,TitleSize:15,Bold:true,Radius:8,BorderWidth:1,ShowAccent:true,ShowDivider:true,Heading:'Rule'};
+const groupAppearanceDefaults={Text:null,Accent:null,Border:null,TitleSize:15,Bold:true,Radius:8,BorderWidth:1,ShowAccent:true,ShowDivider:true,Heading:'Rule',TitleCase:'AsTyped'};
 const groupColours=[['Ink blue','#253E56'],['Aubergine','#493049'],['Forest','#304737'],['Sienna','#573D30'],['Porcelain','#E6E1D8'],['Sage','#AABBA6'],['Rose','#D9B7CA'],['Slate','#657786']];
 const groupPreset=(Name,Fill,Text,Accent,Border,extra={})=>({Name,Fill,Opacity:96,Designed:true,Appearance:{...groupAppearanceDefaults,Text,Accent,Border,...extra}});
 const groupPresets=[
@@ -414,6 +471,7 @@ const groupPresets=[
 ];
 function visibleGroupPresets(){return $('groupCollection').value==='classic'?groupColours.map(([Name,Fill])=>({Name,Fill,Opacity:85,Designed:true,Appearance:{...groupAppearanceDefaults}})):groupPresets;}
 const groupPolicy=JSON.parse(document.getElementById('groupAppearancePolicy').textContent);
+for(const [value,label] of Object.entries(groupPolicy.titleCases))$('groupTitleCase').add(new Option(label,value));
 function groupResolved(t,dark=false){
  const a={...groupAppearanceDefaults,...t.Appearance};
  return {a,...MarginGroupAppearance.resolve({...t,Appearance:a},dark?'#171C22':'#D4D0C8',groupPolicy)};
@@ -426,7 +484,7 @@ function groupVariables(node,t,dark=false){const {a,rgb,accent,border,ink,band,d
 function loadGroupStyle(t){
  const a={...groupAppearanceDefaults,...t.Appearance};$('groupFill').value=t.Fill;$('groupOpacity').value=t.Opacity;$('groupDesigned').checked=t.Designed;
  for(const key of ['Text','Accent','Border']){$('groupAuto'+key).checked=a[key]===null;$('group'+key).value=a[key]||groupResolved(t)[key==='Text'?'ink':key.toLowerCase()];}
- for(const key of ['TitleSize','Radius','BorderWidth','Heading'])$('group'+key).value=a[key];
+ for(const key of ['TitleSize','Radius','BorderWidth','Heading','TitleCase'])$('group'+key).value=a[key];
  for(const key of ['Bold','ShowAccent','ShowDivider'])$('group'+key).checked=a[key];
 }
 function groupStatus(message,error=false){$('groupStatus').textContent=message;$('groupStatus').dataset.error=error;}
@@ -434,15 +492,15 @@ function groupStyle(){const a={};
  for(const key of ['Text','Accent','Border'])a[key]=$('groupAuto'+key).checked?null:$('group'+key).value.toUpperCase();
  for(const key of ['TitleSize','Radius','BorderWidth'])a[key]=+$('group'+key).value;
  for(const key of ['Bold','ShowAccent','ShowDivider'])a[key]=$('group'+key).checked;
- a.Heading=$('groupHeading').value;
+ a.Heading=$('groupHeading').value;a.TitleCase=$('groupTitleCase').value;
  return {Fill:$('groupFill').value.toUpperCase(),Opacity:+$('groupOpacity').value,Designed:$('groupDesigned').checked,Appearance:a};
 }
 function groupPreview(){
  const t=groupStyle(),dark=$('groupStage').dataset.tone==='dark',resolved=groupResolved(t,dark);
  groupVariables($('groupSpecimen'),t,dark);
- for(const key of ['Text','Accent','Border']){const auto=$('groupAuto'+key).checked;$('group'+key).disabled=auto;if(auto)$('group'+key).value=resolved[key==='Text'?'ink':key.toLowerCase()];}
+ for(const key of ['Text','Accent','Border']){const auto=$('groupAuto'+key).checked;if(auto)$('group'+key).value=resolved[key==='Text'?'ink':key.toLowerCase()];}
  $('groupShowDivider').disabled=t.Appearance.Heading!=='Rule';
- $('groupPreviewName').textContent=$('groupName').value.trim()||'Untitled group';$('groupHex').textContent=t.Fill;$('groupOpacityOut').textContent=t.Opacity+'%';
+ $('groupPreviewName').textContent=MarginGroupAppearance.formatTitle($('groupName').value.trim()||'Untitled group',t.Appearance.TitleCase,groupPolicy);$('groupHex').textContent=t.Fill;$('groupOpacityOut').textContent=t.Opacity+'%';
  $('groupStage').classList.toggle('native-style',!t.Designed);
  [...$('groupPalette').children].forEach((b,i)=>{const p=visibleGroupPresets()[i];b.setAttribute('aria-pressed',String(t.Designed&&t.Fill===p.Fill&&Math.abs(t.Opacity-p.Opacity)<.25&&Object.keys(groupAppearanceDefaults).every(k=>t.Appearance[k]===p.Appearance[k])));});
  $('applyGroup').disabled=!groupId||!groupDirty||groupPending;$('revertGroup').disabled=!groupId||!groupDirty||groupPending;
@@ -489,7 +547,7 @@ function buildGroupPresets(){
  groupPreview();
 }
 $('groupCollection').onchange=buildGroupPresets;
-for(const el of $('groupFields').querySelectorAll('input,select'))el.addEventListener('input',()=>{groupDirty=!!groupId;groupPreview();groupStatus('Preview updated. Apply to save it to your group.');});
+for(const el of $('groupFields').querySelectorAll('input,select'))el.addEventListener('input',()=>{for(const key of ['Text','Accent','Border'])if(el.id==='group'+key)$('groupAuto'+key).checked=false;groupDirty=!!groupId;groupPreview();groupStatus('Preview updated. Apply to save it to your group.');});
 buildGroupPresets();
 $('revertGroup').onclick=()=>{groupDirty=false;setGroups(latestGroupData,'Unapplied edits reverted.');};
 function applyGroup(){

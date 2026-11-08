@@ -2,6 +2,8 @@ using Margin.Core;
 int passed=0;
 void Check(bool ok,string message) {if(!ok)throw new Exception(message);passed++;Console.WriteLine("PASS "+message);}
 if (args.Contains("--session")) { SessionChecks.Run(Check); Console.WriteLine($"{passed} session checks passed."); return; }
+if (args.Contains("--case-mappings")) { Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(AppearanceChecks.CaseMappings())); return; }
+if (args.Contains("--title-vectors")) { Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(AppearanceChecks.TitleVectors())); return; }
 if (args.Contains("--appearance-vectors")) { Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(AppearanceChecks.Vectors())); return; }
 if (args.Contains("--appearance")) { AppearanceChecks.Run(Check); Console.WriteLine($"{passed} appearance checks passed."); return; }
 GroupEditingChecks.Run(Check);
@@ -54,7 +56,7 @@ PreferencesStore.Update(preferences, p => p with { UseGroupColour = true, GroupF
 Check(PreferencesStore.Load(preferences) is { LabelsEnabled: true, GroupFill: "#D9B7CA", GroupOpacity: 77 }, "group defaults preserve label preference");
 PreferencesStore.Update(preferences, p => p with { LabelsEnabled = false });
 Check(PreferencesStore.Load(preferences) is { LabelsEnabled: false, UseGroupColour: true, GroupOpacity: 77 }, "off is remembered without losing group defaults");
-var appearance = new GroupAppearance { Text = "#ffeedd", Accent = "#ffa0e1", Border = "#bc96ff", TitleSize = 22, Heading = "Band", Radius = 12, BorderWidth = 2, Bold = false, ShowAccent = false, ShowDivider = false };
+var appearance = new GroupAppearance { TitleCase = "Uppercase", Text = "#ffeedd", Accent = "#ffa0e1", Border = "#bc96ff", TitleSize = 22, Heading = "Band", Radius = 12, BorderWidth = 2, Bold = false, ShowAccent = false, ShowDivider = false };
 PreferencesStore.Update(preferences, p => p with { GroupAppearance = appearance });
 Check(PreferencesStore.Load(preferences).GroupAppearance == appearance.Validate(), "complete group appearance survives preference reload");
 Check(!PreferencesStore.Load(preferences).LabelsEnabled, "group appearance preserves independent label switch");

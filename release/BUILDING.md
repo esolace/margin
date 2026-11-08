@@ -33,3 +33,16 @@ node tools/test_studio_appearance.mjs
 
 Native host checks and remaining limits are documented in `docs/TESTING.md`.
 Do not publish a previously used version number. Public Yak versions are immutable.
+
+Studio interaction checks use the pinned Bun/Playwright workspace:
+
+```sh
+cd tools/browser
+bun install --frozen-lockfile
+bunx playwright install chromium
+bun studio.mjs
+```
+
+CI runs this suite in its own job. Set `MARGIN_BROWSER_EXECUTABLE` to use an
+existing Chromium executable; `MARGIN_SCREENSHOT_DIR` optionally saves UI evidence.
+These checks simulate the native bridge, so native-host checks remain separate.

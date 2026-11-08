@@ -50,3 +50,10 @@
 .DS_Store
 
 !tools/test_gh1_group_workflow.py
+
+!tools/browser/
+!tools/browser/package.json
+!tools/browser/bun.lock
+!tools/browser/studio.mjs
+
+!tools/test_gh1_group_editor.py

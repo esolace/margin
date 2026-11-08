@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0-alpha.6 — local development
+
+- Keep title colour editable in Studio and the native group editor. Picking a colour switches to custom; Auto restores calculated contrast.
+- Add As typed, UPPERCASE, Title Case, Sentence case and lowercase treatments without changing native group names.
+- Save casing with group appearance and future defaults. Existing appearances remain As typed.
+- Add browser workflow checks to CI and native editor colour/casing persistence checks.
+
 ## 0.5.0-alpha.5 — local development
 
 - Fix pasted native groups retaining stale click/selection attributes, restoring heading editing and native ungroup behavior.

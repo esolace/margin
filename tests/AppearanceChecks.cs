@@ -5,6 +5,14 @@ static class AppearanceChecks
     public static void Run(Action<bool, string> check)
     {
         var automatic = new GroupAppearance();
+        check(automatic.TitleCase == "AsTyped", "existing group titles keep their original casing");
+        check(GroupAppearancePolicy.FormatTitle("gUiDe CURVES", "Uppercase") == "GUIDE CURVES", "uppercase formats the title");
+        check(GroupAppearancePolicy.FormatTitle("gUiDe CURVES", "TitleCase") == "Guide Curves", "title case formats each word");
+        check(GroupAppearancePolicy.FormatTitle("— gUiDe CURVES", "SentenceCase") == "— Guide curves", "sentence case capitalizes the first letter after punctuation");
+        check(GroupAppearancePolicy.FormatTitle("GH Guide", "AsTyped") == "GH Guide" && GroupAppearancePolicy.FormatTitle("GH Guide", "Lowercase") == "gh guide", "as-typed preserves acronyms and lowercase is explicit");
+        check(GroupAppearancePolicy.FormatTitle("éTUDE d'été", "TitleCase") == "Étude D'été", "title case preserves accents and internal apostrophes");
+        try { (automatic with { TitleCase = "Bad" }).Validate(); throw new Exception("Invalid case accepted"); }
+        catch (InvalidDataException) { check(true, "invalid casing is rejected"); }
         check(GroupAppearancePolicy.Resolve(automatic, "#FFFFFF", 10, "#151C22").Text == "#F4F3F0",
             "transparent light fill uses light text against the actual dark canvas");
         check(GroupAppearancePolicy.Resolve(automatic, "#000000", 10, "#FFFFFF").Text == "#23282C",
@@ -20,6 +28,15 @@ static class AppearanceChecks
         try { GroupAppearancePolicy.Resolve(automatic, "#FFFFFF", double.NaN, "#000000"); throw new Exception("Invalid opacity accepted"); }
         catch (InvalidDataException) { check(true, "invalid opacity is rejected before colour resolution"); }
     }
+
+    public static object[] CaseMappings() => Enumerable.Range(0, 0x110000)
+        .Where(System.Text.Rune.IsValid).Select(value => new System.Text.Rune(value))
+        .Where(value => System.Text.Rune.ToUpperInvariant(value) != value || System.Text.Rune.ToLowerInvariant(value) != value)
+        .Select(value => (object)new { letter = value.ToString(), upper = System.Text.Rune.ToUpperInvariant(value).ToString(), lower = System.Text.Rune.ToLowerInvariant(value).ToString() }).ToArray();
+
+    public static object[] TitleVectors() => (from name in new[] { "gUiDe CURVES", "— ÉTUDE d'été", "Straße / GH", "ΣΑΣ", "123 guide-curves", "👋 café", "", "e\u0301tude", "𐐨 guide", "aⅣguide", "ᾀ guide", "a²b" }
+        from casing in GroupAppearancePolicy.TitleCases.Keys
+        select new { name, casing, text = GroupAppearancePolicy.FormatTitle(name, casing) }).Cast<object>().ToArray();
 
     public static object[] Vectors() => (from fill in new[] { "#FFFFFF", "#000000", "#304737", "#ED8DC5" }
         from opacity in new[] { 0d, 10, 85.1, 100 }

@@ -1,6 +1,6 @@
 # Margin
 
-**Labels, with character.**
+**Labels and groups, with character.**
 
 A visual label studio for Grasshopper: installed fonts, considered colour,
 backgrounds, borders and spacing, with personal presets you can keep and reuse.
@@ -11,7 +11,7 @@ No extra component is added to your definition.
 ## Install
 
 In Rhino 9, open **PackageManager**, enable **Include prereleases**, search for
-**Margin**, and install **0.4.0-alpha.2**. Save your work before restarting Rhino.
+**Margin**, and install **0.5.0-alpha.4**. Save your work before restarting Rhino.
 In GH1 or GH2, choose **Display → Margin → Open Studio…** and turn labels on.
 The 0.5.0 local preview remembers your label switch across files and Rhino restarts.
 
@@ -20,8 +20,7 @@ are included; GH2 must also be available in your Rhino installation.
 
 ## Groups (0.5.0 preview)
 
-In GH1, create groups normally with **Cmd/Ctrl+G**, or use **Group selected
-components** in Studio. Groups receive the designed frame automatically: a
+In GH1, create groups normally with **Cmd/Ctrl+G**, or use **Group selection** in Studio. Groups receive the designed frame automatically: a
 larger internal heading, accent edge, and divider, distinct from component labels.
 **Double-click the heading on the canvas** to edit its native name and colour.
 Edits are undoable and saved in the Grasshopper file.
@@ -31,7 +30,7 @@ Rose Pop, Blueprint and Ultraviolet. The previous eight colours remain in **Clas
 Edit title colour (or use automatic contrast), size and weight, choose an editorial
 rule, colour band or clean title, then adjust the fill, opacity, accent, border and
 corners. Double-click editing also exposes title colour. Full group appearances
-persist with the definition, undo/redo, and future-group defaults. Choose a preset and **Apply to group**
+persist with the definition, undo/redo, and future-group defaults. Select a group on the canvas, choose a preset, and **Apply to group**
 to update an existing group. **Use appearance for future groups** saves the colour,
 opacity and styling choice on this computer, including for native Cmd/Ctrl+G groups.
 Changing defaults does not recolour existing groups; pasted groups with explicit
@@ -45,9 +44,9 @@ fill colours without Margin; the designed heading requires Margin. GH1 style
 metadata is document-scoped, so copied groups retain native colour but not custom
 Margin metadata.
 
-0.5.0-alpha.4 is a local preview. The public Package Manager version remains
-0.4.0-alpha.2 until separately approved for publication. Windows packages compile;
-interactive Windows Rhino testing remains outstanding.
+0.5.0-alpha.4 is an experimental Package Manager prerelease. Mac GH1 group editing,
+undo/redo, failure recovery and restart persistence have been tested live. Windows
+packages compile; interactive Windows Rhino testing remains outstanding.
 
 ## Make it yours
 

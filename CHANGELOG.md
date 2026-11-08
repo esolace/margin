@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0-alpha.4 — local preview
+## 0.5.0-alpha.4 — 2026-11-08
 
 - Share the group edit session between Studio and the native title editor.
 - Retain the acknowledged group revision if saving future defaults fails, so Save can be retried.

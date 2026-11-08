@@ -10,14 +10,14 @@ import zipfile
 from build_gh2 import atomic_copy
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = '0.4.0-alpha.2'
+VERSION = '0.5.0-alpha.3'
 
 def public_files():
     fixed = ['.gitignore', 'LICENSE', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
              'design/Studio.html', 'docs/TESTING.md', 'docs/images/studio.png',
              'release/BUILDING.md', 'release/README.md', 'release/manifest.yml',
              'release/icon.png', 'release/icon.svg', 'tools/build_release.py',
-             'tools/build_gh2.py', 'tools/test_gh2_staging.py',
+             'tools/build_gh2.py', 'tools/test_gh2_staging.py', 'tools/test_gh1_group_movement.py',
              '.github/workflows/ci.yml', '.github/ISSUE_TEMPLATE/bug_report.yml']
     result = [ROOT / name for name in fixed]
     for folder in ['src', 'tests', 'tools/PackageAudit']:

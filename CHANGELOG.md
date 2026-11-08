@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.5.0-alpha.3 — local preview
+
+- Add eight vivid group presets with coordinated title, fill, accent and border colours; retain the eight classic colours.
+- Add editable title colour, automatic contrast, size/weight, heading treatments, frame colours, corners and border width.
+- Persist the complete group appearance through undo/redo, save/reopen and GH1 future-group defaults; retain legacy styles.
+- Match Studio specimens to both native renderers; keep component labels and workspace themes independent.
+
+## 0.5.0-alpha.2 — local preview
+
+- Remember label visibility across files, canvas recreation and application restarts in GH1 and GH2.
+- Style native GH1 groups automatically, including Cmd/Ctrl+G; preserve the original group preset frames and separate heading hierarchy.
+- Double-click a group heading to edit its native name and colour with undo support.
+- Add working Studio group creation and persisted appearance defaults for future native groups.
+- Retain explicit existing group colours when defaults change.
+- Refresh GH1 group boundaries as members move, including nested groups; keep painting and hit testing on the same current frame.
+
+
+## 0.5.0-alpha.1 (local preview)
+
+- Add a Groups section with native group naming, colour and opacity editing.
+- Add eight independent group colour presets and light/dark previews.
+- Add opt-in group headings, accent edges and borders in GH1 and GH2.
+- Preserve group membership, persist styles with definitions, and support Undo/Redo.
+- Guard against editing a stale group or a different active definition.
+- Keep all five component label presets and personal presets unchanged.
+
+Mac native editing, undo/redo, serialization and Studio interactions verified.
+Mac/Windows packages built and audited; Windows runtime testing is still unverified.
+
 ## 0.4.0-alpha.2
 
 - Add a dedicated Grasshopper 2 renderer and Display menu integration.

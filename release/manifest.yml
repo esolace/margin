@@ -1,5 +1,5 @@
 name: Margin
-version: 0.4.0-alpha.2
+version: 0.5.0-alpha.3
 authors:
   - Solace
 description: >
@@ -11,7 +11,7 @@ description: >
   Experimental Rhino 9 / .NET 10 preview. macOS Apple Silicon has been tested
   live. Windows builds are available for evaluation; interactive Windows Rhino
   behavior remains unverified. Use Rhino 9.0.26300 or newer. Rhino 8 is not
-  supported. Labels start off; enable them under Display > Margin.
+  supported. Label visibility is remembered across files and restarts. Native GH1 groups get editable canvas titles and saved defaults.
 url: https://github.com/esolace/margin
 icon: icon.png
 keywords:

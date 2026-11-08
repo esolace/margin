@@ -20,6 +20,7 @@ public sealed class PluginInfo : Grasshopper2.Framework.Plugin
 public static class Runtime
 {
     static bool started;
+    static bool preferredEnabled;
     static Canvas? attached;
     static Labels? labels;
     static Inspector? inspector;
@@ -27,15 +28,18 @@ public static class Runtime
     static ButtonMenuItem? displayMenu;
     static CheckMenuItem? toggle;
     public static readonly string SettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Margin", "theme.json");
+    public static string PreferencesPath => Path.Combine(Path.GetDirectoryName(SettingsPath)!, "preferences.json");
     public static Theme Current { get; private set; } = new();
     public static bool Enabled => labels?.Enabled ?? false;
     public static Window Owner => Editor.ThisOrRhino;
     public static void Start()
     {
         if (started) return;
-        started = true;
+        started = true; Groups.Start();
         try { if (File.Exists(SettingsPath)) Current = ThemeStore.Load(SettingsPath); }
         catch (Exception ex) { Rhino.RhinoApp.WriteLine("Margin: using Paper. " + ex.Message); }
+        try { preferredEnabled = PreferencesStore.Load(PreferencesPath).LabelsEnabled; }
+        catch (Exception ex) { Rhino.RhinoApp.WriteLine("Margin preferences: " + ex.Message); }
         Current = InstalledFonts.Resolve(Current);
         Rhino.RhinoApp.Idle += Ready;
     }
@@ -46,14 +50,14 @@ public static class Runtime
         if (!ReferenceEquals(attached, editor.Canvas))
         {
             labels?.Dispose(); attached = editor.Canvas;
-            labels = new Labels(attached) { Theme = Current };
+            labels = new Labels(attached) { Theme = Current, Enabled = preferredEnabled };
         }
         if (menu is not null) return;
         displayMenu = editor.Menu.Items.OfType<ButtonMenuItem>()
             .FirstOrDefault(i => i.Text.Replace("&", "").Equals("Display", StringComparison.OrdinalIgnoreCase));
         if (displayMenu is null) return;
         menu = new ButtonMenuItem { Text = "Margin", ID = "MarginMenu" };
-        var open = new ButtonMenuItem { Text = "Open Label Studio…" };
+        var open = new ButtonMenuItem { Text = "Open Studio…" };
         open.Click += (_, _) => Show();
         toggle = new CheckMenuItem { Text = "Show component labels", Checked = Enabled };
         toggle.Click += (_, _) => SetEnabled(toggle.Checked);
@@ -62,8 +66,10 @@ public static class Runtime
     }
     public static void SetEnabled(bool value)
     {
+        PreferencesStore.Update(PreferencesPath, p => p with { LabelsEnabled = value });
+        preferredEnabled = value;
         if (labels is null || attached is null) return;
-        if (labels.LastError is not null) { labels.Dispose(); labels = new Labels(attached) { Theme = Current }; }
+        if (labels.LastError is not null) { labels.Dispose(); labels = new Labels(attached) { Theme = Current, Enabled = preferredEnabled }; }
         labels.Enabled = value;
         if (toggle is not null) toggle.Checked = value;
         attached.Invalidate();
@@ -82,6 +88,7 @@ public static class Runtime
     }
     public static void Stop()
     {
+        Groups.Stop();
         Rhino.RhinoApp.Idle -= Ready;
         labels?.Dispose(); labels = null; attached = null;
         inspector?.Close(); inspector = null;

@@ -38,6 +38,49 @@ recovered with its object IDs intact and computation paused. This is a recovery
 workaround, not a fix for the native crash. Save work before testing GH2, and
 avoid repeatedly reopening a definition that crashes during computation.
 
+## 0.5.0-alpha.2 local preview
+
+GH1 checks ran in a separate empty `Margin-QA.3dm` session with disposable
+definitions. Native Cmd/Ctrl+G, Studio's actual group-creation button, its preset
+Apply button, and its future-defaults button were exercised. Heading double-click
+opened the native editor; entering a name and clicking Save changed the group.
+Native names/colours survived save/reopen and undo/redo. Defaults changed new
+groups without recolouring existing ones. The original preset frame, accent edge
+and internal heading were visually inspected with independent component labels.
+
+The label switch retained ON and OFF across canvas replacement. Separate fresh
+Rhino processes restored saved ON and saved OFF; ON was restored after testing.
+These live restart checks cover GH1. Both adapters use the tested preference store,
+but GH2 has not received another live restart test for this preview.
+
+A movement regression reproduced the frozen frame: custom drawing bypassed the
+native renderer's outline invalidation. The fix compares current member bounds
+before using that outline, including during picking. The reusable host test
+`tools/test_gh1_group_movement.py` checks movement in different directions,
+expansion/contraction, nested groups, whole-group translation, membership changes
+and save. Run it through RhinoCode only in an empty `Margin-QA.3dm` session.
+It creates its own definition and restores the previous active definition.
+Actual native mouse-handler drags were also checked separately for both a member
+and the group heading. Local reports and native canvas exports are in `artifacts/`.
+
+The new native-group defaults and heading editor are GH1 features. GH2 retains
+its previous group editor. No personal workspace code was changed.
+
+## 0.5.0-alpha.3 local preview
+
+Both platform builds and assembly audits pass; the shared suite now has 38 checks,
+including complete appearance persistence, legacy settings, automatic text contrast
+and invalid-value rejection. Browser checks cover all eight new presets, bridge
+payloads, editable title colour, automatic contrast, Classics and a 900px layout.
+
+In a separate Mac GH1 QA document, all eight styles were drawn and inspected.
+Text/accent colours, heading treatments and typography survive save/reopen;
+custom appearance changes undo/redo together and propagate to new native groups
+when saved as defaults. An actual Studio apply changed native text colour,
+heading treatment and corner radius. The group movement regression still passes.
+GH2 and Windows renderers compile; these new appearance controls have not had
+interactive Windows or GH2 host verification. This remains a local preview.
+
 ## Windows
 
 Both adapters compile against the pinned Rhino 9 SDK. Static assembly checks

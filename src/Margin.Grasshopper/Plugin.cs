@@ -21,20 +21,24 @@ public sealed class Startup : GH_AssemblyPriority
 public static class Runtime
 {
     static bool started;
+    static bool preferredEnabled;
     static Labels? labels;
     static Inspector? inspector;
     static ToolStripMenuItem? menu;
     static ToolStripMenuItem? labelsToggle;
     static GH_Canvas? attached;
     public static readonly string SettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Margin", "theme.json");
+    public static string PreferencesPath => Path.Combine(Path.GetDirectoryName(SettingsPath)!, "preferences.json");
     public static Theme Current { get; private set; } = new();
     public static Eto.Forms.Window Owner => Instances.EtoDocumentEditor ?? Rhino.UI.RhinoEtoApp.MainWindowForDocument(Rhino.RhinoDoc.ActiveDoc);
     public static bool Enabled => labels?.Enabled ?? false;
     public static void Start()
     {
         if (started) return;
-        started = true;
+        started = true; Groups.Start();
         try { if (File.Exists(SettingsPath)) Current = ThemeStore.Load(SettingsPath); } catch (Exception ex) { Rhino.RhinoApp.WriteLine("Margin: using Paper theme. " + ex.Message); }
+        try { preferredEnabled = PreferencesStore.Load(PreferencesPath).LabelsEnabled; }
+        catch (Exception ex) { Rhino.RhinoApp.WriteLine("Margin preferences: " + ex.Message); }
         Current = InstalledFonts.Resolve(Current);
         Instances.CanvasCreated += Attach;
         Rhino.RhinoApp.Idle += Ready;
@@ -51,7 +55,7 @@ public static class Runtime
                 .FirstOrDefault(item => item.Name == "mnuDisplay");
             if (display is null) return;
             menu = new ToolStripMenuItem("Margin") { Name = "MarginMenu" };
-            menu.DropDownItems.Add("Open Label Studio…", null, (_, _) => Show());
+            menu.DropDownItems.Add("Open Studio…", null, (_, _) => Show());
             labelsToggle = new ToolStripMenuItem("Show component labels") { CheckOnClick = true, Checked = Enabled };
             labelsToggle.Click += (_, _) => SetEnabled(labelsToggle.Checked);
             menu.DropDownOpening += (_, _) => labelsToggle.Checked = Enabled;
@@ -64,13 +68,14 @@ public static class Runtime
     {
         if (ReferenceEquals(attached, canvas)) return;
         labels?.Dispose(); attached = canvas;
-        // Deliberately off at startup until the user opts in. Safe beside other label plugins.
-        labels = new Labels(canvas) { Theme = Current };
+        labels = new Labels(canvas) { Theme = Current, Enabled = preferredEnabled };
     }
     public static void SetEnabled(bool enabled)
     {
+        PreferencesStore.Update(PreferencesPath, p => p with { LabelsEnabled = enabled });
+        preferredEnabled = enabled;
         if (attached is null) return;
-        if (labels is null || labels.LastError is not null) { labels?.Dispose(); labels = new Labels(attached) { Theme = Current }; }
+        if (labels is null || labels.LastError is not null) { labels?.Dispose(); labels = new Labels(attached) { Theme = Current, Enabled = preferredEnabled }; }
         labels.Enabled = enabled; attached.Invalidate();
         if (labelsToggle is not null) labelsToggle.Checked = enabled;
     }
@@ -87,6 +92,7 @@ public static class Runtime
     }
     public static void Stop()
     {
+        Groups.Stop();
         Instances.CanvasCreated -= Attach; Rhino.RhinoApp.Idle -= Ready;
         labels?.Dispose(); labels = null; attached = null;
         inspector?.Close(); inspector = null;

@@ -8,7 +8,7 @@
     <EnableWindowsTargeting Condition="'$(MarginPlatform)' == 'win'">true</EnableWindowsTargeting>
     <DefineConstants Condition="'$(MarginPlatform)' == 'mac'">$(DefineConstants);MARGIN_MAC</DefineConstants>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
-    <AssemblyName>Margin.GH2</AssemblyName><Version>0.4.0-alpha.2</Version><AssemblyVersion>0.4.0.2</AssemblyVersion>
+    <AssemblyName>Margin.GH2</AssemblyName><Version>0.5.0-alpha.3</Version><AssemblyVersion>0.5.0.3</AssemblyVersion>
     <DefineConstants>$(DefineConstants);MARGIN_GH2</DefineConstants>
     <RhinoResources Condition="'$(RhinoResources)' == ''">/Applications/Rhino 9.app/Contents/Frameworks/RhCore.framework/Versions/A/Resources</RhinoResources>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
@@ -16,6 +16,8 @@
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
+    <Compile Include="../Margin.Grasshopper/Groups.cs" Link="Groups.cs" />
+    <Compile Include="../Margin.Grasshopper/StyledGroup.cs" Link="StyledGroup.cs" />
     <Compile Include="../Margin.Grasshopper/Inspector.cs" Link="Studio/Inspector.cs" />
     <Compile Include="../Margin.Grasshopper/StudioWindow.cs" Link="Studio/StudioWindow.cs" />
     <Compile Include="../Margin.Grasshopper/InstalledFonts.cs" Link="Studio/InstalledFonts.cs" />

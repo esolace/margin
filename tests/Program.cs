@@ -40,4 +40,27 @@ File.WriteAllText(library,"damaged");
 try { Margin.Presets.PresetStore.Save(library,"New",theme); throw new Exception("Corruption ignored"); }
 catch (System.Text.Json.JsonException) { Check(File.ReadAllText(library)=="damaged","damaged library preserved without silent replacement"); }
 Directory.Delete(Path.GetDirectoryName(library)!,true);
+var preferences = Path.Combine(Path.GetTempPath(), "margin-preferences-" + Guid.NewGuid(), "preferences.json");
+PreferencesStore.Update(preferences, p => p with { LabelsEnabled = true });
+Check(PreferencesStore.Load(preferences).LabelsEnabled, "enabled choice survives a fresh settings load");
+PreferencesStore.Update(preferences, p => p with { UseGroupColour = true, GroupFill = "#d9b7ca", GroupOpacity = 77 });
+Check(PreferencesStore.Load(preferences) is { LabelsEnabled: true, GroupFill: "#D9B7CA", GroupOpacity: 77 }, "group defaults preserve label preference");
+PreferencesStore.Update(preferences, p => p with { LabelsEnabled = false });
+Check(PreferencesStore.Load(preferences) is { LabelsEnabled: false, UseGroupColour: true, GroupOpacity: 77 }, "off is remembered without losing group defaults");
+var appearance = new GroupAppearance { Text = "#ffeedd", Accent = "#ffa0e1", Border = "#bc96ff", TitleSize = 22, Heading = "Band", Radius = 12, BorderWidth = 2, Bold = false, ShowAccent = false, ShowDivider = false };
+PreferencesStore.Update(preferences, p => p with { GroupAppearance = appearance });
+Check(PreferencesStore.Load(preferences).GroupAppearance == appearance.Validate(), "complete group appearance survives preference reload");
+Check(!PreferencesStore.Load(preferences).LabelsEnabled, "group appearance preserves independent label switch");
+var legacy = System.Text.Json.JsonSerializer.Deserialize<Preferences>("{\"GroupFill\":\"#304737\",\"GroupOpacity\":85}")!.Validate();
+Check(legacy.GroupAppearance == new GroupAppearance(), "legacy preferences retain original group appearance");
+Check(System.Text.Json.JsonSerializer.Deserialize<GroupAppearance>("{\"Text\":null}")!.Validate().Text is null, "automatic title contrast survives serialization");
+foreach (var invalid in new[] { appearance with { Text = "red" }, appearance with { TitleSize = double.NaN }, appearance with { Radius = -1 }, appearance with { BorderWidth = 20 }, appearance with { Heading = "unknown" } })
+{
+    try { invalid.Validate(); throw new Exception("Invalid appearance accepted"); }
+    catch (InvalidDataException) { Check(true, "invalid group appearance rejected"); }
+}
+File.WriteAllText(preferences, "broken");
+try { PreferencesStore.Update(preferences, p => p with { LabelsEnabled = true }); throw new Exception("Corruption ignored"); }
+catch (System.Text.Json.JsonException) { Check(File.ReadAllText(preferences) == "broken", "damaged preferences are preserved"); }
+Directory.Delete(Path.GetDirectoryName(preferences)!, true);
 Console.WriteLine($"{passed} checks passed.");

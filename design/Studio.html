@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="color-scheme" content="light"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Margin · Label studio</title>
+<html lang="en"><head><meta charset="utf-8"><meta name="color-scheme" content="light"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Margin · Studio</title>
 <style>
 :root{--paper:#f8fafc;--ink:#28313b;--muted:#667789;--edge:#dce3ea;--accent:#547da6;--label-font:'Helvetica Neue',Arial,sans-serif;--label-size:12px;--label-weight:700;--label-ink:#28313b;--label-fill:#f8fafcf5;--label-border:#bcc6d2;--label-accent:#547da6;--radius:6px;--stroke:1px;--px:10px;--py:6px;--gap:12px}
 *{box-sizing:border-box}body{margin:0;background:#e9eef3;color:var(--ink);font:13px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI','Helvetica Neue',sans-serif}button,input,select{font:inherit;color:inherit}button,select{cursor:pointer}button{background:transparent;border:1px solid var(--edge);border-radius:7px;padding:7px 12px}button:hover{background:#e9eef4}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #547da6;outline-offset:3px}header{height:76px;padding:0 32px;display:flex;align-items:center;justify-content:space-between;background:var(--paper);border-bottom:1px solid var(--edge)}.brand{display:flex;gap:13px;align-items:center}.mark{width:27px;height:27px;border:1.5px solid #547da6;border-radius:7px;position:relative}.mark:after{content:'';position:absolute;left:7px;top:6px;bottom:6px;border-left:3px solid #547da6}.brand h1{font-size:24px;letter-spacing:-1px;line-height:1;margin:0;font-weight:600}.brand p{margin:3px 0 0;color:var(--muted);font-size:11px}.meta{font-size:12px;color:var(--muted)}main{display:grid;grid-template-columns:minmax(560px,1fr) 340px;height:calc(100vh - 76px);min-height:700px}.workspace{position:relative;overflow:auto;display:flex;flex-direction:column}.canvas-head{padding:24px 32px 0;display:flex;justify-content:space-between;align-items:center}.breadcrumb{color:var(--muted);font-size:12px}.breadcrumb strong{font-weight:500;color:var(--ink)}.toolbar{display:flex;gap:8px;flex-shrink:0}.canvas{min-height:420px;flex:1;position:relative;margin:18px 24px;background-image:radial-gradient(#9daec04a .7px,transparent .7px);background-size:20px 20px;border-radius:12px;overflow:hidden}.diagram{width:780px;height:410px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}svg.wires{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.wires path{stroke:#8a9cab;stroke-width:1.3;fill:none}.node{position:absolute;min-width:82px;height:46px;padding:0 15px;border:1px solid #9dabb8;border-radius:9px;background:linear-gradient(#f7f9fb,#dbe3e9);display:flex;align-items:center;justify-content:center;font-size:12px;letter-spacing:.2px;color:#4e5f70;box-shadow:0 2px 4px #28313b08}.node:before,.node:after{content:'';position:absolute;width:6px;height:6px;border:1px solid #8f9eab;border-radius:50%;background:#f4f7f9;top:19px}.node:before{left:-4px}.node:after{right:-4px}.node[data-selected]{border-color:#719cbd;box-shadow:0 0 0 3px #abc8dd55}.badge{position:absolute;bottom:calc(100% + var(--gap));left:50%;transform:translateX(-50%);white-space:nowrap;padding:var(--py) var(--px);border:var(--stroke) solid var(--label-border);border-radius:var(--radius);background:var(--label-fill);color:var(--label-ink);font-family:var(--label-font);font-size:var(--label-size);font-weight:var(--label-weight);line-height:1.25;letter-spacing:0;display:flex;align-items:stretch;gap:7px;box-shadow:0 2px 3px #28313b05}.badge:before{content:'';width:2px;background:var(--label-accent);border-radius:1px;flex:none}.badge small{display:block;font-size:calc(var(--label-size) - 2px);font-weight:400;opacity:.7;margin-top:4px}.below .badge{top:calc(100% + var(--gap));bottom:auto}.no-accent .badge:before{display:none}.no-category .badge small{display:none}.labels-off .badge{display:none}.selected-only .node:not([data-selected]) .badge{display:none}.canvas.dark{background-color:#273541;background-image:radial-gradient(#a0b4c633 .7px,transparent .7px)}.canvas.dark .node{background:#354858;color:#d9e7f1;border-color:#718799}.canvas.dark .wires path{stroke:#7991a4}.footnote{padding:0 32px 22px;display:flex;justify-content:space-between;color:var(--muted);font-size:11px}.preset-area{background:#f3f6f9;border-top:1px solid var(--edge);padding:22px 32px 28px}.section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px}.section-head h2{font-size:13px;font-weight:600;margin:0}.section-head span{color:var(--muted);font-size:11px}.presets{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}.preset{padding:0;background:#e9eef3;overflow:hidden;text-align:left}.preset.active{outline:2px solid #6d91b2;outline-offset:2px}.specimen{height:69px;display:flex;align-items:center;justify-content:center}.sample{padding:5px 9px;font-size:11px;border:1px solid #bcc6d2;border-radius:5px;font-weight:600}.preset .caption{background:#f8fafc;border-top:1px solid var(--edge);padding:7px 10px;font-size:11px}.inspector{background:var(--paper);border-left:1px solid var(--edge);overflow:auto;display:flex;flex-direction:column}.inspector-title{padding:24px 22px 16px;border-bottom:1px solid var(--edge)}.inspector-title h2{font-size:17px;letter-spacing:-.3px;margin:0 0 4px}.inspector-title p{font-size:12px;color:var(--muted);margin:0}form{flex:1}.group{padding:18px 22px;border-bottom:1px solid var(--edge)}.group h3{font-size:11px;text-transform:uppercase;letter-spacing:.8px;color:#667789;margin:0 0 13px;font-weight:600}.field{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0}.field label{font-size:12px}.field select,.field input[type=number],.field input[type=text]{width:137px;border:1px solid var(--edge);border-radius:5px;background:#fff;padding:5px 7px;min-width:0}.field input[type=number]{width:62px}.field input[type=color]{width:28px;height:25px;background:transparent;border:0;padding:0}.color-value{display:flex;align-items:center;gap:8px}.hex{font:10px Menlo,monospace;color:var(--muted)}.field input[type=range]{width:98px;accent-color:#547da6}.field input[type=checkbox]{accent-color:#547da6;width:15px;height:15px}.footer{padding:16px 22px;background:#f1f5f8}.actions{display:flex;gap:7px}.actions button{font-size:11px;flex:1;padding:8px 5px;background:#fff}.actions button.primary{background:#344f66;color:#fff;border-color:#344f66}#status{margin:10px 0 0;font-size:11px;color:var(--muted);min-height:32px}details summary{cursor:pointer;font-weight:500;font-size:12px}details .group{border:0;padding:15px 0 0}.mono{font-family:Menlo,monospace;font-size:10px}#themeFile{display:none}@media(max-width:1000px){main{grid-template-columns:minmax(450px,1fr) 300px}.diagram{transform:translate(-50%,-50%) scale(.8)}.presets{gap:7px}.preset-area{padding:20px}.canvas-head{padding:20px}.meta{display:none}}@media(max-width:760px){main{display:block;height:auto;min-height:0}.workspace{height:auto}.canvas{height:360px;min-height:360px;flex:none}.inspector{border-left:0}.diagram{transform:translate(-50%,-50%) scale(.43)}.presets{grid-template-columns:repeat(5,minmax(65px,1fr))}header{padding:0 20px}.footnote{padding:0 20px 15px}.footnote span:last-child{display:none}.preset-area{padding:18px 12px;flex-shrink:0}.caption{font-size:10px!important}.field select,.field input[type=text]{width:50%}}
@@ -55,9 +55,24 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 @media(max-width:760px) { body{height:auto;overflow:auto;} main{height:auto;display:block;} .workspace{height:auto;} .canvas{height:300px;min-height:300px;flex:none;} .diagram{transform:translate(-50%,-50%) scale(.43);} .presets{grid-template-columns:repeat(5,minmax(0,1fr));} .preset-area{padding:18px 12px;flex:none;} .inspector{overflow:visible;} form{overflow:visible;} .field input[type=text]{width:50%;} #fontTrigger{width:55%;} .font-meta{font-size:12px;} }
 
 .preset-area .section-head{gap:12px;margin-bottom:10px}.preset-tabs{display:flex;gap:14px;align-items:center}.preset-tab{border:0;border-radius:0;padding:4px 0;color:#697b8d;font-size:12px;border-bottom:2px solid transparent}.preset-tab[aria-pressed=true]{color:#283d50;border-color:#547da6;font-weight:600}.preset-tabs small{font-size:10px;font-variant-numeric:tabular-nums}.preset-save{font-size:11px;padding:5px 9px;white-space:nowrap;background:#fff}.presets{max-height:116px;overflow-y:auto;padding:3px;margin:-3px;scrollbar-width:thin}.preset{min-width:0}.preset .caption{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.specimen{overflow:hidden;padding:6px}.sample{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.preset-tools{display:flex;gap:10px;align-items:center;margin-top:12px;font-size:11px;min-height:24px}.preset-tools[hidden]{display:none}.preset-tools span{margin-right:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;color:#697b8d}.preset-tools button{border:0;padding:3px 0;white-space:nowrap;font-size:11px}.preset-tools .delete{color:#8e4b50}#presetEmpty{height:90px;border:1px dashed #bdcbd7;border-radius:8px;padding:17px 18px;color:#607386;font-size:12px;margin:0}#presetEmpty strong{display:block;color:#344f66;margin-bottom:3px;font-weight:600}#presetDialog{width:370px;max-width:calc(100vw - 32px);padding:24px;border:1px solid #cbd6e0;border-radius:14px;background:#f8fafc;color:#28313b;box-shadow:0 18px 70px #172c3e30}#presetDialog::backdrop{background:#24384c45}#presetDialog h2{font-size:20px;letter-spacing:-.5px;margin:0 0 8px}#presetDialog p{font-size:13px;color:#607386;margin:0 0 18px}#presetDialog label{display:block;font-size:12px;margin-bottom:6px}#presetDialog input{width:100%;background:#fff;border:1px solid #bdcbd7;border-radius:6px;padding:9px 10px;font-size:14px}#presetDialog .dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px}#presetSubmit{background:#344f66;color:white;border-color:#344f66}#presetDialog #presetError{color:#99434d;margin:10px 0 0;font-size:12px}#presetDialog button:disabled{opacity:.5;cursor:wait}
+
+[hidden]{display:none!important}.studio-tabs{display:flex;gap:4px;padding:4px;border:1px solid var(--edge);border-radius:9px}.studio-tabs button{border:0;padding:5px 18px}.studio-tabs button[aria-pressed=true]{background:#344f66;color:white}
+#groupStudio{grid-template-columns:minmax(0,1fr) 340px}.group-workspace{display:flex;flex-direction:column;min-height:0;overflow:auto}.group-stage{position:relative;flex:1;min-height:300px;margin:20px 24px;display:flex;align-items:center;justify-content:center;background-color:#d4d0c8;background-image:linear-gradient(#78756c22 1px,transparent 1px),linear-gradient(90deg,#78756c22 1px,transparent 1px);background-size:32px 32px;border-radius:8px}.group-stage[data-tone=dark]{background-color:#171c22;background-image:linear-gradient(#a2b3c51a 1px,transparent 1px),linear-gradient(90deg,#a2b3c51a 1px,transparent 1px)}
+.group-specimen{width:calc(100% - 56px);min-height:225px;border:1px solid var(--g-edge);border-left:5px solid var(--g-edge);border-radius:9px;padding:18px 22px;background:var(--g-fill);color:var(--g-ink);transition:background .12s}.group-specimen h2{font-size:20px;line-height:1.3;margin:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.group-specimen h2:after{content:'';display:block;width:136px;height:2px;margin-top:10px;background:var(--g-edge)}.group-nodes{display:flex;align-items:center;justify-content:center;margin:46px 0 15px}.group-node{background:linear-gradient(#f1f1f1,#bbb);border:1px solid #555;border-radius:4px;color:#222;padding:10px 12px;font-size:11px;white-space:nowrap}.group-wire{flex:1;max-width:65px;height:2px;background:var(--g-ink);opacity:.7}.group-preview-note{position:absolute;bottom:12px;left:16px;color:#66717b;font-size:10px}.group-stage[data-tone=dark] .group-preview-note{color:#a6b0bb}.group-palette{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.group-swatch{padding:0;overflow:hidden;text-align:left;background:white}.group-swatch span{display:block;height:49px;border-left:4px solid var(--swatch-edge);background:var(--swatch);margin:8px;border-radius:5px}.group-swatch strong{display:block;padding:0 9px 9px;font-size:11px;font-weight:500}.group-swatch[aria-pressed=true]{outline:2px solid #547da6;outline-offset:2px}
+.group-editor{overflow:auto;padding:20px;flex:1}.group-editor h3{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#667789;margin:23px 0 10px}.group-editor label{font-size:12px}.group-editor input[type=text]{width:100%;padding:9px;margin-top:7px;border:1px solid var(--edge);border-radius:6px}.group-editor input[type=color]{height:32px;width:46px;border:0;background:none}.group-editor input[type=range]{accent-color:#547da6;width:110px}#groupStatus{font-size:12px;margin:10px 0 0;color:#596a79;min-height:36px}#groupStatus[data-error=true]{color:#a03046}.group-empty{padding:20px;background:#eef2f6;border-radius:8px;color:#56687a}.group-empty p{margin:5px 0 0;font-size:12px}button:disabled{opacity:.45;cursor:default}.group-help{font-size:11px;color:#667789;margin:14px 0 0}.group-editor fieldset{border:0;padding:0;margin:0}.group-stage.native-style .group-specimen{border-left-width:1px;border-radius:2px}.group-stage.native-style h2:after{display:none}
+#createGroup{margin-top:0}#saveGroupDefaults{width:100%;margin-top:10px;font-size:12px}
+
+/* The preset specimens and live preview share the same appearance variables. */
+.group-specimen{position:relative;padding:0;border-style:solid;border-width:var(--g-border-width,1px);border-left-width:var(--g-border-width,1px);border-color:var(--g-border);border-radius:var(--g-radius,10px);overflow:hidden}
+.group-specimen:before{content:'';position:absolute;left:1px;top:13px;bottom:13px;width:5px;background:var(--g-accent);display:var(--g-accent-display,block)}
+.group-specimen h2{font-size:var(--g-size,20px);font-weight:var(--g-weight,700);line-height:1.3;padding:13px 23px;background:var(--g-title-fill,transparent);color:var(--g-ink)}
+.group-specimen h2:after{display:var(--g-divider-display,block);background:var(--g-accent);width: min(198px,100%);margin-top:8px}
+.group-nodes{margin:38px 23px 27px}.group-stage{min-height:270px}.group-editor select,#groupCollection{font:inherit;font-size:12px;border:1px solid var(--edge);background:#fff;color:var(--ink);padding:7px;border-radius:5px}.group-editor input[type=number]{width:74px;padding:6px;border:1px solid var(--edge);border-radius:5px;background:white;color:var(--ink)}.group-editor .auto-colour{display:flex;gap:4px;align-items:center;font-size:10px;color:var(--muted)}.group-editor .auto-colour input{margin:0}.group-editor input[type=color]:disabled{opacity:.5}.group-palette{gap:10px}.group-swatch .group-mini{height:72px;position:relative;overflow:hidden;display:block;margin:8px;border:1px solid var(--g-border);border-left:1px solid var(--g-border);border-radius:var(--mini-radius,6px);background:var(--g-fill);color:var(--g-ink)}
+.group-swatch .group-mini:before{content:'';display:var(--g-accent-display);position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--g-accent)}.group-swatch .mini-title{display:block;margin:0;padding:7px 8px;height:auto;background:var(--g-title-fill);border:0;border-radius:0;color:var(--g-ink);font-size:12px;font-weight:var(--g-weight)}.group-swatch .mini-rule{display:var(--g-divider-display);height:2px;width:30px;background:var(--g-accent);margin:0 8px;border:0;border-radius:0}.group-swatch .mini-nodes{position:absolute;bottom:10px;left:9px;right:9px;display:flex;justify-content:space-between;height:8px;margin:0;background:none;border:0}.mini-nodes i{height:8px;width:19px;border-radius:2px;background:#e6e9eb;border:1px solid #6a7178}.group-swatch strong{display:flex;align-items:center;justify-content:space-between;padding:0 9px 9px;font-weight:600}.group-swatch small{font-size:9px;font-weight:400;color:#627383}.group-swatch[aria-pressed=true]{outline:2px solid #344f66}.group-palette button:focus-visible{outline:3px solid #344f66;outline-offset:3px}
+@media(max-width:920px){.group-palette{grid-template-columns:repeat(2,1fr)}#groupStudio{grid-template-columns:minmax(0,1fr) 310px}}
 </style></head><body>
-<header><div class="brand"><div class="mark" aria-hidden="true"></div><div><h1>Margin</h1><p>Labels, with character.</p></div></div><span class="meta">GRASSHOPPER &nbsp; / &nbsp; LABEL STUDIO</span><button id="reset">Reset to Paper</button></header>
-<main><section class="workspace"><div class="canvas-head"><div class="breadcrumb">Preview &nbsp; / &nbsp; <strong>A surface from curves</strong></div><div class="toolbar"><button id="background">Dark canvas</button><button id="toggle" aria-pressed="true">Labels on</button></div></div>
+<header><div class="brand"><div class="mark" aria-hidden="true"></div><div><h1>Margin</h1><p>Labels & groups, with character.</p></div></div><nav class="studio-tabs" aria-label="Studio section"><button id="labelsTab" aria-pressed="true">Labels</button><button id="groupsTab" aria-pressed="false">Groups</button></nav><button id="reset">Reset to Paper</button></header>
+<main id="labelStudio"><section class="workspace"><div class="canvas-head"><div class="breadcrumb">Preview &nbsp; / &nbsp; <strong>A surface from curves</strong></div><div class="toolbar"><button id="background">Dark canvas</button><button id="toggle" aria-pressed="true">Labels on</button></div></div>
 <div class="canvas no-category" id="canvas"><div class="diagram"><svg class="wires" viewBox="0 0 780 410" aria-hidden="true"><path d="M138 176 C205 176 192 176 260 176 M342 176 C395 176 407 109 465 109 M342 176 C395 176 407 275 465 275 M547 109 C610 109 591 176 650 176 M547 275 C610 275 591 176 650 176"/></svg>
 <div class="node" style="left:56px;top:153px">Crv<div class="badge"><div>Curve<small>Params</small></div></div></div>
 <div class="node" style="left:260px;top:153px" data-selected>Divide<div class="badge"><div>Divide Curve<small>Curve</small></div></div></div>
@@ -71,6 +86,35 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 <div class="group"><h3>Surface</h3><div class="field"><label for="Fill">Background</label><div class="color-value"><span class="hex" data-for="Fill"></span><input id="Fill" type="color"></div></div><div class="field"><label for="Opacity">Opacity</label><input id="Opacity" type="range" min="0" max="100"><output id="opacityOut"></output></div><div class="field"><label for="Radius">Corners</label><input id="Radius" type="number" min="0" max="24"></div><div class="field"><label for="Border">Border</label><div class="color-value"><span class="hex" data-for="Border"></span><input id="Border" type="color"></div></div><div class="field"><label for="BorderWidth">Border width</label><input id="BorderWidth" type="number" min="0" max="4" step=".5"></div><div class="field"><label for="ShowAccent">Accent rule</label><input id="ShowAccent" type="checkbox"></div><div class="field"><label for="Accent">Accent colour</label><div class="color-value"><span class="hex" data-for="Accent"></span><input id="Accent" type="color"></div></div></div>
 <div class="group"><details><summary>Spacing & visibility</summary><div class="group"><div class="field"><label for="PaddingX">Side padding</label><input id="PaddingX" type="number" min="2" max="30"></div><div class="field"><label for="PaddingY">Top / bottom padding</label><input id="PaddingY" type="number" min="2" max="20"></div><div class="field"><label for="Gap">Distance from component</label><input id="Gap" type="number" min="4" max="60"></div><div class="field"><label for="UseNickname">Use nicknames</label><input id="UseNickname" type="checkbox"></div><div class="field"><label for="AvoidOverlap">Avoid overlaps</label><input id="AvoidOverlap" type="checkbox"></div><div class="field"><label for="MinZoom">Hide below zoom</label><input id="MinZoom" type="number" min=".2" max="2" step=".05"></div><div class="field"><label for="Below">Place below</label><input id="Below" type="checkbox"></div><div class="field"><label for="SelectedOnly">Selected only</label><input id="SelectedOnly" type="checkbox"></div></div></details></div></form>
 <div class="footer"><div class="actions"><button class="primary" id="save">Set as default</button><button id="export">Export</button><button id="import">Import</button></div><p id="status" role="status">Experiment here. Export a theme to use in Margin.</p><input type="file" id="themeFile" accept=".json,application/json"></div></aside></main>
+
+<main id="groupStudio" hidden>
+<section class="group-workspace">
+<div class="canvas-head"><div class="breadcrumb">Preview &nbsp; / &nbsp; <strong id="groupTarget">Future groups</strong></div><div class="toolbar"><button id="createGroup" type="button">Group selection</button><button id="groupTone">Dark preview</button></div></div>
+<div class="group-stage" id="groupStage"><div class="group-specimen" id="groupSpecimen"><h2 id="groupPreviewName">Guide geometry</h2><div class="group-nodes" aria-hidden="true"><span class="group-node">Curve</span><span class="group-wire"></span><span class="group-node">Divide Curve</span><span class="group-wire"></span><span class="group-node">Move</span></div></div><span class="group-preview-note">Style preview · your components stay in place</span></div>
+<div class="preset-area"><div class="section-head"><h2>Group presets</h2><select id="groupCollection" aria-label="Group preset collection"><option value="studio">Studio collection</option><option value="classic">Classic colours</option></select></div><div class="group-palette" id="groupPalette"></div><p class="group-help">Choose a starting point, then make it yours. Component label presets are separate.</p></div>
+</section>
+<aside class="inspector"><div class="inspector-title"><h2>Appearance</h2><p id="groupDocInfo">Select a group on the canvas to edit its appearance.</p></div>
+<form id="groupForm" class="group-editor"><fieldset id="groupFields">
+<div id="groupIdentity"><label for="groupName">Group name</label><input type="text" id="groupName" maxlength="120" placeholder="Untitled group" autocomplete="off"></div>
+<div class="field"><label for="groupDesigned">Margin styling</label><input type="checkbox" id="groupDesigned" checked></div>
+<h3>Title</h3>
+<div class="field"><label for="groupHeading">Treatment</label><select id="groupHeading"><option value="Rule">Editorial rule</option><option value="Band">Colour band</option><option value="Plain">Clean title</option></select></div>
+<div class="field"><label for="groupText">Text colour</label><div class="color-value"><label class="auto-colour"><input id="groupAutoText" type="checkbox" checked>Auto</label><input type="color" id="groupText" value="#F4F3F0" aria-label="Group title colour"></div></div>
+<div class="field"><label for="groupTitleSize">Title size</label><input id="groupTitleSize" type="number" min="10" max="30" step="1" value="15"></div>
+<div class="field"><label for="groupBold">Bold title</label><input id="groupBold" type="checkbox" checked></div>
+<h3>Surface & frame</h3>
+<div class="field"><label for="groupFill">Fill colour</label><div class="color-value"><span id="groupHex" class="mono"></span><input type="color" id="groupFill" value="#253e56"></div></div>
+<div class="field"><label for="groupOpacity">Opacity</label><input type="range" id="groupOpacity" min="0" max="100" value="85"><output id="groupOpacityOut">85%</output></div>
+<div class="field"><label for="groupAccent">Accent colour</label><div class="color-value"><label class="auto-colour"><input id="groupAutoAccent" type="checkbox" checked>Auto</label><input type="color" id="groupAccent" value="#6A839B" aria-label="Group accent colour"></div></div>
+<div class="field"><label for="groupBorder">Border colour</label><div class="color-value"><label class="auto-colour"><input id="groupAutoBorder" type="checkbox" checked>Auto</label><input type="color" id="groupBorder" value="#6A839B" aria-label="Group border colour"></div></div>
+<div class="field"><label for="groupBorderWidth">Border width</label><input id="groupBorderWidth" type="number" min="0" max="4" step=".5" value="1"></div>
+<div class="field"><label for="groupRadius">Corners</label><input id="groupRadius" type="number" min="0" max="24" step="1" value="8"></div>
+<div class="field"><label for="groupShowAccent">Accent edge</label><input id="groupShowAccent" type="checkbox" checked></div>
+<div class="field"><label for="groupShowDivider">Title divider</label><input id="groupShowDivider" type="checkbox" checked></div>
+<p class="group-help">Auto keeps colours in balance as the fill changes. Turn it off to choose your own. Component labels stay independent.</p>
+</fieldset></form>
+<div class="footer"><div class="actions"><button class="primary" id="applyGroup" disabled>Apply to group</button><button id="revertGroup" disabled>Revert edits</button></div><button id="saveGroupDefaults" type="button">Use appearance for future groups</button><p id="groupStatus" role="status">Group edits are saved with your Grasshopper file.</p></div></aside>
+</main>
 <div id="fontPopover" role="dialog" aria-modal="true" aria-label="Installed fonts" hidden>
 <div class="font-top"><strong>Installed fonts</strong><button id="fontClose" aria-label="Close font picker">×</button></div>
 <input id="fontSearch" type="search" placeholder="Search font families…" aria-label="Search installed fonts" autocomplete="off" aria-controls="fontResults" role="combobox" aria-expanded="true" aria-autocomplete="list">
@@ -291,14 +335,123 @@ $('themeFile').onchange=async()=>{
   try{const f=$('themeFile').files[0];if(!f)return;if(f.size>32768)throw Error('Choose a theme smaller than 32 KB.');theme=clean(JSON.parse(await f.text()));render(true);apply();status('Theme imported.');}
   catch(e){status(e.message);}finally{$('themeFile').value='';}
 };
+
+let groupData={Document:null,Host:'Grasshopper',Items:[]}, latestGroupData=groupData, groupId=null, groupDirty=false, groupPending=false;
+const groupAppearanceDefaults={Text:null,Accent:null,Border:null,TitleSize:15,Bold:true,Radius:8,BorderWidth:1,ShowAccent:true,ShowDivider:true,Heading:'Rule'};
+const groupColours=[['Ink blue','#253E56'],['Aubergine','#493049'],['Forest','#304737'],['Sienna','#573D30'],['Porcelain','#E6E1D8'],['Sage','#AABBA6'],['Rose','#D9B7CA'],['Slate','#657786']];
+const groupPreset=(Name,Fill,Text,Accent,Border,extra={})=>({Name,Fill,Opacity:96,Designed:true,Appearance:{...groupAppearanceDefaults,Text,Accent,Border,...extra}});
+const groupPresets=[
+ groupPreset('Cobalt','#193B9F','#FFFFFF','#3569F6','#729BFF',{Heading:'Band',ShowAccent:false,TitleSize:18,Radius:10}),
+ groupPreset('Orchid','#6937C4','#FFF0FB','#FFA0E1','#BC96FF',{TitleSize:18,Radius:12}),
+ groupPreset('Citrus','#D9F05C','#253414','#647F12','#90AA2E',{Heading:'Plain',ShowDivider:false,ShowAccent:false,TitleSize:22,Radius:3}),
+ groupPreset('Lagoon','#007F83','#E7FFFF','#76F8D7','#38D2C7',{TitleSize:17,Radius:10}),
+ groupPreset('Ember','#C84829','#FFF1DC','#FFD08B','#FF956C',{TitleSize:19,Radius:3,BorderWidth:1.5}),
+ groupPreset('Rose Pop','#ED8DC5','#4D133D','#8A2B67','#B34A8C',{Heading:'Plain',ShowDivider:false,TitleSize:20,Radius:14}),
+ groupPreset('Blueprint','#14253D','#B6E7FF','#4ABEFF','#4ABEFF',{TitleSize:16,Radius:2,BorderWidth:1.5,ShowAccent:false}),
+ groupPreset('Ultraviolet','#25163E','#1C102C','#BD88FF','#8454BC',{Heading:'Band',ShowAccent:false,TitleSize:18,Radius:12})
+];
+function visibleGroupPresets(){return $('groupCollection').value==='classic'?groupColours.map(([Name,Fill])=>({Name,Fill,Opacity:85,Designed:true,Appearance:{...groupAppearanceDefaults}})):groupPresets;}
+function groupResolved(t,dark=false){
+ const a={...groupAppearanceDefaults,...t.Appearance},rgb=t.Fill.slice(1).match(/../g).map(x=>parseInt(x,16));
+ const hex=c=>'#'+c.map(x=>Math.round(x).toString(16).padStart(2,'0')).join('').toUpperCase();
+ const lum=c=>c[0]*.2126+c[1]*.7152+c[2]*.0722;
+ const edge=hex(rgb.map(x=>lum(rgb)/255>.55?Math.floor(x*.65):Math.min(255,x+69)));
+ const accent=a.Accent||edge, bg=dark?[23,28,34]:[212,208,200],alpha=t.Opacity/100;
+ const behind=a.Heading==='Band'?accent.slice(1).match(/../g).map(x=>parseInt(x,16)):rgb.map((x,i)=>x*alpha+bg[i]*(1-alpha));
+ return {a,rgb,accent,border:a.Border||edge,ink:a.Text||(lum(behind)/255>.55?'#23282C':'#F4F3F0')};
+}
+function groupVariables(node,t,dark=false){const {a,rgb,accent,border,ink}=groupResolved(t,dark),st=node.style;
+ const vars={'fill':'rgba('+rgb+','+t.Opacity/100+')','accent':accent,'border':border,'ink':ink,'size':a.TitleSize*1.3+'px','weight':a.Bold?700:400,'radius':a.Radius*1.3+'px','border-width':a.BorderWidth*1.3+'px','title-fill':a.Heading==='Band'?accent:'transparent','accent-display':a.ShowAccent?'block':'none','divider-display':a.Heading==='Rule'&&a.ShowDivider?'block':'none'};
+ for(const [key,value] of Object.entries(vars))st.setProperty('--g-'+key,value);
+ st.setProperty('--mini-radius',Math.min(8,a.Radius)+'px');
+}
+function loadGroupStyle(t){
+ const a={...groupAppearanceDefaults,...t.Appearance};$('groupFill').value=t.Fill;$('groupOpacity').value=t.Opacity;$('groupDesigned').checked=t.Designed;
+ for(const key of ['Text','Accent','Border']){$('groupAuto'+key).checked=a[key]===null;$('group'+key).value=a[key]||groupResolved(t)[key==='Text'?'ink':key.toLowerCase()];}
+ for(const key of ['TitleSize','Radius','BorderWidth','Heading'])$('group'+key).value=a[key];
+ for(const key of ['Bold','ShowAccent','ShowDivider'])$('group'+key).checked=a[key];
+}
+function groupStatus(message,error=false){$('groupStatus').textContent=message;$('groupStatus').dataset.error=error;}
+function groupStyle(){const a={};
+ for(const key of ['Text','Accent','Border'])a[key]=$('groupAuto'+key).checked?null:$('group'+key).value.toUpperCase();
+ for(const key of ['TitleSize','Radius','BorderWidth'])a[key]=+$('group'+key).value;
+ for(const key of ['Bold','ShowAccent','ShowDivider'])a[key]=$('group'+key).checked;
+ a.Heading=$('groupHeading').value;
+ return {Fill:$('groupFill').value.toUpperCase(),Opacity:+$('groupOpacity').value,Designed:$('groupDesigned').checked,Appearance:a};
+}
+function groupPreview(){
+ const t=groupStyle(),dark=$('groupStage').dataset.tone==='dark',resolved=groupResolved(t,dark);
+ groupVariables($('groupSpecimen'),t,dark);
+ for(const key of ['Text','Accent','Border']){const auto=$('groupAuto'+key).checked;$('group'+key).disabled=auto;if(auto)$('group'+key).value=resolved[key==='Text'?'ink':key.toLowerCase()];}
+ $('groupShowDivider').disabled=t.Appearance.Heading!=='Rule';
+ $('groupPreviewName').textContent=$('groupName').value.trim()||'Untitled group';$('groupHex').textContent=t.Fill;$('groupOpacityOut').textContent=t.Opacity+'%';
+ $('groupStage').classList.toggle('native-style',!t.Designed);
+ [...$('groupPalette').children].forEach((b,i)=>{const p=visibleGroupPresets()[i];b.setAttribute('aria-pressed',String(t.Designed&&t.Fill===p.Fill&&Math.abs(t.Opacity-p.Opacity)<.25&&Object.keys(groupAppearanceDefaults).every(k=>t.Appearance[k]===p.Appearance[k])));});
+ $('applyGroup').disabled=!groupId||!groupDirty||groupPending;$('revertGroup').disabled=!groupId||!groupDirty||groupPending;
+}
+function selectGroup(id){
+ groupId=id;groupDirty=false;groupPending=false;
+ const entry=groupData.Items.find(g=>g.Id===id);
+ $('groupName').disabled=!entry;$('groupIdentity').hidden=!entry;
+ $('groupTarget').textContent=entry?.Name||'Future groups';
+ $('groupDocInfo').textContent=entry?'Editing the group selected on your canvas.':'Select a group on the canvas, or set the appearance for future groups.';
+ if(entry){$('groupName').value=entry.Name;loadGroupStyle(entry.Style);}else if(groupData.Defaults){$('groupName').value='';loadGroupStyle(groupData.Defaults);}
+ groupPreview();
+}
+function setGroups(data,message,preserveDraft=false){
+ latestGroupData=data;
+ if(preserveDraft && groupDirty && data.Document===groupData.Document){
+  groupStatus(message||'Finish these edits before changing the selected group.');return;
+ }
+ const switched=groupDirty&&data.Document!==groupData.Document;
+ groupData=data;groupPending=false;$('createGroup').hidden=data.Host==='Grasshopper 2';$('saveGroupDefaults').hidden=data.Host==='Grasshopper 2';
+ const selected=data.Items.filter(g=>g.Selected);
+ selectGroup(selected.length===1?selected[0].Id:null);
+ if(selected.length>1)$('groupDocInfo').textContent='Select one group on the canvas to edit it.';
+ if(switched)groupStatus('Definition changed. Select a group in this file to edit it.');
+ else if(message)groupStatus(message);
+ else groupStatus(selected.length===1?'Changes stay in preview until you apply them.':'Choose a style and save it for future groups.');
+}
+function openSection(groups){$('groupStudio').hidden=!groups;$('labelStudio').hidden=groups;$('reset').hidden=groups;$('labelsTab').setAttribute('aria-pressed',String(!groups));$('groupsTab').setAttribute('aria-pressed',String(groups));send('studio-section',{groups});if(groups&&!groupDirty)send('groups-refresh');}
+$('createGroup').onclick=()=>{if(groupDirty&&groupId){groupStatus('Apply or revert your edits before grouping.',true);return;}if(!send('group-create'))groupStatus('Open Margin in Grasshopper to group the selected components.');};
+$('saveGroupDefaults').onclick=()=>{if(!send('group-defaults',{style:groupStyle()}))groupStatus('Open Margin in Grasshopper to save defaults.');};
+$('labelsTab').onclick=()=>openSection(false);$('groupsTab').onclick=()=>openSection(true);
+$('groupTone').onclick=()=>{const dark=$('groupStage').dataset.tone!=='dark';$('groupStage').dataset.tone=dark?'dark':'light';$('groupTone').textContent=dark?'Light preview':'Dark preview';groupPreview();};
+function buildGroupPresets(){
+ $('groupPalette').replaceChildren();
+ for(const preset of visibleGroupPresets()){
+  const b=document.createElement('button');b.className='group-swatch';b.type='button';b.setAttribute('aria-label',preset.Name+' group preset');
+  const sw=document.createElement('span');sw.className='group-mini';groupVariables(sw,preset);
+  const title=document.createElement('span');title.className='mini-title';title.textContent='Group title';
+  const rule=document.createElement('span');rule.className='mini-rule';
+  const nodes=document.createElement('span');nodes.className='mini-nodes';for(let i=0;i<3;i++)nodes.append(document.createElement('i'));
+  sw.append(title,rule,nodes);const caption=document.createElement('strong');caption.textContent=preset.Name;const type=document.createElement('small');type.textContent=preset.Appearance.Heading;caption.append(type);b.append(sw,caption);
+  b.onclick=()=>{loadGroupStyle(preset);groupDirty=!!groupId;groupPreview();groupStatus(groupId?preset.Name+' preview. Apply to save it to your group.':preset.Name+' preview. Save as the appearance for future groups.');};$('groupPalette').append(b);
+ }
+ groupPreview();
+}
+$('groupCollection').onchange=buildGroupPresets;
+for(const el of $('groupFields').querySelectorAll('input,select'))el.addEventListener('input',()=>{groupDirty=!!groupId;groupPreview();groupStatus('Preview updated. Apply to save it to your group.');});
+buildGroupPresets();
+$('revertGroup').onclick=()=>{groupDirty=false;setGroups(latestGroupData,'Unapplied edits reverted.');};
+function applyGroup(){
+ const g=groupData.Items.find(g=>g.Id===groupId);if(!g||!groupDirty||groupPending)return;
+ groupPending=true;groupPreview();
+ if(!send('group-apply',{document:groupData.Document,id:g.Id,revision:g.Revision,name:$('groupName').value.trim(),style:groupStyle()})){groupPending=false;groupPreview();groupStatus('Open Margin in Grasshopper to apply group edits.',true);}
+}
+$('applyGroup').onclick=applyGroup;$('groupForm').onsubmit=e=>{e.preventDefault();applyGroup();};
+groupPreview();
+
 window.MarginStudio={
-  connect(data){native=!!data.native;clearTimeout(applyTimer);presets=data.presets.map(clean);userPresets=data.userPresets||[];theme=clean(data.theme);selectedPresetId=userPresets.find(p=>p.Theme.Name===theme.Name&&sameStyle(p.Theme,theme))?.Id||null;if(selectedPresetId)presetCollection='user';this.setFonts(data.fonts);buildPresets();render(true);setEnabled(data.enabled);$('connection').textContent='Connected to Grasshopper';status(data.libraryError||'Changes apply live. Save a preset to keep a style in your collection.');},
+  setGroups,
+  reportError(message){presetError(message);groupPending=false;groupPreview();groupStatus(message,true);},
+  connect(data){if(data.groups)setGroups(data.groups);native=!!data.native;clearTimeout(applyTimer);presets=data.presets.map(clean);userPresets=data.userPresets||[];theme=clean(data.theme);selectedPresetId=userPresets.find(p=>p.Theme.Name===theme.Name&&sameStyle(p.Theme,theme))?.Id||null;if(selectedPresetId)presetCollection='user';this.setFonts(data.fonts);buildPresets();render(true);setEnabled(data.enabled);$('connection').textContent='Connected to Grasshopper';status(data.libraryError||'Changes apply live. Save a preset to keep a style in your collection.');},
   setUserPresets:finishPresets,
   presetError,
   setFonts(names){fonts=[...new Set(names)].filter(n=>typeof n==='string'&&n.trim()).sort((a,b)=>a.localeCompare(b));if(!$('fontPopover').hidden)drawFonts();},
   setTheme(value){theme=clean(value);render(true);},
   status,
-  inspect(){return {theme,fonts:fonts.length,native,enabled,presets:presets.length,userPresets,selectedPresetId};}
+  inspect(){return {groups:groupData,groupId,groupDirty,groupPending,theme,fonts:fonts.length,native,enabled,presets:presets.length,userPresets,selectedPresetId};}
 };
 try{const saved=localStorage.getItem('margin-theme');if(saved)theme=clean(JSON.parse(saved));}catch{}
 try{const saved=JSON.parse(localStorage.getItem('margin-presets')||'[]');if(Array.isArray(saved))userPresets=saved.map(p=>({Id:p.Id,Theme:clean(p.Theme)}));}catch{}

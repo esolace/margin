@@ -28,6 +28,7 @@
 !tools/build_release.py
 !tools/build_gh2.py
 !tools/test_gh2_staging.py
+!tools/test_gh1_group_movement.py
 !tools/PackageAudit/
 !tools/PackageAudit/Program.cs
 !tools/PackageAudit/PackageAudit.csproj

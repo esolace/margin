@@ -17,13 +17,17 @@ public sealed class Inspector : Form
 {
     readonly WebView web = new() { BrowserContextMenuEnabled = false };
     bool closed;
+    bool groupsVisible;
+    bool syncingGroups;
+    string? lastGroupSnapshot;
+    readonly UITimer groupSelectionTimer = new() { Interval = .4 };
     static string PresetsPath => Path.Combine(Path.GetDirectoryName(Runtime.SettingsPath)!, "presets.json");
     public bool Ready { get; private set; }
     public int FontCount { get; private set; }
     public string? LastError { get; private set; }
     public Inspector()
     {
-        Title = "Margin · Label Studio";
+        Title = "Margin · Studio";
         ClientSize = new Size(1080, 760);
         MinimumSize = new Size(900, 600);
         BackgroundColor = Color.FromArgb(248, 250, 252);
@@ -31,7 +35,9 @@ public sealed class Inspector : Form
         web.MessageReceived += OnMessage;
         web.DocumentLoaded += OnLoaded;
         web.DocumentLoading += (_, e) => { if (e.Uri is not null && e.Uri.Scheme != "about") e.Cancel = true; };
-        Closed += (_, _) => closed = true;
+        groupSelectionTimer.Elapsed += SyncGroupSelection;
+        groupSelectionTimer.Start();
+        Closed += (_, _) => { closed = true; groupSelectionTimer.Stop(); groupSelectionTimer.Dispose(); };
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Margin.Studio.html")
             ?? throw new InvalidOperationException("The Margin studio resource is missing.");
         using var reader = new StreamReader(stream);
@@ -51,7 +57,7 @@ public sealed class Inspector : Form
             List<SavedPreset> userPresets;
             try { userPresets = PresetStore.Load(PresetsPath); }
             catch (Exception ex) { userPresets = new(); libraryError = ex.Message; }
-            var data = new { userPresets, libraryError, theme = Runtime.Current, presets = Theme.Presets.Select(InstalledFonts.Resolve), fonts = ReadInstalledFonts(), enabled = Runtime.Enabled, native = true };
+            var data = new { userPresets, libraryError, theme = Runtime.Current, presets = Theme.Presets.Select(InstalledFonts.Resolve), fonts = ReadInstalledFonts(), enabled = Runtime.Enabled, groups = Groups.Snapshot(), native = true };
             await web.ExecuteScriptAsync("window.MarginStudio.connect(" + JsonSerializer.Serialize(data) + ")");
             Ready = true;
         }
@@ -79,6 +85,21 @@ public sealed class Inspector : Form
                         await web.ExecuteScriptAsync("window.MarginStudio.setTheme(" + JsonSerializer.Serialize(Runtime.Current) + ")");
                         await Reply("That font is not installed here. Using " + Runtime.Current.FontFamily + ".");
                     }
+                    break;
+                case "studio-section": groupsVisible = root.GetProperty("groups").GetBoolean(); break;
+                case "groups-refresh": await GroupReply(); break;
+#if !MARGIN_GH2
+                case "group-create":
+                    Groups.Create(); await GroupReply("Selection grouped. Double-click its title on the canvas to edit it."); break;
+                case "group-defaults":
+                    Groups.SaveDefaults(JsonSerializer.Deserialize<GroupStyle>(root.GetProperty("style").GetRawText()) ?? throw new InvalidDataException("Missing group style."));
+                    await GroupReply("Appearance saved for future groups, including Cmd/Ctrl+G.", preserveDraft: true); break;
+#endif
+                case "group-apply":
+                    Groups.Apply(root.GetProperty("document").GetString()!, root.GetProperty("id").GetString()!,
+                        root.GetProperty("revision").GetString()!, root.GetProperty("name").GetString() ?? "",
+                        JsonSerializer.Deserialize<GroupStyle>(root.GetProperty("style").GetRawText()) ?? throw new InvalidDataException("Missing group style."));
+                    await GroupReply("Group updated. Save your Grasshopper file to keep it.");
                     break;
                 case "enabled": Runtime.SetEnabled(root.GetProperty("enabled").GetBoolean()); break;
                 case "save": Runtime.Save(); await Reply("Theme saved on this computer."); break;
@@ -125,9 +146,30 @@ public sealed class Inspector : Form
         catch (Exception ex)
         {
             LastError = ex.Message;
-            if (!closed) await web.ExecuteScriptAsync("window.MarginStudio.presetError(" + JsonSerializer.Serialize(ex.Message) + ")");
+            if (!closed) await web.ExecuteScriptAsync("window.MarginStudio.reportError(" + JsonSerializer.Serialize(ex.Message) + ")");
             await Reply("Couldn’t apply that change: " + ex.Message);
         }
+    }
+    async void SyncGroupSelection(object? sender, EventArgs e)
+    {
+        if (closed || !Ready || !Visible || !groupsVisible || syncingGroups) return;
+        syncingGroups = true;
+        try
+        {
+            var snapshot = JsonSerializer.Serialize(Groups.Snapshot());
+            if (snapshot == lastGroupSnapshot) return;
+            await web.ExecuteScriptAsync("window.MarginStudio.setGroups(" + snapshot + ",null,true)");
+            lastGroupSnapshot = snapshot;
+        }
+        catch (Exception ex) { LastError = ex.Message; }
+        finally { syncingGroups = false; }
+    }
+    async Task GroupReply(string message = "Groups refreshed.", bool preserveDraft = false)
+    {
+        if (closed) return;
+        var snapshot = JsonSerializer.Serialize(Groups.Snapshot());
+        await web.ExecuteScriptAsync("window.MarginStudio.setGroups(" + snapshot + "," + JsonSerializer.Serialize(message) + "," + (preserveDraft ? "true" : "false") + ")");
+        lastGroupSnapshot = snapshot;
     }
     async Task PresetReply(string? selectedId, Theme? theme, string message)
     {

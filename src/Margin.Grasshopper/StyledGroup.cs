@@ -199,6 +199,11 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
             using var format = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
             var titleBounds = title;
             g.DrawString(name,font,text,titleBounds,format);
+            if (Selected && group.Border == GH_GroupBorder.None)
+            {
+                using var selection = new Pen(ink, 1.5f);
+                g.DrawLine(selection, title.Left, title.Bottom - 2, title.Left + Math.Min(title.Width, 170), title.Bottom - 2);
+            }
             if (boxed && resolved.Divider)
             { using var rule = new Pen(accentColour,1.5f);var y=b.Y+(float)appearance.TitleSize*1.3f+17;g.DrawLine(rule,b.X+18,y,b.X+Math.Min(b.Width-18,170),y); }
         }

@@ -197,7 +197,7 @@ The enhanced native workflow checks run on disposable definitions without replac
 the working canvas or changing the system clipboard. A separately named assembly
 built from the new source passes 43 checks: complete custom appearance through
 same-definition and cross-definition copies, independent edits, undo/redo, multiple
-and nested groups, unnamed groups, save/reopen and first-copy promotion of legacy
+and nested groups, identical-name groups with distinct member relationships, unnamed groups, save/reopen and first-copy promotion of legacy
 styles. Contour picking and crossing selection are compared against native GH1
 attributes for Blob and Rectangles. Box, None and movement are also exercised.
 
@@ -215,9 +215,12 @@ were rerun separately in a fresh test session. No working definition was replace
 This is recorded as a QA-session stall, not a proven Margin runtime crash or a clean
 long-running stability result.
 
-These checks exercise actual native APIs and editor controls, but do not certify
-physical mouse/keyboard interaction, Windows Rhino, new GH2 interactions or prolonged
-use. Separate QA assembly results are not proof that the packaged alpha.7 assembly
+These checks exercise actual native APIs and editor controls. Real Cmd+G, Cmd+Z
+and Cmd+Shift+Z were also exercised through the native UI on two fixture components
+in an otherwise empty, disposable test session; screenshots confirmed creation,
+undo and redo. The active definition was not replaced, and only the three fixture
+objects were removed afterward. Full mouse interaction, Windows Rhino, new GH2
+interactions and prolonged use remain unverified. Separate QA assembly results are not proof that the packaged alpha.7 assembly
 is installed in a user's session. Fresh installed-candidate verification on 2026-11-09 loaded exactly one
 Margin.Native 0.5.0.7 from the installed alpha.7 package in a new Mac GH1 process.
 The installed assembly passed all 43 workflow and 14 editor checks; the active
@@ -231,3 +234,7 @@ The all-platform release build passed 71 portable checks, 384 appearance compari
 packages. The Studio browser workflow passed using the installed Chrome executable.
 Mac alpha.7 is installed locally; no package was pushed or published. Keep untested
 combinations experimental.
+
+Review follow-up: same-named copied groups now have distinct member identities in
+the fixture, and recursive membership as well as appearance is checked after copy
+and reopen. Selected None groups show a title underline without an enclosing frame.

@@ -71,15 +71,26 @@ def verify_cross_definition(Groups, GroupStyle, source, original, check):
             'Appearance':{'TitleCase':'Lowercase','Text':'#FFFFFF','TitleSize':19,'Heading':'Plain'}}))
         Groups.BeginEdit(source, snapshot.Document, entry.Id, entry.Revision).Save('', other)
         original.Border = GH_GroupBorder.Blob
+        members = [o for o in source.Objects if not isinstance(o, GH_Group)]
+        for index, member in enumerate(members): member.NickName = 'Member '+str(index)
+        same_name = GH_Group(); same_name.NickName = original.NickName; same_name.AddObject(members[-1].InstanceGuid)
+        source.AddObject(same_name, False)
+        snapshot = Groups.Snapshot(source); entry = next(e for e in snapshot.Items if e.Id == str(same_name.InstanceGuid))
+        Groups.BeginEdit(source, snapshot.Document, entry.Id, entry.Revision).Save(same_name.NickName, other)
         def signature(document):
-            return sorted((g.NickName, str(g.Border), g.ObjectIDs.Count, Groups.Style(g).ToString())
-                          for g in document.Objects if isinstance(g, GH_Group))
+            def describe(obj):
+                if not isinstance(obj, GH_Group): return (obj.GetType().FullName, obj.NickName)
+                children = tuple(sorted(describe(document.FindObject(id, True)) for id in obj.ObjectIDs))
+                return ('Group', obj.NickName, str(obj.Border), Groups.Style(obj).ToString(), children)
+            return sorted(describe(g) for g in document.Objects if isinstance(g, GH_Group))
         expected = signature(source)
         check(not Groups.Style(original).Equals(Groups.Defaults), 'copy fixture differs from destination future defaults')
         duplicate = GH_Document.DuplicateDocument(source); duplicate.MutateAllIds()
         destination.MergeDocument(duplicate); Groups.Attach(destination)
-        check(signature(destination) == expected, 'cross-definition copy preserves multiple and nested group appearances, names and outlines')
-        copied = next(g for g in destination.Objects if isinstance(g, GH_Group) and g.NickName == original.NickName)
+        check(signature(destination) == expected, 'cross-definition copy preserves same-named and nested group appearances, outlines and member relationships')
+        original_member_name = source.FindObject(original.ObjectIDs[0], True).NickName
+        copied = next(g for g in destination.Objects if isinstance(g, GH_Group) and g.NickName == original.NickName
+                      and destination.FindObject(g.ObjectIDs[0], True).NickName == original_member_name)
         original_style = Groups.Style(original)
         snapshot = Groups.Snapshot(destination); entry = next(e for e in snapshot.Items if e.Id == str(copied.InstanceGuid))
         Groups.BeginEdit(destination, snapshot.Document, entry.Id, entry.Revision).Save(copied.NickName, other)

@@ -11,8 +11,8 @@ const run = spawnSync(dotnet, ['run', '--project', resolve(root, 'tests'), '-c',
 assert.equal(run.status, 0, run.stderr);
 const vectors = JSON.parse(run.stdout);
 const policy = JSON.parse(readFileSync(resolve(root, 'design/group-appearance-policy.json'), 'utf8'));
-for (const {style, dark, resolved} of vectors) {
-  const actual = globalThis.MarginGroupAppearance.resolve(style, dark ? '#171C22' : '#D4D0C8', policy);
+for (const {style, dark, externalTitle, resolved} of vectors) {
+  const actual = globalThis.MarginGroupAppearance.resolve(style, dark ? '#171C22' : '#D4D0C8', policy, externalTitle);
   assert.deepEqual({Text: actual.ink, Accent: actual.accent, Border: actual.border, Band: actual.band, Divider: actual.divider}, resolved);
 }
 console.log(`PASS ${vectors.length} Studio/native appearance comparisons`);

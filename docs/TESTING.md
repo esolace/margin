@@ -238,3 +238,48 @@ combinations experimental.
 Review follow-up: same-named copied groups now have distinct member identities in
 the fixture, and recursive membership as well as appearance is checked after copy
 and reopen. Selected None groups show a title underline without an enclosing frame.
+
+
+## Alpha.7 review fixes and future-default regression — 2026-11-09
+
+Grasshopper's native Group command assigns `GH_Skin.group_back` before adding
+its group. The previous empty-colour check therefore skipped saved typography.
+The command reproduced the user's green/20px/uppercase defaults being replaced
+by automatic/15px/as-typed. The corrected installed build applies the saved
+appearance; the visible canvas and native state both confirmed it after restart.
+Existing native groups are pinned before their first copy so destination defaults
+do not replace their appearance. Metadata-free imports from sources never opened
+with Margin remain indistinguishable from new standard-colour groups; see the ADR.
+
+The outline fixture now explicitly enables Designed styling. The native workflow
+passes 58 checks on the installed Mac GH1 adapter, including distinctive temporary
+in-memory defaults, both colour preference modes, explicit-colour preservation,
+existing-native copy preservation and every outline. Test state is restored in
+`finally`; all three user preference JSON hashes remained unchanged. Fourteen
+native editor checks and 19 movement checks also pass on the final adapter.
+
+Physical mouse testing on disposable definitions verified Blob, Rectangles, Box
+and None title/contour selection, native context menus and double-click editing.
+Blob title dragging moved both members; Cmd+Z restored them. Box member dragging
+expanded its frame. Blob/Rectangles gaps and None empty space did not capture
+group menus; crossing a wholly empty None region selected nothing. Clearing a
+name in the editor displayed Group (with the chosen uppercase casing). None was
+set through the native API because this GH1 menu does not expose None.
+
+Mouse testing also exposed a component label covering a None heading. Label
+placement now reserves designed group title regions using its existing collision
+policy. A fresh installed process visibly moved that label below its component.
+Final native light/dark exports of all four outlines were inspected with labels.
+Studio now uses canvas contrast for external headings and suppresses inapplicable
+bands/dividers in its preview. Browser checks cover Auto/manual colours across
+light/dark previews and each external outline.
+
+The release build passes 74 portable checks, 768 native/Studio appearance
+comparisons, 60 title-casing scenarios, 2,987 Unicode mappings and both platform
+package audits. The Studio browser workflow passes. Local detailed evidence is
+in `artifacts/alpha7-review-fixes/`, including mouse actions, final native reports,
+preference hashes, the native Group-command reproduction and light/dark renders.
+This completes the targeted Mac GH1 mouse pass, not an exhaustive interaction or
+stability certification. Windows, new GH2 interactions, multi-monitor behavior
+and prolonged use remain unverified. The package remains a local experimental
+alpha; nothing was published.

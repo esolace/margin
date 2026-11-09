@@ -16,7 +16,7 @@ globalThis.MarginGroupAppearance = Object.freeze({
     }
     return result;
   },
-  resolve(style, canvas, policy) {
+  resolve(style, canvas, policy, externalTitle = false) {
     const a = style.Appearance;
     const rgb = hex => hex.slice(1).match(/../g).map(x => parseInt(x, 16));
     const hex = channels => '#' + channels.map(x => Math.floor(x).toString(16).padStart(2, '0')).join('').toUpperCase();
@@ -25,11 +25,11 @@ globalThis.MarginGroupAppearance = Object.freeze({
     const edge = hex(fill.map(x => luminance(fill) > policy.lightThreshold
       ? x * policy.lightEdgeScale : Math.min(255, x + policy.darkEdgeOffset)));
     const accent = a.Accent || edge, heading = policy.headings[a.Heading];
-    const behind = heading.band ? rgb(accent) : fill.map((x, i) => x * alpha + background[i] * (1 - alpha));
+    const behind = externalTitle ? background : heading.band ? rgb(accent) : fill.map((x, i) => x * alpha + background[i] * (1 - alpha));
     return {
       rgb: fill, accent, border: a.Border || edge,
       ink: a.Text || (luminance(behind) > policy.lightThreshold ? policy.darkInk : policy.lightInk),
-      band: heading.band, divider: heading.divider && a.ShowDivider
+      band: !externalTitle && heading.band, divider: !externalTitle && heading.divider && a.ShowDivider
     };
   }
 });

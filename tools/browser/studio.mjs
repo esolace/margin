@@ -18,6 +18,26 @@ try {
     MarginStudio.connect({native:true,theme:defaults,presets:[defaults],fonts:['Arial'],enabled:true,userPresets:[],groups:fixture});
   });
   await page.locator('#groupsTab').click();
+  for(const outline of ['Blob','Rectangles','None']){
+    await page.evaluate(outline=>{
+      fixture.Items[0].Outline=outline;
+      fixture.Items[0].Style={Fill:'#000000',Opacity:100,Designed:true,Appearance:{...groupAppearanceDefaults,Heading:'Band'}};
+      MarginStudio.setGroups(fixture);
+    },outline);
+    assert.equal(await page.locator('#groupText').inputValue(),'#23282c',outline+' Auto title contrasts with the light canvas');
+    assert.equal(await page.locator('#groupSpecimen').evaluate(n=>n.style.getPropertyValue('--g-ink')),'#23282C');
+    const title=await page.locator('#groupPreviewName').boundingBox(),frame=await page.locator('#groupSpecimen').boundingBox();
+    assert(title.y+title.height<=frame.y,outline+' preview title sits outside the fill');
+    if(process.env.MARGIN_SCREENSHOT_DIR){await mkdir(process.env.MARGIN_SCREENSHOT_DIR,{recursive:true});await page.screenshot({path:join(process.env.MARGIN_SCREENSHOT_DIR,'studio-'+outline.toLowerCase()+'-light.png')});}
+    await page.locator('#groupTone').click();
+    assert.equal(await page.locator('#groupText').inputValue(),'#f4f3f0',outline+' Auto title follows the dark canvas');
+    await page.locator('#groupText').evaluate(input=>{input.value='#ff35a0';input.dispatchEvent(new Event('input',{bubbles:true}));});
+    await page.locator('#groupTone').click();
+    assert.equal(await page.locator('#groupText').inputValue(),'#ff35a0',outline+' custom title colour stays explicit');
+    await page.locator('#revertGroup').click();
+  }
+  await page.evaluate(()=>{fixture.Items[0].Outline='Box';MarginStudio.setGroups(fixture);});
+  assert.equal(await page.locator('#groupText').inputValue(),'#f4f3f0','Box restores contrast against its dark band');
   await page.evaluate(()=>{fixture.Items[0].Name='';MarginStudio.setGroups(fixture);});
   assert.equal(await page.locator('#groupTarget').innerText(),'Group','selected unnamed group is not future defaults');
   assert.equal(await page.locator('#groupPreviewName').innerText(),'Group','blank name has a neutral canvas preview');

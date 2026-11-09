@@ -20,7 +20,13 @@ static class AppearanceChecks
         var band = automatic with { Heading = "Band", Accent = "#FFFFFF" };
         var resolved = GroupAppearancePolicy.Resolve(band, "#000000", 10, "#151C22");
         check(resolved.Text == "#23282C" && resolved.Band && !resolved.Divider, "band title contrast follows its opaque accent instead of the group fill");
+        var external = GroupAppearancePolicy.Resolve(automatic with { Heading = "Band" }, "#000000", 100, "#FFFFFF", externalTitle: true);
+        check(external is { Text: "#23282C", Band: false, Divider: false }, "external title uses the light canvas and suppresses internal decoration");
+        check(GroupAppearancePolicy.Resolve(band, "#FFFFFF", 100, "#171C22", externalTitle: true).Text == "#F4F3F0",
+            "external title uses the dark canvas even with a light fill and band");
         var manual = automatic with { Text = "#123456", Accent = "#ABCDEF", Border = "#654321" };
+        check(GroupAppearancePolicy.Resolve(manual, "#FFFFFF", 100, "#171C22", externalTitle: true).Text == "#123456",
+            "external titles retain their explicit colour override");
         check(GroupAppearancePolicy.Resolve(manual, "#FFFFFF", 0, "#FFFFFF") == new ResolvedGroupAppearance("#123456", "#ABCDEF", "#654321", false, true),
             "explicit title, accent and border colours override automatic choices");
         check(GroupAppearancePolicy.Resolve(automatic with { Heading = "Plain" }, "#FFFFFF", 100, "#000000") is { Divider: false, Band: false, Accent: "#A5A5A5" },
@@ -44,12 +50,13 @@ static class AppearanceChecks
         from heading in new[] { "Rule", "Band", "Plain" }
         from manual in new[] { false, true }
         from divider in new[] { false, true }
-        select Vector(fill, opacity, dark, new GroupAppearance { Heading = heading, ShowDivider = divider,
+        from externalTitle in new[] { false, true }
+        select Vector(fill, opacity, dark, externalTitle, new GroupAppearance { Heading = heading, ShowDivider = divider,
             Text = manual ? "#123456" : null, Accent = manual ? "#ABCDEF" : null, Border = manual ? "#654321" : null })).ToArray();
 
-    static object Vector(string fill, double opacity, bool dark, GroupAppearance appearance) => new
+    static object Vector(string fill, double opacity, bool dark, bool externalTitle, GroupAppearance appearance) => new
     {
-        style = new { Fill = fill, Opacity = opacity, Appearance = appearance }, dark,
-        resolved = GroupAppearancePolicy.Resolve(appearance, fill, opacity, dark ? "#171C22" : "#D4D0C8")
+        style = new { Fill = fill, Opacity = opacity, Appearance = appearance }, dark, externalTitle,
+        resolved = GroupAppearancePolicy.Resolve(appearance, fill, opacity, dark ? "#171C22" : "#D4D0C8", externalTitle)
     };
 }

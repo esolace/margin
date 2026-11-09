@@ -72,10 +72,8 @@ public static class Groups
         return saved with { Fill = $"#{colour.R:X2}{colour.G:X2}{colour.B:X2}", Opacity = Math.Round(colour.A / 255d * 100, 1) };
     }
     internal static string TitleColour(GH_Group g, GroupAppearance appearance, string fill, double opacity, string canvas) =>
-        g.Border == GH_GroupBorder.Box
-            ? GroupAppearancePolicy.Resolve(appearance, fill, opacity, canvas).Text
-            : GroupAppearancePolicy.Resolve(appearance with { Heading = "Plain" }, canvas, 0, canvas).Text;
-    static GroupEntry Entry(GH_Group g) => new(g.InstanceGuid.ToString(), g.NickName ?? "", g.ObjectIDs.Count, g.Attributes?.Selected ?? false, Style(g), (g.NickName ?? "") + "|" + g.Colour.ToArgb() + "|" + g.Border + "|" + Read(g));
+        GroupAppearancePolicy.Resolve(appearance, fill, opacity, canvas, externalTitle: g.Border != GH_GroupBorder.Box).Text;
+    static GroupEntry Entry(GH_Group g) => new(g.InstanceGuid.ToString(), g.NickName ?? "", g.ObjectIDs.Count, g.Attributes?.Selected ?? false, Style(g), (g.NickName ?? "") + "|" + g.Colour.ToArgb() + "|" + g.Border + "|" + Read(g)) { Outline = g.Border.ToString() };
     public static GroupSnapshot Snapshot() => Active is { } d ? Snapshot(d) : new(null, "Grasshopper", []);
     public static GroupSnapshot Snapshot(GH_Document d) => new(Identity(d), "Grasshopper", Items(d).Select(Entry).ToArray());
 #endif
@@ -221,8 +219,9 @@ public static class Groups
         {
             foreach (var g in e.Objects.OfType<GH_Group>())
             {
-                // Preserve pasted/restored styles and explicit native colours.
-                if (Read(g).Length == 0 && g.Colour.IsEmpty)
+                // Native Group assigns the canvas default before adding the object.
+                // Portable metadata keeps copied/restored groups out of this path.
+                if (Read(g).Length == 0 && (g.Colour.IsEmpty || g.Colour.ToArgb() == GH_Skin.group_back.ToArgb()))
                 {
                     var style = Defaults;
                     var colour = preferences.UseGroupColour
@@ -264,8 +263,13 @@ public static class Groups
         {
             // Promote old definition-owned styles before the first native copy.
             // Keep the legacy value for older Margin installations; object values win.
-            if (GroupMetadata.Read(g).Length == 0 && d.ValueTable.GetValue(StyleKey(g), "") is { Length: > 0 } legacy)
-                GroupMetadata.Write(g, legacy);
+            if (GroupMetadata.Read(g).Length == 0)
+            {
+                var legacy = d.ValueTable.GetValue(StyleKey(g), "");
+                // Pin existing native appearances too: copying them must not apply
+                // the destination's defaults just because their colour is standard.
+                GroupMetadata.Write(g, legacy.Length > 0 ? legacy : JsonSerializer.Serialize(Style(g)));
+            }
             if (g.Attributes?.GetType() == typeof(GH_GroupAttributes))
             {
                 g.Attributes = new StyledGroup(g) { Selected = g.Attributes.Selected };

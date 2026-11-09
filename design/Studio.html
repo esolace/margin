@@ -67,6 +67,11 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 .group-specimen:before{content:'';position:absolute;left:1px;top:13px;bottom:13px;width:5px;background:var(--g-accent);display:var(--g-accent-display,block)}
 .group-specimen h2{font-size:var(--g-size,20px);font-weight:var(--g-weight,700);line-height:1.3;padding:13px 23px;background:var(--g-title-fill,transparent);color:var(--g-ink)}
 .group-specimen h2:after{display:var(--g-divider-display,block);background:var(--g-accent);width: min(198px,100%);margin-top:8px}
+.group-specimen[data-external-title=true]{overflow:visible;min-height:160px;margin-top:65px}
+.group-specimen[data-external-title=true] h2{position:absolute;bottom:calc(100% + 12px);left:0;width:100%;padding:0;background:transparent}
+.group-specimen[data-external-title=true]:before{display:none}
+.group-specimen[data-external-title=true] .group-wire{background:var(--g-border)}
+.group-specimen[data-outline=None]{background:transparent;border-color:transparent}
 .group-nodes{margin:38px 23px 27px}.group-stage{min-height:270px}.group-editor select,#groupCollection{font:inherit;font-size:12px;border:1px solid var(--edge);background:#fff;color:var(--ink);padding:7px;border-radius:5px}.group-editor input[type=number]{width:74px;padding:6px;border:1px solid var(--edge);border-radius:5px;background:white;color:var(--ink)}.group-editor .auto-colour{display:flex;gap:4px;align-items:center;font-size:10px;color:var(--muted)}.group-editor .auto-colour input{margin:0}.group-editor input[type=color]:disabled{opacity:.5}.group-palette{gap:10px}.group-swatch .group-mini{height:72px;position:relative;overflow:hidden;display:block;margin:8px;border:1px solid var(--g-border);border-left:1px solid var(--g-border);border-radius:var(--mini-radius,6px);background:var(--g-fill);color:var(--g-ink)}
 .group-swatch .group-mini:before{content:'';display:var(--g-accent-display);position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--g-accent)}.group-swatch .mini-title{display:block;margin:0;padding:7px 8px;height:auto;background:var(--g-title-fill);border:0;border-radius:0;color:var(--g-ink);font-size:12px;font-weight:var(--g-weight)}.group-swatch .mini-rule{display:var(--g-divider-display);height:2px;width:30px;background:var(--g-accent);margin:0 8px;border:0;border-radius:0}.group-swatch .mini-nodes{position:absolute;bottom:10px;left:9px;right:9px;display:flex;justify-content:space-between;height:8px;margin:0;background:none;border:0}.mini-nodes i{height:8px;width:19px;border-radius:2px;background:#e6e9eb;border:1px solid #6a7178}.group-swatch strong{display:flex;align-items:center;justify-content:space-between;padding:0 9px 9px;font-weight:600}.group-swatch small{font-size:9px;font-weight:400;color:#627383}.group-swatch[aria-pressed=true]{outline:2px solid #344f66}.group-palette button:focus-visible{outline:3px solid #344f66;outline-offset:3px}
 @media(max-width:920px){.group-palette{grid-template-columns:repeat(2,1fr)}#groupStudio{grid-template-columns:minmax(0,1fr) 310px}}
@@ -141,7 +146,7 @@ globalThis.MarginGroupAppearance = Object.freeze({
     }
     return result;
   },
-  resolve(style, canvas, policy) {
+  resolve(style, canvas, policy, externalTitle = false) {
     const a = style.Appearance;
     const rgb = hex => hex.slice(1).match(/../g).map(x => parseInt(x, 16));
     const hex = channels => '#' + channels.map(x => Math.floor(x).toString(16).padStart(2, '0')).join('').toUpperCase();
@@ -150,11 +155,11 @@ globalThis.MarginGroupAppearance = Object.freeze({
     const edge = hex(fill.map(x => luminance(fill) > policy.lightThreshold
       ? x * policy.lightEdgeScale : Math.min(255, x + policy.darkEdgeOffset)));
     const accent = a.Accent || edge, heading = policy.headings[a.Heading];
-    const behind = heading.band ? rgb(accent) : fill.map((x, i) => x * alpha + background[i] * (1 - alpha));
+    const behind = externalTitle ? background : heading.band ? rgb(accent) : fill.map((x, i) => x * alpha + background[i] * (1 - alpha));
     return {
       rgb: fill, accent, border: a.Border || edge,
       ink: a.Text || (luminance(behind) > policy.lightThreshold ? policy.darkInk : policy.lightInk),
-      band: heading.band, divider: heading.divider && a.ShowDivider
+      band: !externalTitle && heading.band, divider: !externalTitle && heading.divider && a.ShowDivider
     };
   }
 });
@@ -472,11 +477,11 @@ const groupPresets=[
 function visibleGroupPresets(){return $('groupCollection').value==='classic'?groupColours.map(([Name,Fill])=>({Name,Fill,Opacity:85,Designed:true,Appearance:{...groupAppearanceDefaults}})):groupPresets;}
 const groupPolicy=JSON.parse(document.getElementById('groupAppearancePolicy').textContent);
 for(const [value,label] of Object.entries(groupPolicy.titleCases))$('groupTitleCase').add(new Option(label,value));
-function groupResolved(t,dark=false){
+function groupResolved(t,dark=false,externalTitle=false){
  const a={...groupAppearanceDefaults,...t.Appearance};
- return {a,...MarginGroupAppearance.resolve({...t,Appearance:a},dark?'#171C22':'#D4D0C8',groupPolicy)};
+ return {a,...MarginGroupAppearance.resolve({...t,Appearance:a},dark?'#171C22':'#D4D0C8',groupPolicy,externalTitle)};
 }
-function groupVariables(node,t,dark=false){const {a,rgb,accent,border,ink,band,divider}=groupResolved(t,dark),st=node.style;
+function groupVariables(node,t,dark=false,externalTitle=false){const {a,rgb,accent,border,ink,band,divider}=groupResolved(t,dark,externalTitle),st=node.style;
  const vars={'fill':'rgba('+rgb+','+t.Opacity/100+')','accent':accent,'border':border,'ink':ink,'size':a.TitleSize*1.3+'px','weight':a.Bold?700:400,'radius':a.Radius*1.3+'px','border-width':a.BorderWidth*1.3+'px','title-fill':band?accent:'transparent','accent-display':a.ShowAccent?'block':'none','divider-display':divider?'block':'none'};
  for(const [key,value] of Object.entries(vars))st.setProperty('--g-'+key,value);
  st.setProperty('--mini-radius',Math.min(8,a.Radius)+'px');
@@ -496,8 +501,11 @@ function groupStyle(){const a={};
  return {Fill:$('groupFill').value.toUpperCase(),Opacity:+$('groupOpacity').value,Designed:$('groupDesigned').checked,Appearance:a};
 }
 function groupPreview(){
- const t=groupStyle(),dark=$('groupStage').dataset.tone==='dark',resolved=groupResolved(t,dark);
- groupVariables($('groupSpecimen'),t,dark);
+ const t=groupStyle(),dark=$('groupStage').dataset.tone==='dark';
+ const outline=groupData.Items.find(g=>g.Id===groupId)?.Outline||'Box',externalTitle=t.Designed&&outline!=='Box';
+ const resolved=groupResolved(t,dark,externalTitle),specimen=$('groupSpecimen');
+ specimen.dataset.outline=outline;specimen.dataset.externalTitle=externalTitle;
+ groupVariables(specimen,t,dark,externalTitle);
  for(const key of ['Text','Accent','Border']){const auto=$('groupAuto'+key).checked;if(auto)$('group'+key).value=resolved[key==='Text'?'ink':key.toLowerCase()];}
  $('groupShowDivider').disabled=t.Appearance.Heading!=='Rule';
  $('groupPreviewName').textContent=MarginGroupAppearance.formatTitle($('groupName').value.trim()||'Group',t.Appearance.TitleCase,groupPolicy);$('groupHex').textContent=t.Fill;$('groupOpacityOut').textContent=t.Opacity+'%';

@@ -6,6 +6,7 @@ selects a separately named QA assembly: {"namespace": "MarginQa.Native",
 "assemblies": ["/absolute/Core.dll", "/absolute/Native.dll"], "run": "qa"}.
 """
 import importlib
+from contextlib import contextmanager
 import json
 import tempfile
 import traceback
@@ -19,7 +20,7 @@ SCRIPT = Path(unquote(urlparse(__file__).path) if __file__.startswith('file:') e
 OUTPUT = SCRIPT.resolve().parents[1] / 'artifacts' / 'group-workflow'
 
 
-def verify_outlines(Groups, check):
+def verify_outlines(Groups, GroupStyle, check):
     from Grasshopper.Kernel import GH_Document, GH_PickBox
     from Grasshopper.Kernel.Parameters import Param_Curve
     from Grasshopper.Kernel.Special import GH_Group, GH_GroupAttributes, GH_GroupBorder
@@ -35,8 +36,11 @@ def verify_outlines(Groups, check):
         group = GH_Group()
         for member in members: group.AddObject(member.InstanceGuid)
         d.AddObject(group, False)
+        snapshot = Groups.Snapshot(d); entry = snapshot.Items[0]
+        Groups.BeginEdit(d, snapshot.Document, entry.Id, entry.Revision).Save('', GroupStyle('#253E56', 85, True))
         for border in [GH_GroupBorder.Blob, GH_GroupBorder.Rectangles, GH_GroupBorder.Box, System.Enum.Parse(GH_GroupBorder, 'None')]:
             group.Border = border
+            check(Groups.Snapshot(d).Items[0].Outline == str(border), str(border)+' outline reaches Studio')
             group.Attributes.ExpireLayout()
             native = GH_GroupAttributes(group)
             b = native.Bounds
@@ -137,6 +141,74 @@ def verify_legacy(Groups, GroupStyle, check):
         d.Dispose()
 
 
+@contextmanager
+def distinctive_defaults(Groups, GroupStyle, use_group_colour=True):
+    # Swap only in-memory test state on the UI thread; never write user preferences.
+    field = clr.GetClrType(Groups).GetField('preferences', System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+    original = field.GetValue(None)
+    sentinel = System.Activator.CreateInstance(field.FieldType)
+    style = GroupStyle.Parse(json.dumps({'Fill':'#742196','Opacity':72,'Designed':True,
+        'Appearance':{'TitleSize':29,'Text':'#FFCA31','TitleCase':'Lowercase','Heading':'Band'}}))
+    for name, value in [('GroupFill',style.Fill),('GroupOpacity',style.Opacity),('StyleGroups',True),
+                        ('UseGroupColour',use_group_colour),('GroupAppearance',style.Appearance)]:
+        field.FieldType.GetProperty(name).SetValue(sentinel, value)
+    field.SetValue(None, sentinel)
+    try:
+        yield
+    finally:
+        field.SetValue(None, original)
+
+
+def verify_native_defaults(Groups, check, use_group_colour=True):
+    from Grasshopper.Kernel import GH_Document
+    from Grasshopper.Kernel.Special import GH_Group
+    from Grasshopper.Kernel.Parameters import Param_Curve
+    from Grasshopper.GUI.Canvas import GH_Skin
+    d = GH_Document()
+    try:
+        Groups.Attach(d)
+        member = Param_Curve(); member.CreateAttributes(); d.AddObject(member, False)
+        # Grasshopper's Group command assigns the native colour BEFORE AddObject.
+        group = GH_Group(); group.NickName = ''; group.Colour = GH_Skin.group_back
+        group.AddObject(member.InstanceGuid); d.AddObject(group, False)
+        actual = Groups.Style(group); expected = Groups.Defaults
+        check(actual.Appearance.Equals(expected.Appearance) and actual.Designed == expected.Designed,
+              'native Group command colour initialization does not suppress saved appearance defaults')
+        studio_group = GH_Group(); studio_group.AddObject(member.InstanceGuid); d.AddObject(studio_group, False)
+        check(actual.Equals(Groups.Style(studio_group)),
+              'native and Studio group creation receive the same defaults')
+        from System.Drawing import Color, ColorTranslator
+        expected_colour = Color.FromArgb(int(System.Math.Round(expected.Opacity * 2.55)), ColorTranslator.FromHtml(expected.Fill)) if use_group_colour else GH_Skin.group_back
+        check(group.Colour.ToArgb() == expected_colour.ToArgb(), 'new group colour respects UseGroupColour='+str(use_group_colour))
+        explicit = GH_Group(); explicit.Colour = Color.FromArgb(190, 18, 134, 76)
+        explicit.AddObject(member.InstanceGuid); original = explicit.Colour; d.AddObject(explicit, False)
+        check(explicit.Colour.ToArgb() == original.ToArgb(), 'explicit custom native colour is preserved')
+    finally:
+        d.Dispose()
+
+
+def verify_existing_native_copy(Groups, check):
+    from Grasshopper.Kernel import GH_Document
+    from Grasshopper.Kernel.Special import GH_Group
+    from Grasshopper.Kernel.Parameters import Param_Curve
+    from Grasshopper.GUI.Canvas import GH_Skin
+    source = GH_Document(); destination = GH_Document(); duplicate = None
+    try:
+        member = Param_Curve(); member.CreateAttributes(); source.AddObject(member, False)
+        group = GH_Group(); group.Colour = GH_Skin.group_back; group.AddObject(member.InstanceGuid)
+        source.AddObject(group, False)
+        original = Groups.Style(group)
+        check(not original.Appearance.Equals(Groups.Defaults.Appearance), 'existing native copy fixture differs from future defaults')
+        Groups.Attach(source); Groups.Attach(destination)
+        check(Groups.Style(group).Equals(original), 'attaching an existing native group preserves its appearance')
+        duplicate = GH_Document.DuplicateDocument(source); duplicate.MutateAllIds(); destination.MergeDocument(duplicate)
+        copied = next(o for o in destination.Objects if isinstance(o, GH_Group))
+        check(Groups.Style(copied).Equals(original), 'copying an existing native-colour group does not apply future defaults')
+    finally:
+        if duplicate is not None: duplicate.Dispose()
+        destination.Dispose(); source.Dispose()
+
+
 def run():
     report = {'checks': []}
     docs = []
@@ -217,9 +289,14 @@ def run():
         b = saved.Attributes.Bounds
         check(System.Object.ReferenceEquals(reopened.Document.FindAttribute(PointF(b.X + 35, b.Y + 20), True), saved.Attributes),
               'reopened pasted group remains clickable')
-        verify_outlines(Groups, check)
+        verify_outlines(Groups, GroupStyle, check)
         verify_cross_definition(Groups, GroupStyle, d, group, check)
         verify_legacy(Groups, GroupStyle, check)
+        with distinctive_defaults(Groups, GroupStyle):
+            verify_native_defaults(Groups, check)
+            verify_existing_native_copy(Groups, check)
+        with distinctive_defaults(Groups, GroupStyle, use_group_colour=False):
+            verify_native_defaults(Groups, check, use_group_colour=False)
         check(System.Object.ReferenceEquals(canvas.Document, current) and ids == [str(o.InstanceGuid) for o in current.Objects]
               if current else (canvas is None or canvas.Document is None), 'working canvas and object identities are untouched')
         report['passed'] = True

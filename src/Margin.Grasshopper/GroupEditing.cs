@@ -19,7 +19,10 @@ public sealed record GroupStyle(string Fill, double Opacity, bool Designed = tru
         catch { return null; }
     }
 }
-public sealed record GroupEntry(string Id, string Name, int Members, bool Selected, GroupStyle Style, string Revision);
+public sealed record GroupEntry(string Id, string Name, int Members, bool Selected, GroupStyle Style, string Revision)
+{
+    public string? Outline { get; init; }
+}
 
 public sealed record GroupSaveResult(GroupEntry Group, string? DefaultsError)
 {

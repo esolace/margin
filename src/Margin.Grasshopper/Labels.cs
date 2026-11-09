@@ -28,7 +28,11 @@ public sealed class Labels : ILabelRenderer
                 .Where(o => o.Attributes is not null)
                 .Select(o => new LabelItem(o.Name, o.NickName, o.Category, From(o.Attributes.Bounds), o.Attributes.Selected))
                 .ToArray();
-            LastDrawn = Draw(sender.Graphics, items, Theme);
+            // Component labels must leave the group heading readable, including None.
+            var headings = sender.Document.Objects.OfType<Grasshopper.Kernel.Special.GH_Group>()
+                .Where(g => Groups.Style(g).Designed && g.Attributes is StyledGroup)
+                .Select(g => From(((StyledGroup)g.Attributes).TitleRegion)).ToArray();
+            LastDrawn = Draw(sender.Graphics, items, Theme, headings);
         }
         catch (Exception ex)
         {
@@ -41,7 +45,7 @@ public sealed class Labels : ILabelRenderer
     }
     public static Box From(RectangleF b) => new(b.X, b.Y, b.Width, b.Height);
     public static Color ColorOf(string hex, int alpha = 255) => Color.FromArgb(alpha, Convert.ToInt32(hex[1..3], 16), Convert.ToInt32(hex[3..5], 16), Convert.ToInt32(hex[5..7], 16));
-    public static int Draw(Graphics graphics, IReadOnlyList<LabelItem> items, Theme source)
+    public static int Draw(Graphics graphics, IReadOnlyList<LabelItem> items, Theme source, IReadOnlyList<Box>? exclusions = null)
     {
         var theme = source.Normalize();
         var state = graphics.Save();
@@ -57,6 +61,7 @@ public sealed class Labels : ILabelRenderer
             using var accent = new SolidBrush(ColorOf(theme.Accent));
             using var format = new StringFormat(StringFormat.GenericTypographic) { FormatFlags = StringFormatFlags.NoWrap };
             var occupied = items.Where(i => i.Bounds.Valid).Select(i => i.Bounds).ToList();
+            if (exclusions is not null) occupied.AddRange(exclusions.Where(b => b.Valid));
             int drawn = 0;
             foreach (var item in items.OrderByDescending(i => i.Selected))
             {

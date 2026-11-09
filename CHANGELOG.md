@@ -2,6 +2,10 @@
 
 ## 0.5.0-alpha.7 — local development
 
+- Apply saved future-group styling to Grasshopper's native Group command, which assigns a standard colour before adding the group. Preserve existing native appearances when copying.
+- Match Studio's automatic title contrast and external heading preview to Blob, Rectangles and None.
+- Keep component labels clear of group titles, including borderless groups.
+
 - Respect GH1 Box, Blob, Rectangles and None outlines in both drawing and interaction. Freeform titles sit above the native contour; None retains a title without an enclosing frame.
 - Keep Box heading bands, accents and corner styling; retain those settings when switching to an outline where they do not apply. Automatic freeform title contrast uses the actual canvas background.
 - Display “Group” for unnamed groups on the canvas and in Studio. Preserve blank native names and distinguish a selected unnamed group from future defaults.

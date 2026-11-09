@@ -125,6 +125,7 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
         frame = RectangleF.Union(b, title);
         return frame;
     }
+    internal RectangleF TitleRegion { get { Frame(); return title; } }
     static RectangleF TitleBounds(RectangleF b, GroupAppearance appearance) => new(b.X+18,b.Y+10,b.Width-34,(float)appearance.TitleSize*1.5f+7);
     public new RectangleF Bounds { get => Groups.Style(group).Designed ? Frame() : base.Bounds; set => base.Bounds = value; }
     public new bool IsPickRegion(PointF point)

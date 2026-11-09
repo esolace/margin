@@ -19,6 +19,113 @@ SCRIPT = Path(unquote(urlparse(__file__).path) if __file__.startswith('file:') e
 OUTPUT = SCRIPT.resolve().parents[1] / 'artifacts' / 'group-workflow'
 
 
+def verify_outlines(Groups, check):
+    from Grasshopper.Kernel import GH_Document, GH_PickBox
+    from Grasshopper.Kernel.Parameters import Param_Curve
+    from Grasshopper.Kernel.Special import GH_Group, GH_GroupAttributes, GH_GroupBorder
+    from System.Drawing import PointF, RectangleF
+    d = GH_Document()
+    try:
+        Groups.Attach(d)
+        members = []
+        for x, y in [(200, 280), (500, 500)]:
+            member = Param_Curve(); member.CreateAttributes(); d.AddObject(member, False)
+            member.Attributes.Pivot = PointF(x, y); member.Attributes.ExpireLayout(); member.Attributes.PerformLayout()
+            members.append(member)
+        group = GH_Group()
+        for member in members: group.AddObject(member.InstanceGuid)
+        d.AddObject(group, False)
+        for border in [GH_GroupBorder.Blob, GH_GroupBorder.Rectangles, GH_GroupBorder.Box, System.Enum.Parse(GH_GroupBorder, 'None')]:
+            group.Border = border
+            group.Attributes.ExpireLayout()
+            native = GH_GroupAttributes(group)
+            b = native.Bounds
+            if border in [GH_GroupBorder.Blob, GH_GroupBorder.Rectangles]:
+                points = [PointF(b.X + b.Width * x / 10, b.Y + b.Height * y / 10) for x in range(1,10) for y in range(1,10)]
+                check(all(group.Attributes.IsPickRegion(p) == native.IsPickRegion(p) for p in points), str(border)+' picking follows the native contour')
+                gap = next(p for p in points if not native.IsPickRegion(p))
+                check(not group.Attributes.IsMenuRegion(gap), str(border)+' has no invisible rectangular context-menu region')
+                box = RectangleF(gap.X, gap.Y, .1, .1)
+                check(not group.Attributes.IsPickRegion(box, GH_PickBox.Crossing), str(border)+' crossing selection excludes gaps')
+            elif border == System.Enum.Parse(GH_GroupBorder, 'None'):
+                check(not group.Attributes.IsPickRegion(PointF(350,390)), 'None does not leave an enclosing pick region')
+            check(all(group.Attributes.Bounds.Contains(member.Attributes.Bounds) for member in members), str(border)+' bounds contain members')
+        before = group.Attributes.Bounds
+        members[1].Attributes.Pivot = PointF(650,600); members[1].Attributes.ExpireLayout(); members[1].Attributes.PerformLayout()
+        check(group.Attributes.Bounds != before, 'outline layout follows moved members before painting')
+    finally:
+        d.Dispose()
+
+
+def verify_cross_definition(Groups, GroupStyle, source, original, check):
+    from Grasshopper.Kernel import GH_Document, GH_DocumentIO
+    from Grasshopper.Kernel.Special import GH_Group, GH_GroupBorder
+    destination = GH_Document()
+    duplicate = reopened = None
+    try:
+        Groups.Attach(destination)
+        outer = GH_Group(); outer.NickName = ''; outer.AddObject(original.InstanceGuid)
+        source.AddObject(outer, False)
+        snapshot = Groups.Snapshot(source); entry = next(e for e in snapshot.Items if e.Id == str(outer.InstanceGuid))
+        other = GroupStyle.Parse(json.dumps({'Fill':'#117755','Opacity':80,'Designed':True,
+            'Appearance':{'TitleCase':'Lowercase','Text':'#FFFFFF','TitleSize':19,'Heading':'Plain'}}))
+        Groups.BeginEdit(source, snapshot.Document, entry.Id, entry.Revision).Save('', other)
+        original.Border = GH_GroupBorder.Blob
+        def signature(document):
+            return sorted((g.NickName, str(g.Border), g.ObjectIDs.Count, Groups.Style(g).ToString())
+                          for g in document.Objects if isinstance(g, GH_Group))
+        expected = signature(source)
+        check(not Groups.Style(original).Equals(Groups.Defaults), 'copy fixture differs from destination future defaults')
+        duplicate = GH_Document.DuplicateDocument(source); duplicate.MutateAllIds()
+        destination.MergeDocument(duplicate); Groups.Attach(destination)
+        check(signature(destination) == expected, 'cross-definition copy preserves multiple and nested group appearances, names and outlines')
+        copied = next(g for g in destination.Objects if isinstance(g, GH_Group) and g.NickName == original.NickName)
+        original_style = Groups.Style(original)
+        snapshot = Groups.Snapshot(destination); entry = next(e for e in snapshot.Items if e.Id == str(copied.InstanceGuid))
+        Groups.BeginEdit(destination, snapshot.Document, entry.Id, entry.Revision).Save(copied.NickName, other)
+        check(Groups.Style(original).Equals(original_style) and Groups.Style(copied).Appearance.Equals(other.Appearance), 'editing a cross-definition copy leaves the original appearance unchanged')
+        destination.UndoServer.PerformUndo()
+        check(Groups.Style(copied).Equals(original_style), 'copy appearance edit undo restores transferred design')
+        destination.UndoServer.PerformRedo()
+        check(Groups.Style(copied).Appearance.Equals(other.Appearance), 'copy appearance edit redo restores independent design')
+        snapshot = Groups.Snapshot(source); entry = next(e for e in snapshot.Items if e.Id == str(original.InstanceGuid))
+        Groups.BeginEdit(source, snapshot.Document, entry.Id, entry.Revision).Save(original.NickName, GroupStyle('#991133', 60, True))
+        check(Groups.Style(copied).Appearance.Equals(other.Appearance), 'editing the original leaves its copy unchanged')
+        expected = signature(destination)
+        path = str(OUTPUT / 'Cross-definition-copy.gh')
+        check(GH_DocumentIO(destination).SaveQuiet(path), 'cross-definition destination saves')
+        reopened = GH_DocumentIO(); check(reopened.Open(path), 'cross-definition destination reopens')
+        Groups.Attach(reopened.Document)
+        check(signature(reopened.Document) == expected, 'all destination group appearances and outlines survive reopen')
+        check(Groups.Style(next(g for g in reopened.Document.Objects if isinstance(g, GH_Group) and g.NickName == '')).Appearance.Equals(other.Appearance), 'unnamed nested group retains its distinct appearance')
+    finally:
+        if reopened is not None and reopened.Document is not None: reopened.Document.Dispose()
+        if duplicate is not None: duplicate.Dispose()
+        destination.Dispose()
+
+
+def verify_legacy(Groups, GroupStyle, check):
+    from Grasshopper.Kernel import GH_Document
+    from Grasshopper.Kernel.Special import GH_Group
+    from Grasshopper.Kernel.Parameters import Param_Curve
+    from System.Drawing import Color
+    d = GH_Document(); duplicate = None
+    try:
+        member=Param_Curve();member.CreateAttributes();d.AddObject(member,False)
+        group=GH_Group();group.AddObject(member.InstanceGuid);group.Colour=Color.FromArgb(204,17,119,85);d.AddObject(group,False)
+        legacy=json.dumps({'Fill':'#117755','Opacity':80,'Designed':True,'Appearance':{'Text':'#FFCC44','TitleCase':'Uppercase','TitleSize':26}})
+        # Fixture in the pre-portable format; observe behaviour only through the native group workflow.
+        d.ValueTable.SetValue('Margin.GroupStyle.'+group.InstanceGuid.ToString('N'),legacy)
+        Groups.Attach(d)
+        check(Groups.Style(group).Appearance.Equals(GroupStyle.Parse(legacy).Appearance), 'existing definition appearance loads unchanged')
+        duplicate=GH_Document.DuplicateDocument(d);duplicate.MutateAllIds();Groups.Attach(duplicate)
+        copied=next(g for g in duplicate.Objects if isinstance(g,GH_Group))
+        check(Groups.Style(copied).Equals(Groups.Style(group)), 'legacy appearance survives first copy without an intervening edit')
+    finally:
+        if duplicate is not None: duplicate.Dispose()
+        d.Dispose()
+
+
 def run():
     report = {'checks': []}
     docs = []
@@ -50,12 +157,15 @@ def run():
         member.Attributes.Pivot = PointF(200, 280); member.Attributes.ExpireLayout(); member.Attributes.PerformLayout()
         group = GH_Group(); group.NickName = 'Original'; group.AddObject(member.InstanceGuid); d.AddObject(group, False)
         snapshot = Groups.Snapshot(d); entry = snapshot.Items[0]
-        Groups.BeginEdit(d, snapshot.Document, entry.Id, entry.Revision).Save('Guide curves', GroupStyle('#6937C4', 96, True))
+        custom = GroupStyle.Parse(json.dumps({'Fill':'#6937C4','Opacity':96,'Designed':True,
+            'Appearance':{'TitleSize':23,'Text':'#FFD080','TitleCase':'Uppercase','Heading':'Band','BorderWidth':3,'Radius':18}}))
+        Groups.BeginEdit(d, snapshot.Document, entry.Id, entry.Revision).Save('Guide curves', custom)
         # DuplicateDocument uses native GH_DocumentIO.Copy/Paste with its LOCAL clipboard.
         duplicate = GH_Document.DuplicateDocument(d); docs.append(duplicate)
         duplicate.MutateAllIds(); d.MergeDocument(duplicate)
         pasted = next(o for o in d.Objects if isinstance(o, GH_Group) and o.InstanceGuid != group.InstanceGuid)
         pasted_id = pasted.InstanceGuid
+        check(Groups.Style(pasted).Equals(Groups.Style(group)), 'same-definition copy preserves complete custom appearance')
         b = pasted.Attributes.Bounds
         hit = d.FindAttribute(PointF(b.X + 35, b.Y + 20), True)
         check(System.Object.ReferenceEquals(hit, pasted.Attributes), 'pasted heading picks the current group attributes')
@@ -91,10 +201,14 @@ def run():
         reopened = GH_DocumentIO(); check(reopened.Open(file), 'fixture reopens'); docs.append(reopened.Document)
         Groups.Attach(reopened.Document)
         saved = reopened.Document.FindObject(pasted_id, True)
+        check(Groups.Style(saved).Equals(Groups.Style(pasted)), 'copied custom appearance survives save and reopen')
         check(saved.NickName == 'Independent copy' and saved.ObjectIDs.Contains(child.InstanceGuid), 'pasted rename and membership survive reopen')
         b = saved.Attributes.Bounds
         check(System.Object.ReferenceEquals(reopened.Document.FindAttribute(PointF(b.X + 35, b.Y + 20), True), saved.Attributes),
               'reopened pasted group remains clickable')
+        verify_outlines(Groups, check)
+        verify_cross_definition(Groups, GroupStyle, d, group, check)
+        verify_legacy(Groups, GroupStyle, check)
         check(System.Object.ReferenceEquals(canvas.Document, current) and ids == [str(o.InstanceGuid) for o in current.Objects]
               if current else (canvas is None or canvas.Document is None), 'working canvas and object identities are untouched')
         report['passed'] = True

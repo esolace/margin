@@ -30,8 +30,8 @@ internal static class GroupEditor
         var autoText = new CheckBox { ID = "group-title-auto", Text = "Automatic title contrast", Checked = entry.Style.Appearance.Text is null };
         var canvasColour = GH_Skin.canvas_back;
         var canvasHex = $"#{canvasColour.R:X2}{canvasColour.G:X2}{canvasColour.B:X2}";
-        var resolved = GroupAppearancePolicy.Resolve(entry.Style.Appearance, entry.Style.Fill, entry.Style.Opacity, canvasHex);
-        var textColour = new ColorPicker { ID = "group-title-colour", Value = Color.Parse(resolved.Text) };
+        var resolved = Groups.TitleColour(group, entry.Style.Appearance, entry.Style.Fill, entry.Style.Opacity, canvasHex);
+        var textColour = new ColorPicker { ID = "group-title-colour", Value = Color.Parse(resolved) };
         var updatingColour = false;
         textColour.ValueChanged += (_, _) => { if (!updatingColour) autoText.Checked = false; };
         var opacity = new NumericStepper { MinValue = 0, MaxValue = 100, Value = entry.Style.Opacity };
@@ -39,9 +39,9 @@ internal static class GroupEditor
         {
             if (autoText.Checked != true) return;
             var appearance = entry.Style.Appearance with { Text = null };
-            var next = GroupAppearancePolicy.Resolve(appearance, colour.Value.ToHex(false), opacity.Value, canvasHex);
+            var next = Groups.TitleColour(group, appearance, colour.Value.ToHex(false), opacity.Value, canvasHex);
             updatingColour = true;
-            try { textColour.Value = Color.Parse(next.Text); }
+            try { textColour.Value = Color.Parse(next); }
             finally { updatingColour = false; }
         }
         autoText.CheckedChanged += (_, _) => UpdateAutomaticColour();

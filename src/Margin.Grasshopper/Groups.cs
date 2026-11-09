@@ -59,7 +59,11 @@ public static class Groups
     static IEnumerable<GH_Group> Items(GH_Document d) => d.Objects.OfType<GH_Group>();
     static string Identity(GH_Document d) => d.DocumentID.ToString();
     static string StyleKey(GH_Group g) => Key + "." + g.InstanceGuid.ToString("N");
-    static string Read(GH_Group g) => g.OnPingDocument()?.ValueTable.GetValue(StyleKey(g), "") ?? "";
+    static string Read(GH_Group g)
+    {
+        var portable = GroupMetadata.Read(g);
+        return portable.Length > 0 ? portable : g.OnPingDocument()?.ValueTable.GetValue(StyleKey(g), "") ?? "";
+    }
     public static GroupStyle Style(GH_Group g)
     {
         // Uncoloured native groups inherit the canvas default; Empty is not transparent black.
@@ -67,7 +71,11 @@ public static class Groups
         var saved = GroupStyle.Parse(Read(g)) ?? new GroupStyle("#000000", 85);
         return saved with { Fill = $"#{colour.R:X2}{colour.G:X2}{colour.B:X2}", Opacity = Math.Round(colour.A / 255d * 100, 1) };
     }
-    static GroupEntry Entry(GH_Group g) => new(g.InstanceGuid.ToString(), g.NickName ?? "", g.ObjectIDs.Count, g.Attributes?.Selected ?? false, Style(g), (g.NickName ?? "") + "|" + g.Colour.ToArgb() + "|" + Read(g));
+    internal static string TitleColour(GH_Group g, GroupAppearance appearance, string fill, double opacity, string canvas) =>
+        g.Border == GH_GroupBorder.Box
+            ? GroupAppearancePolicy.Resolve(appearance, fill, opacity, canvas).Text
+            : GroupAppearancePolicy.Resolve(appearance with { Heading = "Plain" }, canvas, 0, canvas).Text;
+    static GroupEntry Entry(GH_Group g) => new(g.InstanceGuid.ToString(), g.NickName ?? "", g.ObjectIDs.Count, g.Attributes?.Selected ?? false, Style(g), (g.NickName ?? "") + "|" + g.Colour.ToArgb() + "|" + g.Border + "|" + Read(g));
     public static GroupSnapshot Snapshot() => Active is { } d ? Snapshot(d) : new(null, "Grasshopper", []);
     public static GroupSnapshot Snapshot(GH_Document d) => new(Identity(d), "Grasshopper", Items(d).Select(Entry).ToArray());
 #endif
@@ -150,6 +158,7 @@ public static class Groups
     {
         g.NickName = name; g.Colour = colour;
         var d = g.OnPingDocument();
+        GroupMetadata.Write(g, value);
         d?.ValueTable.SetValue(StyleKey(g), value);
         g.ExpireCaches(); g.Attributes?.ExpireLayout(); d?.Modified();
     }
@@ -251,10 +260,17 @@ public static class Groups
         if (!documents.Any(w => w.TryGetTarget(out var target) && ReferenceEquals(target, d)))
         { documents.Add(new(d)); d.ObjectsAdded += Added; }
         var replaced = false;
-        foreach (var g in Items(d)) if (g.Attributes?.GetType() == typeof(GH_GroupAttributes))
+        foreach (var g in Items(d))
         {
-            g.Attributes = new StyledGroup(g) { Selected = g.Attributes.Selected };
-            replaced = true;
+            // Promote old definition-owned styles before the first native copy.
+            // Keep the legacy value for older Margin installations; object values win.
+            if (GroupMetadata.Read(g).Length == 0 && d.ValueTable.GetValue(StyleKey(g), "") is { Length: > 0 } legacy)
+                GroupMetadata.Write(g, legacy);
+            if (g.Attributes?.GetType() == typeof(GH_GroupAttributes))
+            {
+                g.Attributes = new StyledGroup(g) { Selected = g.Attributes.Selected };
+                replaced = true;
+            }
         }
         // Paste can build the document's pick/selection table before ObjectsAdded.
         // Replacing attributes must invalidate that table as well as the drawing.

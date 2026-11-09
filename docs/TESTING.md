@@ -156,7 +156,7 @@ Release evidence must distinguish completed checks from missing ones. A native
 restart, interactive Windows tests and copying custom group typography are not
 covered by the workflow above. Group fill/name/membership travel with native
 copy/paste; GH1 custom appearance is document-keyed and its transfer to a new
-copied identity remains a known limitation.
+copied identity remains a known limitation in alpha.5/alpha.6. The alpha.7 section below supersedes this limitation for the new implementation.
 
 
 ## 0.5.0-alpha.6 title controls and completion checks
@@ -184,10 +184,50 @@ saving/reopening the GH definition. The previous 17 copy/paste/rename/ungroup
 checks also pass against the new implementation. Neither test changes the working
 canvas or its objects. Test files are disposable and excluded from public source.
 
-A separate Rhino launch was attempted for fresh-process verification. Rhino
-blocked it in its native `checkForOtherRhinos` modal check; the extra test process
-was closed, leaving the working session running. Fresh-process verification is
-therefore still unverified. Interactive Windows and GH2 verification remain
-separate limitations; both adapters are built and audited for both platforms.
-The native GH1 custom-appearance transfer limitation on copy/paste noted above
-also applies to casing; saving and reopening an existing group preserves it.
+An earlier fresh-process attempt was blocked by Rhino's native other-instance
+check. Later verification on 2026-11-08 superseded that result: the restarted Mac
+GH1 process loaded one installed alpha.6 native assembly and passed 13 editor
+and 17 group workflow checks, with saved preferences restored. Local evidence is
+in `artifacts/restart-alpha6/VERIFIED.md`. Windows and new GH2 interactions remain
+unverified; alpha.6 still has the copied-custom-appearance limitation.
+
+## 0.5.0-alpha.7 outlines and portable appearance
+
+The enhanced native workflow checks run on disposable definitions without replacing
+the working canvas or changing the system clipboard. A separately named assembly
+built from the new source passes 43 checks: complete custom appearance through
+same-definition and cross-definition copies, independent edits, undo/redo, multiple
+and nested groups, unnamed groups, save/reopen and first-copy promotion of legacy
+styles. Contour picking and crossing selection are compared against native GH1
+attributes for Blob and Rectangles. Box, None and movement are also exercised.
+
+Fourteen native editor checks pass, including automatic title contrast against the
+canvas for external headings. Studio's browser suite now also checks blank-name
+fallbacks and the distinction between a selected unnamed group and future defaults.
+The original copy-appearance regression and rectangular Blob pick region both failed
+before their respective fixes. The editor contrast regression also failed before its fix.
+
+Native light/dark renders were inspected locally under `artifacts/native-outlines/`.
+They show the retained Box frame, native freeform contours and borderless Group title.
+A combined QA script stalled while switching global canvas backgrounds during export;
+the disposable process was terminated, and workflow/editor checks and image export
+were rerun separately in a fresh test session. No working definition was replaced.
+This is recorded as a QA-session stall, not a proven Margin runtime crash or a clean
+long-running stability result.
+
+These checks exercise actual native APIs and editor controls, but do not certify
+physical mouse/keyboard interaction, Windows Rhino, new GH2 interactions or prolonged
+use. Separate QA assembly results are not proof that the packaged alpha.7 assembly
+is installed in a user's session. Fresh installed-candidate verification on 2026-11-09 loaded exactly one
+Margin.Native 0.5.0.7 from the installed alpha.7 package in a new Mac GH1 process.
+The installed assembly passed all 43 workflow and 14 editor checks; the active
+canvas remained empty. Labels remained enabled with Petal, runtime/group errors
+were null, and all three preference JSON files retained their original hashes.
+Local evidence: `artifacts/alpha7-loaded.json`, `artifacts/alpha7-runtime.json`,
+`artifacts/group-workflow/alpha7-installed.json` and `artifacts/group-editor/result.json`.
+
+The all-platform release build passed 71 portable checks, 384 appearance comparisons,
+60 casing scenarios, 2,987 Unicode mappings and exact-content audits of both Yak
+packages. The Studio browser workflow passed using the installed Chrome executable.
+Mac alpha.7 is installed locally; no package was pushed or published. Keep untested
+combinations experimental.

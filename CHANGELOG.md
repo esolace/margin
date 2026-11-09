@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.5.0-alpha.7 — local development
+
+- Respect GH1 Box, Blob, Rectangles and None outlines in both drawing and interaction. Freeform titles sit above the native contour; None retains a title without an enclosing frame.
+- Keep Box heading bands, accents and corner styling; retain those settings when switching to an outline where they do not apply. Automatic freeform title contrast uses the actual canvas background.
+- Display “Group” for unnamed groups on the canvas and in Studio. Preserve blank native names and distinguish a selected unnamed group from future defaults.
+- Carry complete GH1 group appearance through copying within and between definitions, independent edits, undo/redo and save/reopen. Promote legacy saved styles before copying.
+- Extend native and Studio regression coverage. Windows/GH2 interactive validation remains outstanding; this is not a stable or published release.
+
 ## 0.5.0-alpha.6 — local development
 
 - Keep title colour editable in Studio and the native group editor. Picking a colour switches to custom; Auto restores calculated contrast.

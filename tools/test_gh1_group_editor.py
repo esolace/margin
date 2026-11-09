@@ -41,6 +41,8 @@ def run():
         d=GH_Document();docs.append(d);native.Groups.Attach(d)
         child=Param_Curve();child.CreateAttributes();d.AddObject(child,False)
         group=GH_Group();group.NickName='Guide curves';group.AddObject(child.InstanceGuid);d.AddObject(group,False)
+        snapshot=native.Groups.Snapshot(d);entry=next(e for e in snapshot.Items if e.Id==str(group.InstanceGuid))
+        native.Groups.BeginEdit(d,snapshot.Document,entry.Id,entry.Revision).Save('Guide curves',native.GroupStyle('#253E56',85,True))
         def edit():
             result=factory.Invoke(None,System.Array[System.Object]([group]));dialogs.append(result);return result
         dialog=edit();picker=dialog.FindChild(clr.GetClrType(Control),'group-title-colour');auto=dialog.FindChild(clr.GetClrType(Control),'group-title-auto');case=dialog.FindChild(clr.GetClrType(Control),'group-title-case')
@@ -66,6 +68,19 @@ def run():
         io2=GH_DocumentIO();check(io2.Open(file),'title fixture reopens');docs.append(io2.Document)
         restored=io2.Document.FindObject(group.InstanceGuid,True)
         check(native.Groups.Style(restored).Appearance.Text=='#FF35A0' and native.Groups.Style(restored).Appearance.TitleCase=='Uppercase','reopened definition retains colour and letter case')
+        from Grasshopper.GUI.Canvas import GH_Skin
+        from Grasshopper.Kernel.Special import GH_GroupBorder
+        from System.Drawing import Color as DrawingColor
+        previous_canvas_colour=GH_Skin.canvas_back
+        try:
+            GH_Skin.canvas_back=DrawingColor.White
+            group.Border=GH_GroupBorder.Blob
+            dialog=edit()
+            dialog.FindChild(clr.GetClrType(Control),'group-fill').Value=Color.Parse('#111111')
+            dialog.FindChild(clr.GetClrType(Control),'group-title-auto').Checked=True
+            check(dialog.FindChild(clr.GetClrType(Control),'group-title-colour').Value.ToHex(False)=='#23282C','freeform automatic title colour contrasts with the canvas rather than the fill')
+        finally:
+            GH_Skin.canvas_back=previous_canvas_colour
         check(System.Object.ReferenceEquals(c.Document,current) and (ids==[str(o.InstanceGuid) for o in current.Objects] if current else True),'working definition stays untouched')
         report['target']=namespace;report['passed']=True
     except Exception:report['passed']=False;report['error']=traceback.format_exc()

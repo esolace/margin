@@ -40,13 +40,28 @@ Component label presets, including Petal, remain independent.
 GH2 retains its existing group editor. This update adds remembered label visibility
 to both GH1 and GH2; new native-group defaults and on-canvas heading editing are
 currently GH1 features. Names and membership stay native. GH1 retains exact native
-fill colours without Margin; the designed heading requires Margin. GH1 style
-metadata is document-scoped, so copied groups retain native colour but not custom
-Margin metadata.
+fill colours without Margin; the designed heading requires Margin. The local alpha.7 preview carries complete GH1 group appearance with copied groups,
+including across definitions and after save/reopen. Older saved appearances are
+promoted automatically. Public alpha.4 retains the earlier copy-appearance limitation.
 
 0.5.0-alpha.4 is an experimental Package Manager prerelease. Mac GH1 group editing,
 undo/redo, failure recovery and restart persistence have been tested live. Windows
 packages compile; interactive Windows Rhino testing remains outstanding.
+
+## Local alpha.7 group improvements
+
+The local alpha.7 build respects GH1's native **Box, Blob, Rectangles and None**
+outline choices for drawing, selection and context menus. Box retains its internal
+heading and decorative frame. Blob and Rectangles retain their native contours
+with a heading above; None shows the heading without a frame. Bands, vertical
+accents and corner controls apply to Box; their saved settings remain available
+when switching back. Automatic title contrast follows the canvas for external headings.
+
+Unnamed groups display **Group**, while their native names remain blank. Studio
+keeps a selected unnamed group distinct from future defaults. Copy/paste preserves
+custom appearance, title colour and casing within and between definitions; copies
+remain independently editable. These changes are local development, not yet in the
+public alpha.4 package. See the testing notes for current validation limits.
 
 ## Make it yours
 

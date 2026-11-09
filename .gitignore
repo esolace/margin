@@ -5,6 +5,7 @@
 !README.md
 !CHANGELOG.md
 !CONTRIBUTING.md
+!GLOSSARY.md
 !src/
 !src/**/
 !src/**/*.cs
@@ -21,6 +22,9 @@
 !design/group-appearance.js
 !docs/
 !docs/TESTING.md
+!docs/NEXT-RELEASE.md
+!docs/adr/
+!docs/adr/*.md
 !docs/images/
 !docs/images/*.png
 !release/

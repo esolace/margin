@@ -95,7 +95,7 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 </section>
 <aside class="inspector"><div class="inspector-title"><h2>Appearance</h2><p id="groupDocInfo">Select a group on the canvas to edit its appearance.</p></div>
 <form id="groupForm" class="group-editor"><fieldset id="groupFields">
-<div id="groupIdentity"><label for="groupName">Group name</label><input type="text" id="groupName" maxlength="120" placeholder="Untitled group" autocomplete="off"></div>
+<div id="groupIdentity"><label for="groupName">Group name</label><input type="text" id="groupName" maxlength="120" placeholder="Group" autocomplete="off"></div>
 <div class="field"><label for="groupDesigned">Margin styling</label><input type="checkbox" id="groupDesigned" checked></div>
 <h3>Title</h3>
 <div class="field"><label for="groupTitleCase">Letter case</label><select id="groupTitleCase" aria-describedby="groupCaseHint"></select></div>
@@ -500,7 +500,7 @@ function groupPreview(){
  groupVariables($('groupSpecimen'),t,dark);
  for(const key of ['Text','Accent','Border']){const auto=$('groupAuto'+key).checked;if(auto)$('group'+key).value=resolved[key==='Text'?'ink':key.toLowerCase()];}
  $('groupShowDivider').disabled=t.Appearance.Heading!=='Rule';
- $('groupPreviewName').textContent=MarginGroupAppearance.formatTitle($('groupName').value.trim()||'Untitled group',t.Appearance.TitleCase,groupPolicy);$('groupHex').textContent=t.Fill;$('groupOpacityOut').textContent=t.Opacity+'%';
+ $('groupPreviewName').textContent=MarginGroupAppearance.formatTitle($('groupName').value.trim()||'Group',t.Appearance.TitleCase,groupPolicy);$('groupHex').textContent=t.Fill;$('groupOpacityOut').textContent=t.Opacity+'%';
  $('groupStage').classList.toggle('native-style',!t.Designed);
  [...$('groupPalette').children].forEach((b,i)=>{const p=visibleGroupPresets()[i];b.setAttribute('aria-pressed',String(t.Designed&&t.Fill===p.Fill&&Math.abs(t.Opacity-p.Opacity)<.25&&Object.keys(groupAppearanceDefaults).every(k=>t.Appearance[k]===p.Appearance[k])));});
  $('applyGroup').disabled=!groupId||!groupDirty||groupPending;$('revertGroup').disabled=!groupId||!groupDirty||groupPending;
@@ -509,7 +509,7 @@ function selectGroup(id){
  groupId=id;groupDirty=false;groupPending=false;
  const entry=groupData.Items.find(g=>g.Id===id);
  $('groupName').disabled=!entry;$('groupIdentity').hidden=!entry;
- $('groupTarget').textContent=entry?.Name||'Future groups';
+ $('groupTarget').textContent=entry ? (entry.Name?.trim() || 'Group') : 'Future groups';
  $('groupDocInfo').textContent=entry?'Editing the group selected on your canvas.':'Select a group on the canvas, or set the appearance for future groups.';
  if(entry){$('groupName').value=entry.Name;loadGroupStyle(entry.Style);}else if(groupData.Defaults){$('groupName').value='';loadGroupStyle(groupData.Defaults);}
  groupPreview();

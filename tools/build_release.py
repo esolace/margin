@@ -10,10 +10,10 @@ import zipfile
 from build_gh2 import atomic_copy
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = '0.5.0-alpha.6'
+VERSION = '0.5.0-alpha.7'
 
 def public_files():
-    fixed = ['.gitignore', 'LICENSE', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
+    fixed = ['GLOSSARY.md', 'docs/NEXT-RELEASE.md', 'docs/adr/0001-portable-native-group-appearance.md', '.gitignore', 'LICENSE', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
              'tools/browser/package.json', 'tools/browser/bun.lock', 'tools/browser/studio.mjs',
              'design/Studio.html', 'design/group-appearance-policy.json', 'design/group-appearance.js', 'tools/sync_studio_policy.py', 'tools/test_studio_appearance.mjs', 'docs/TESTING.md', 'docs/images/studio.png',
              'release/BUILDING.md', 'release/README.md', 'release/manifest.yml',

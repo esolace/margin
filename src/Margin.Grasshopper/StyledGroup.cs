@@ -62,7 +62,7 @@ public sealed class StyledGroup : GroupAttributes
             const float scale = .75f;
 #endif
             using var font = new Font(SystemFonts.Default().Family, (float)appearance.TitleSize * scale, appearance.Bold ? FontStyle.Bold : FontStyle.None);
-            string name = string.IsNullOrWhiteSpace(group.UserName) ? "Untitled group" : group.UserName;
+            string name = string.IsNullOrWhiteSpace(group.UserName) ? "Group" : group.UserName;
             name = GroupAppearancePolicy.FormatTitle(name, appearance.TitleCase);
             while (name.Length > 2 && g.MeasureString(font,name).Width > b.Width - 34) name = name[..^2] + "…";
             var ink = Color.Parse(resolved.Text);
@@ -79,33 +79,76 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
     readonly GH_Group group;
     bool failed;
     RectangleF[] frameContents = [];
+    GroupAppearance? layoutAppearance;
+    GH_GroupBorder? layoutBorder;
+    GraphicsPath? outline;
+    RectangleF frame, title;
     public StyledGroup(GH_Group group) : base(group) => this.group = group;
     RectangleF Frame()
     {
-        // The native renderer normally invalidates its cached outline when members
-        // move. Our renderer replaces that pass, so refresh the same cache here.
-        // Doing this before bounds/picking as well as painting keeps dragging and
-        // nested groups in sync without expiring layouts on every paint.
-        var contents = group.ContentBoxes();
-        if (contents is null || !contents.SequenceEqual(frameContents))
+        var contents = group.ContentBoxes()?.ToArray() ?? [];
+        var appearance = Groups.Style(group).Appearance;
+        if (contents.SequenceEqual(frameContents) && appearance == layoutAppearance && group.Border == layoutBorder)
+            return frame;
+        base.ExpireLayout();
+        outline?.Dispose(); outline = null;
+        frameContents = contents; layoutAppearance = appearance; layoutBorder = group.Border;
+        frame = title = RectangleF.Empty;
+        if (contents.Length == 0) return frame;
+        var b = contents.Aggregate(RectangleF.Union);
+        switch (group.Border)
         {
-            base.ExpireLayout();
-            frameContents = contents?.ToArray() ?? [];
+            case GH_GroupBorder.Box:
+                b.Inflate(22, 22);
+                var header = 85 + (float)appearance.ExtraHeaderSpace;
+                b.Y -= header; b.Height += header; b.Width = Math.Max(180, b.Width);
+                outline = GroupFrame.Path(b.X, b.Y, b.Width, b.Height, (float)appearance.Radius);
+                title = TitleBounds(b, appearance);
+                break;
+            case GH_GroupBorder.Blob:
+                outline = Grasshopper.GUI.GH_GDI_Util.Freeform_Blob(contents, 20, 2.0);
+                break;
+            case GH_GroupBorder.Rectangles:
+                var boxes = contents.Select(c => { var box = Grasshopper.Kernel.GH_Convert.ToRectangle(c); box.Inflate(30, 30); return box; }).ToList();
+                if (Grasshopper.GUI.GH_GDI_Util.BoxUnion(boxes) is not null)
+                    outline = Grasshopper.GUI.GH_GDI_Util.FilletBoxOutline(boxes, 20);
+                break;
         }
-        var b = base.Bounds;
-        if (b.IsEmpty) return b;
-        b.Inflate(12,12); var header = 85 + (float)Groups.Style(group).Appearance.ExtraHeaderSpace; b.Y -= header; b.Height += header;
-        if(b.Width < 180) b.Width = 180;
-        return b;
+        if (group.Border != GH_GroupBorder.Box)
+        {
+            // Keep the native contour intact. Freeform and borderless groups get a
+            // heading above it, without a rectangular band or replacement frame.
+            if (outline is not null) b = outline.GetBounds();
+            var height = (float)appearance.TitleSize * 1.5f + 7;
+            title = new(b.X, b.Y - height - 12, Math.Max(180, b.Width), height);
+        }
+        frame = RectangleF.Union(b, title);
+        return frame;
     }
     static RectangleF TitleBounds(RectangleF b, GroupAppearance appearance) => new(b.X+18,b.Y+10,b.Width-34,(float)appearance.TitleSize*1.5f+7);
     public new RectangleF Bounds { get => Groups.Style(group).Designed ? Frame() : base.Bounds; set => base.Bounds = value; }
-    public new bool IsPickRegion(PointF point) => Groups.Style(group).Designed ? Frame().Contains(point) : base.IsPickRegion(point);
-    public new bool IsPickRegion(RectangleF rectangle, Grasshopper.Kernel.GH_PickBox pick) => Groups.Style(group).Designed ? (pick == Grasshopper.Kernel.GH_PickBox.Window ? rectangle.Contains(Frame()) : rectangle.IntersectsWith(Frame())) : base.IsPickRegion(rectangle, pick);
-    public new bool IsMenuRegion(PointF point) => Groups.Style(group).Designed ? Frame().Contains(point) : base.IsMenuRegion(point);
+    public new bool IsPickRegion(PointF point)
+    {
+        if (!Groups.Style(group).Designed) return base.IsPickRegion(point);
+        Frame();
+        return title.Contains(point) || (outline?.IsVisible(point) ?? false);
+    }
+    public new bool IsPickRegion(RectangleF rectangle, Grasshopper.Kernel.GH_PickBox pick)
+    {
+        if (!Groups.Style(group).Designed) return base.IsPickRegion(rectangle, pick);
+        Frame();
+        if (frame.IsEmpty) return false;
+        if (pick == Grasshopper.Kernel.GH_PickBox.Window) return rectangle.Contains(frame);
+        if (pick != Grasshopper.Kernel.GH_PickBox.Crossing) return false;
+        return title.IntersectsWith(rectangle) || (outline is not null &&
+            Grasshopper.Kernel.GH_Attributes<GH_Group>.SolvePathBoxPick(outline, rectangle, 1f, pick));
+    }
+    public new bool IsMenuRegion(PointF point) => IsPickRegion(point);
+    bool IGH_TooltipAwareObject.IsTooltipRegion(PointF point) => IsPickRegion(point);
+    bool TitleContains(PointF point) { Frame(); return title.Contains(point); }
     public new GH_ObjectResponse RespondToMouseDoubleClick(GH_Canvas sender, Grasshopper.GUI.GH_CanvasMouseEvent e)
     {
-        if (Groups.Style(group).Designed && TitleBounds(Frame(), Groups.Style(group).Appearance).Contains(e.CanvasLocation))
+        if (Groups.Style(group).Designed && TitleContains(e.CanvasLocation))
         {
             Eto.Forms.Application.Instance.AsyncInvoke(() => GroupEditor.Show(group));
             return GH_ObjectResponse.Handled;
@@ -129,29 +172,34 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
             var resolved = GroupAppearancePolicy.Resolve(appearance, style.Fill, colour.A / 255d * 100, canvasColour);
             var accentColour = ColorTranslator.FromHtml(resolved.Accent);
             var borderColour = ColorTranslator.FromHtml(resolved.Border);
-            using var path = GroupFrame.Path(b.X,b.Y,b.Width,b.Height,(float)appearance.Radius);
-            using var fill = new SolidBrush(colour); g.FillPath(fill,path);
-            if (resolved.Band)
+            var boxed = group.Border == GH_GroupBorder.Box;
+            if (outline is not null)
             {
-                using var band = GroupFrame.Path(b.X,b.Y,b.Width,(float)appearance.TitleSize*1.3f+24,(float)appearance.Radius,true);
-                using var bandFill = new SolidBrush(accentColour); g.FillPath(bandFill,band);
+                using var fill = new SolidBrush(colour); g.FillPath(fill, outline);
+                if (boxed && resolved.Band)
+                {
+                    using var band = GroupFrame.Path(b.X,b.Y,b.Width,(float)appearance.TitleSize*1.3f+24,(float)appearance.Radius,true);
+                    using var bandFill = new SolidBrush(accentColour); g.FillPath(bandFill,band);
+                }
+                if (appearance.BorderWidth > 0 || Selected)
+                {
+                    using var pen = new Pen(borderColour, Selected ? Math.Max(2.5f,(float)appearance.BorderWidth) : (float)appearance.BorderWidth);
+                    g.DrawPath(pen,outline);
+                }
+                if (boxed && appearance.ShowAccent)
+                { using var accent = new SolidBrush(accentColour);g.FillRectangle(accent,b.X+1,b.Y+10,4,b.Height-20); }
             }
-            if (appearance.BorderWidth > 0 || Selected)
-            {
-                using var pen = new Pen(borderColour, Selected ? Math.Max(2.5f,(float)appearance.BorderWidth) : (float)appearance.BorderWidth);
-                g.DrawPath(pen,path);
-            }
-            if (appearance.ShowAccent)
-            { using var accent = new SolidBrush(accentColour);g.FillRectangle(accent,b.X+1,b.Y+10,4,b.Height-20); }
             using var font = new Font(SystemFonts.DefaultFont.FontFamily,(float)appearance.TitleSize,appearance.Bold ? FontStyle.Bold : FontStyle.Regular,GraphicsUnit.Pixel);
-            string name = string.IsNullOrWhiteSpace(group.NickName)?"Untitled group":group.NickName;
+            string name = string.IsNullOrWhiteSpace(group.NickName)?"Group":group.NickName;
             name = GroupAppearancePolicy.FormatTitle(name, appearance.TitleCase);
-            var ink = ColorTranslator.FromHtml(resolved.Text);
+            // Freeform headings sit on the canvas, not on the group's fill/band.
+            var titleInk = Groups.TitleColour(group, appearance, style.Fill, colour.A / 255d * 100, canvasColour);
+            var ink = ColorTranslator.FromHtml(titleInk);
             using var text = new SolidBrush(ink);
             using var format = new StringFormat { Trimming = StringTrimming.EllipsisCharacter, FormatFlags = StringFormatFlags.NoWrap };
-            var titleBounds = TitleBounds(b, appearance);
+            var titleBounds = title;
             g.DrawString(name,font,text,titleBounds,format);
-            if (resolved.Divider)
+            if (boxed && resolved.Divider)
             { using var rule = new Pen(accentColour,1.5f);var y=b.Y+(float)appearance.TitleSize*1.3f+17;g.DrawLine(rule,b.X+18,y,b.X+Math.Min(b.Width-18,170),y); }
         }
         catch(Exception ex) { failed=true;Rhino.RhinoApp.WriteLine("Margin group styling paused: "+ex.Message); }

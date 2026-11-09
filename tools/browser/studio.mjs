@@ -18,6 +18,11 @@ try {
     MarginStudio.connect({native:true,theme:defaults,presets:[defaults],fonts:['Arial'],enabled:true,userPresets:[],groups:fixture});
   });
   await page.locator('#groupsTab').click();
+  await page.evaluate(()=>{fixture.Items[0].Name='';MarginStudio.setGroups(fixture);});
+  assert.equal(await page.locator('#groupTarget').innerText(),'Group','selected unnamed group is not future defaults');
+  assert.equal(await page.locator('#groupPreviewName').innerText(),'Group','blank name has a neutral canvas preview');
+  assert.equal(await page.locator('#groupName').inputValue(),'','fallback does not replace the native blank name');
+  await page.evaluate(()=>{fixture.Items[0].Name='Guide curves';MarginStudio.setGroups(fixture);});
   assert(await page.locator('#groupText').isVisible(),'title colour is visible in Studio');
   assert(await page.locator('#groupText').isEnabled(),'title colour remains editable in automatic mode');
   await page.locator('#groupName').fill('Edited group');

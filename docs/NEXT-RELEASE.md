@@ -24,6 +24,10 @@ Both the normal GH2 Group command and Studio’s **Group selection** button must
 
 Record the tested Rhino and GH2 builds and the observed results before publishing. Windows remains experimental pending interactive validation. The November 9 verification record covers the newer workflows on Mac GH1 only.
 
+## Optional group title in GH1 and GH2
+
+A group can have a blank native name. With **Show title** enabled, Margin displays “Group” for a blank name. Switching **Show title** off hides the whole heading and its reserved space while preserving the group's stored name, membership, outline and chosen styling. Studio must let the author find the group and restore the title, including a borderless group with a blank name. Existing appearances default to showing the title. Verify undo/redo, future defaults, independent copies and saving/reopening on each host.
+
 ## User Stories
 
 1. As a Grasshopper user, I want to choose Blob, so that Margin respects the organic boundary I selected.

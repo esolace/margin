@@ -8,6 +8,7 @@ public sealed record GroupAppearance
     public string? Text { get; init; }
     public string? Accent { get; init; }
     public string? Border { get; init; }
+    public bool ShowTitle { get; init; } = true;
     public double TitleSize { get; init; } = 15;
     public bool Bold { get; init; } = true;
     public double Radius { get; init; } = 8;

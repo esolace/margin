@@ -71,6 +71,9 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 .group-specimen[data-external-title=true] h2{position:absolute;bottom:calc(100% + 12px);left:0;width:100%;padding:0;background:transparent}
 .group-specimen[data-external-title=true]:before{display:none}
 .group-specimen[data-external-title=true] .group-wire{background:var(--g-border)}
+.group-specimen[data-show-title=false]{min-height:0;margin-top:0}
+.group-specimen[data-show-title=false] .group-nodes{margin:23px}
+#groupLookup{max-width:100%;width:100%}
 .group-specimen[data-outline=None]{background:transparent;border-color:transparent}
 .group-nodes{margin:38px 23px 27px}.group-stage{min-height:270px}.group-editor select,#groupCollection{font:inherit;font-size:12px;border:1px solid var(--edge);background:#fff;color:var(--ink);padding:7px;border-radius:5px}.group-editor input[type=number]{width:74px;padding:6px;border:1px solid var(--edge);border-radius:5px;background:white;color:var(--ink)}.group-editor .auto-colour{display:flex;gap:4px;align-items:center;font-size:10px;color:var(--muted)}.group-editor .auto-colour input{margin:0}.group-editor input[type=color]:disabled{opacity:.5}.group-palette{gap:10px}.group-swatch .group-mini{height:72px;position:relative;overflow:hidden;display:block;margin:8px;border:1px solid var(--g-border);border-left:1px solid var(--g-border);border-radius:var(--mini-radius,6px);background:var(--g-fill);color:var(--g-ink)}
 .group-swatch .group-mini:before{content:'';display:var(--g-accent-display);position:absolute;left:0;top:6px;bottom:6px;width:3px;background:var(--g-accent)}.group-swatch .mini-title{display:block;margin:0;padding:7px 8px;height:auto;background:var(--g-title-fill);border:0;border-radius:0;color:var(--g-ink);font-size:12px;font-weight:var(--g-weight)}.group-swatch .mini-rule{display:var(--g-divider-display);height:2px;width:30px;background:var(--g-accent);margin:0 8px;border:0;border-radius:0}.group-swatch .mini-nodes{position:absolute;bottom:10px;left:9px;right:9px;display:flex;justify-content:space-between;height:8px;margin:0;background:none;border:0}.mini-nodes i{height:8px;width:19px;border-radius:2px;background:#e6e9eb;border:1px solid #6a7178}.group-swatch strong{display:flex;align-items:center;justify-content:space-between;padding:0 9px 9px;font-weight:600}.group-swatch small{font-size:9px;font-weight:400;color:#627383}.group-swatch[aria-pressed=true]{outline:2px solid #344f66}.group-palette button:focus-visible{outline:3px solid #344f66;outline-offset:3px}
@@ -99,10 +102,11 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 <div class="preset-area"><div class="section-head"><h2>Group presets</h2><select id="groupCollection" aria-label="Group preset collection"><option value="studio">Studio collection</option><option value="classic">Classic colours</option></select></div><div class="group-palette" id="groupPalette"></div><p class="group-help">Choose a starting point, then make it yours. Component label presets are separate.</p></div>
 </section>
 <aside class="inspector"><div class="inspector-title"><h2>Appearance</h2><p id="groupDocInfo">Select a group on the canvas to edit its appearance.</p></div>
-<form id="groupForm" class="group-editor"><fieldset id="groupFields">
+<form id="groupForm" class="group-editor"><div id="groupLookupRow" hidden><label for="groupLookup">Edit group from this definition</label><select id="groupLookup"></select></div><fieldset id="groupFields">
 <div id="groupIdentity"><label for="groupName">Group name</label><input type="text" id="groupName" maxlength="120" placeholder="Group" autocomplete="off"></div>
 <div class="field"><label for="groupDesigned">Margin styling</label><input type="checkbox" id="groupDesigned" checked></div>
 <h3>Title</h3>
+<div class="field"><label for="groupShowTitle">Show title</label><input type="checkbox" id="groupShowTitle" checked aria-describedby="groupCaseHint"></div>
 <div class="field"><label for="groupTitleCase">Letter case</label><select id="groupTitleCase" aria-describedby="groupCaseHint"></select></div>
 <div class="field"><label for="groupText">Title colour</label><div class="color-value"><label class="auto-colour"><input id="groupAutoText" type="checkbox" checked>Auto</label><input type="color" id="groupText" value="#F4F3F0" aria-label="Group title colour"></div></div>
 <div class="field"><label for="groupHeading">Treatment</label><select id="groupHeading"><option value="Rule">Editorial rule</option><option value="Band">Colour band</option><option value="Plain">Clean title</option></select></div>
@@ -159,7 +163,7 @@ globalThis.MarginGroupAppearance = Object.freeze({
     return {
       rgb: fill, accent, border: a.Border || edge,
       ink: a.Text || (luminance(behind) > policy.lightThreshold ? policy.darkInk : policy.lightInk),
-      band: !externalTitle && heading.band, divider: !externalTitle && heading.divider && a.ShowDivider
+      band: a.ShowTitle !== false && !externalTitle && heading.band, divider: a.ShowTitle !== false && !externalTitle && heading.divider && a.ShowDivider
     };
   }
 });
@@ -461,7 +465,7 @@ $('themeFile').onchange=async()=>{
 };
 
 let groupData={Document:null,Host:'Grasshopper',Items:[]}, latestGroupData=groupData, groupId=null, groupDirty=false, groupPending=false;
-const groupAppearanceDefaults={Text:null,Accent:null,Border:null,TitleSize:15,Bold:true,Radius:8,BorderWidth:1,ShowAccent:true,ShowDivider:true,Heading:'Rule',TitleCase:'AsTyped'};
+const groupAppearanceDefaults={Text:null,Accent:null,Border:null,TitleSize:15,Bold:true,ShowTitle:true,Radius:8,BorderWidth:1,ShowAccent:true,ShowDivider:true,Heading:'Rule',TitleCase:'AsTyped'};
 const groupColours=[['Ink blue','#253E56'],['Aubergine','#493049'],['Forest','#304737'],['Sienna','#573D30'],['Porcelain','#E6E1D8'],['Sage','#AABBA6'],['Rose','#D9B7CA'],['Slate','#657786']];
 const groupPreset=(Name,Fill,Text,Accent,Border,extra={})=>({Name,Fill,Opacity:96,Designed:true,Appearance:{...groupAppearanceDefaults,Text,Accent,Border,...extra}});
 const groupPresets=[
@@ -490,13 +494,13 @@ function loadGroupStyle(t){
  const a={...groupAppearanceDefaults,...t.Appearance};$('groupFill').value=t.Fill;$('groupOpacity').value=t.Opacity;$('groupDesigned').checked=t.Designed;
  for(const key of ['Text','Accent','Border']){$('groupAuto'+key).checked=a[key]===null;$('group'+key).value=a[key]||groupResolved(t)[key==='Text'?'ink':key.toLowerCase()];}
  for(const key of ['TitleSize','Radius','BorderWidth','Heading','TitleCase'])$('group'+key).value=a[key];
- for(const key of ['Bold','ShowAccent','ShowDivider'])$('group'+key).checked=a[key];
+ for(const key of ['Bold','ShowTitle','ShowAccent','ShowDivider'])$('group'+key).checked=a[key];
 }
 function groupStatus(message,error=false){$('groupStatus').textContent=message;$('groupStatus').dataset.error=error;}
 function groupStyle(){const a={};
  for(const key of ['Text','Accent','Border'])a[key]=$('groupAuto'+key).checked?null:$('group'+key).value.toUpperCase();
  for(const key of ['TitleSize','Radius','BorderWidth'])a[key]=+$('group'+key).value;
- for(const key of ['Bold','ShowAccent','ShowDivider'])a[key]=$('group'+key).checked;
+ for(const key of ['Bold','ShowTitle','ShowAccent','ShowDivider'])a[key]=$('group'+key).checked;
  a.Heading=$('groupHeading').value;a.TitleCase=$('groupTitleCase').value;
  return {Fill:$('groupFill').value.toUpperCase(),Opacity:+$('groupOpacity').value,Designed:$('groupDesigned').checked,Appearance:a};
 }
@@ -505,9 +509,15 @@ function groupPreview(){
  const outline=groupData.Items.find(g=>g.Id===groupId)?.Outline||'Box',externalTitle=t.Designed&&outline!=='Box';
  const resolved=groupResolved(t,dark,externalTitle),specimen=$('groupSpecimen');
  specimen.dataset.outline=outline;specimen.dataset.externalTitle=externalTitle;
+ const showTitle=!t.Designed||t.Appearance.ShowTitle;
+ specimen.dataset.showTitle=showTitle;
+ $('groupPreviewName').hidden=!showTitle;
+ $('groupShowTitle').disabled=!t.Designed;
+ $('groupCaseHint').textContent=t.Designed?'Styles the title; your group name stays as typed.':'Turn on Margin styling to control title visibility.';
+ $('groupLookup').disabled=groupDirty||groupPending;
  groupVariables(specimen,t,dark,externalTitle);
  for(const key of ['Text','Accent','Border']){const auto=$('groupAuto'+key).checked;if(auto)$('group'+key).value=resolved[key==='Text'?'ink':key.toLowerCase()];}
- $('groupShowDivider').disabled=t.Appearance.Heading!=='Rule';
+ $('groupShowDivider').disabled=!showTitle||t.Appearance.Heading!=='Rule';
  $('groupPreviewName').textContent=MarginGroupAppearance.formatTitle($('groupName').value.trim()||'Group',t.Appearance.TitleCase,groupPolicy);$('groupHex').textContent=t.Fill;$('groupOpacityOut').textContent=t.Opacity+'%';
  $('groupStage').classList.toggle('native-style',!t.Designed);
  [...$('groupPalette').children].forEach((b,i)=>{const p=visibleGroupPresets()[i];b.setAttribute('aria-pressed',String(t.Designed&&t.Fill===p.Fill&&Math.abs(t.Opacity-p.Opacity)<.25&&Object.keys(groupAppearanceDefaults).every(k=>t.Appearance[k]===p.Appearance[k])));});
@@ -518,23 +528,37 @@ function selectGroup(id){
  const entry=groupData.Items.find(g=>g.Id===id);
  $('groupName').disabled=!entry;$('groupIdentity').hidden=!entry;
  $('groupTarget').textContent=entry ? (entry.Name?.trim() || 'Group') : 'Future groups';
- $('groupDocInfo').textContent=entry?'Editing the group selected on your canvas.':'Select a group on the canvas, or set the appearance for future groups.';
+ $('groupLookup').value=id||'';
+ $('groupDocInfo').textContent=entry?'Editing this group in your definition.':'Select a group on the canvas, or set the appearance for future groups.';
  if(entry){$('groupName').value=entry.Name;loadGroupStyle(entry.Style);}else if(groupData.Defaults){$('groupName').value='';loadGroupStyle(groupData.Defaults);}
  groupPreview();
 }
+// An invisible borderless group has no canvas hit target. Keep a document-scoped
+// picker while a hidden title exists; a new canvas selection takes priority.
+let pickedGroup=null,lastCanvasSelection='';
+const selectionKey=data=>JSON.stringify(data.Items.filter(g=>g.Selected).map(g=>g.Id));
+$('groupLookup').onchange=()=>{
+ pickedGroup=$('groupLookup').value||null;selectGroup(pickedGroup);
+ groupStatus(pickedGroup?'Changes stay in preview until you apply them.':'Choose a style and save it for future groups.');
+};
 function setGroups(data,message,preserveDraft=false){
  latestGroupData=data;
  if(preserveDraft && groupDirty && data.Document===groupData.Document){
   groupStatus(message||'Finish these edits before changing the selected group.');return;
  }
+ if(data.Document!==groupData.Document||selectionKey(data)!==lastCanvasSelection||!data.Items.some(g=>g.Id===pickedGroup))pickedGroup=null;
+ lastCanvasSelection=selectionKey(data);
  const switched=groupDirty&&data.Document!==groupData.Document;
  groupData=data;groupPending=false;$('createGroup').hidden=data.Host==='Grasshopper 2';$('saveGroupDefaults').hidden=data.Host==='Grasshopper 2';
  const selected=data.Items.filter(g=>g.Selected);
- selectGroup(selected.length===1?selected[0].Id:null);
- if(selected.length>1)$('groupDocInfo').textContent='Select one group on the canvas to edit it.';
+ const options=[new Option('Future groups',''),...data.Items.map((g,i)=>new Option((g.Name?.trim()||'Group')+' · '+(i+1)+' · '+g.Members+(g.Members===1?' member':' members'),g.Id))];
+ $('groupLookup').replaceChildren(...options);
+ $('groupLookupRow').hidden=!pickedGroup&&!data.Items.some(g=>g.Style.Designed&&g.Style.Appearance?.ShowTitle===false);
+ selectGroup(pickedGroup||(selected.length===1?selected[0].Id:null));
+ if(!pickedGroup&&selected.length>1)$('groupDocInfo').textContent='Select one group on the canvas to edit it.';
  if(switched)groupStatus('Definition changed. Select a group in this file to edit it.');
  else if(message)groupStatus(message);
- else groupStatus(selected.length===1?'Changes stay in preview until you apply them.':'Choose a style and save it for future groups.');
+ else groupStatus(groupId?'Changes stay in preview until you apply them.':'Choose a style and save it for future groups.');
 }
 function openSection(groups){$('groupStudio').hidden=!groups;$('labelStudio').hidden=groups;$('reset').hidden=groups;$('labelsTab').setAttribute('aria-pressed',String(!groups));$('groupsTab').setAttribute('aria-pressed',String(groups));send('studio-section',{groups});if(groups&&!groupDirty)send('groups-refresh');}
 $('createGroup').onclick=()=>{if(groupDirty&&groupId){groupStatus('Apply or revert your edits before grouping.',true);return;}if(!send('group-create'))groupStatus('Open Margin in Grasshopper to group the selected components.');};

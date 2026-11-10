@@ -61,3 +61,4 @@
 !tools/browser/studio.mjs
 
 !tools/test_gh1_group_editor.py
+!tools/test_gh2_group_editor.py

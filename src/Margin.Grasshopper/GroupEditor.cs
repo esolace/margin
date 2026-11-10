@@ -42,7 +42,7 @@ internal static class GroupEditor
         var edit = activeOnly ? Groups.BeginEdit(snapshot.Document!, entry.Id, entry.Revision)
             : Groups.BeginEdit(doc, snapshot.Document!, entry.Id, entry.Revision);
         var dialog = new Dialog<bool> { Title = "Edit group", Padding = new Padding(20), Resizable = false };
-        var name = new TextBox { Text = entry.Name, PlaceholderText = "Group name", Width = 320 };
+        var name = new TextBox { ID = "group-name", Text = entry.Name, PlaceholderText = "Group name", Width = 320 };
         var titleCase = new DropDown { ID = "group-title-case", Width = 180 };
         foreach (var option in GroupAppearancePolicy.TitleCases) titleCase.Items.Add(new ListItem { Key = option.Key, Text = option.Value });
         titleCase.SelectedKey = entry.Style.Appearance.TitleCase;

@@ -16,6 +16,14 @@ Grasshopper's native outline remains authoritative. Margin adapts rendering and 
 
 Describe validation by operating system and Grasshopper host. Builds without interactive validation remain explicitly experimental; availability must not imply tested feature parity.
 
+## Mac Grasshopper 2 release requirement
+
+The next public alpha requires a passing group workflow in the installed Mac GH2 build. In a disposable definition, save a distinctive group appearance in Studio, create a group with the normal GH2 Group command, and verify its fill and title styling on the canvas. Edit and clear its title, then check the “Group” fallback. Copy the group within the file and into a second definition. Check that the copy keeps its appearance and membership, that edits to each copy are independent, and that saving and reopening the destination preserves the result. Check the outline choices that GH2 itself offers on light and dark canvases.
+
+Both the normal GH2 Group command and Studio’s **Group selection** button must create a native group with the saved appearance. Double-clicking the group title must open Margin’s title editor. Check that saving a title updates the canvas and that right-clicking still opens the native GH2 group menu.
+
+Record the tested Rhino and GH2 builds and the observed results before publishing. Windows remains experimental pending interactive validation. The November 9 verification record covers the newer workflows on Mac GH1 only.
+
 ## User Stories
 
 1. As a Grasshopper user, I want to choose Blob, so that Margin respects the organic boundary I selected.

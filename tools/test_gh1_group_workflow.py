@@ -192,7 +192,7 @@ def verify_hidden_default_reopens(Groups, check):
     from Grasshopper.Kernel.Special import GH_Group, GH_GroupAttributes
     from Grasshopper.Kernel.Parameters import Param_Curve
     from Grasshopper.GUI.Canvas import GH_Canvas, GH_CanvasChannel, GH_Skin
-    from System.Drawing import Bitmap, Color, Graphics, PointF, Size
+    from System.Drawing import Bitmap, Color, Graphics, Point, PointF, Size
     from System.Drawing.Imaging import ImageFormat
     from System.IO import MemoryStream
     document = GH_Document()
@@ -220,7 +220,7 @@ def verify_hidden_default_reopens(Groups, check):
         try:
             canvas.Size = Size(320, 220)
             canvas.Viewport.Zoom = 1
-            canvas.Viewport.Target = PointF(0, 0)
+            canvas.Viewport.Target = Point(0, 0)
             canvas.Viewport.ComputeProjection()
             target = clr.GetClrType(GH_Canvas).GetField('_graphics', System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
             def render(attributes):

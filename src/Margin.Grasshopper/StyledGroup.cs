@@ -20,6 +20,27 @@ public sealed class StyledGroup : GroupAttributes
     readonly GroupObject group;
     bool failed;
     public StyledGroup(GroupObject group) : base(group) => this.group = group;
+    internal RectangleF TitleRegion
+    {
+        get
+        {
+            var style = Groups.Style(group);
+            var b = Bounds;
+            return style.Designed && style.Appearance.ShowTitle && b.Width > 34
+                ? new RectangleF(b.X + 18, b.Y + 10, b.Width - 34, (float)style.Appearance.TitleSize * 1.5f + 7)
+                : RectangleF.Empty;
+        }
+    }
+    public override bool HandleDoubleClick(PointF point)
+    {
+        var title = TitleRegion;
+        if (!title.IsEmpty && title.Contains(point))
+        {
+            Eto.Forms.Application.Instance.AsyncInvoke(() => GroupEditor.Show(group));
+            return true;
+        }
+        return base.HandleDoubleClick(point);
+    }
     public override void Layout(Shape shape)
     {
         base.Layout(shape);
@@ -100,10 +121,13 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
         {
             case GH_GroupBorder.Box:
                 b.Inflate(22, 22);
-                var header = 85 + (float)appearance.ExtraHeaderSpace;
-                b.Y -= header; b.Height += header; b.Width = Math.Max(180, b.Width);
+                if (appearance.ShowTitle)
+                {
+                    var header = 85 + (float)appearance.ExtraHeaderSpace;
+                    b.Y -= header; b.Height += header; b.Width = Math.Max(180, b.Width);
+                    title = TitleBounds(b, appearance);
+                }
                 outline = GroupFrame.Path(b.X, b.Y, b.Width, b.Height, (float)appearance.Radius);
-                title = TitleBounds(b, appearance);
                 break;
             case GH_GroupBorder.Blob:
                 outline = Grasshopper.GUI.GH_GDI_Util.Freeform_Blob(contents, 20, 2.0);
@@ -119,10 +143,13 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
             // Keep the native contour intact. Freeform and borderless groups get a
             // heading above it, without a rectangular band or replacement frame.
             if (outline is not null) b = outline.GetBounds();
-            var height = (float)appearance.TitleSize * 1.5f + 7;
-            title = new(b.X, b.Y - height - 12, Math.Max(180, b.Width), height);
+            if (appearance.ShowTitle)
+            {
+                var height = (float)appearance.TitleSize * 1.5f + 7;
+                title = new(b.X, b.Y - height - 12, Math.Max(180, b.Width), height);
+            }
         }
-        frame = RectangleF.Union(b, title);
+        frame = title.IsEmpty ? b : RectangleF.Union(b, title);
         return frame;
     }
     internal RectangleF TitleRegion { get { Frame(); return title; } }
@@ -141,7 +168,7 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
         if (frame.IsEmpty) return false;
         if (pick == Grasshopper.Kernel.GH_PickBox.Window) return rectangle.Contains(frame);
         if (pick != Grasshopper.Kernel.GH_PickBox.Crossing) return false;
-        return title.IntersectsWith(rectangle) || (outline is not null &&
+        return (!title.IsEmpty && title.IntersectsWith(rectangle)) || (outline is not null &&
             Grasshopper.Kernel.GH_Attributes<GH_Group>.SolvePathBoxPick(outline, rectangle, 1f, pick));
     }
     public new bool IsMenuRegion(PointF point) => IsPickRegion(point);
@@ -190,6 +217,7 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
                 if (boxed && appearance.ShowAccent)
                 { using var accent = new SolidBrush(accentColour);g.FillRectangle(accent,b.X+1,b.Y+10,4,b.Height-20); }
             }
+            if (title.IsEmpty) return;
             using var font = new Font(SystemFonts.DefaultFont.FontFamily,(float)appearance.TitleSize,appearance.Bold ? FontStyle.Bold : FontStyle.Regular,GraphicsUnit.Pixel);
             string name = string.IsNullOrWhiteSpace(group.NickName)?"Group":group.NickName;
             name = GroupAppearancePolicy.FormatTitle(name, appearance.TitleCase);

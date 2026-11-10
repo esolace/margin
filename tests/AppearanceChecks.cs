@@ -18,6 +18,11 @@ static class AppearanceChecks
         check(GroupAppearancePolicy.Resolve(automatic, "#000000", 10, "#FFFFFF").Text == "#23282C",
             "transparent dark fill uses dark text against the actual light canvas");
         var band = automatic with { Heading = "Band", Accent = "#FFFFFF" };
+        check(System.Text.Json.JsonSerializer.Deserialize<GroupAppearance>("""{"Heading":"Band"}""")!.ShowTitle,
+            "legacy group appearances retain a visible title");
+        var hidden = System.Text.Json.JsonSerializer.Deserialize<GroupAppearance>("""{"Heading":"Band","ShowTitle":false,"TitleSize":30}""")!;
+        check(GroupAppearancePolicy.Resolve(hidden, "#111111", 85, "#FFFFFF") is { Band: false, Divider: false }
+            && hidden.ExtraHeaderSpace == 0, "a saved hidden title adds no heading band or space");
         var resolved = GroupAppearancePolicy.Resolve(band, "#000000", 10, "#151C22");
         check(resolved.Text == "#23282C" && resolved.Band && !resolved.Divider, "band title contrast follows its opaque accent instead of the group fill");
         var external = GroupAppearancePolicy.Resolve(automatic with { Heading = "Band" }, "#000000", 100, "#FFFFFF", externalTitle: true);
@@ -50,8 +55,9 @@ static class AppearanceChecks
         from heading in new[] { "Rule", "Band", "Plain" }
         from manual in new[] { false, true }
         from divider in new[] { false, true }
+        from showTitle in new[] { false, true }
         from externalTitle in new[] { false, true }
-        select Vector(fill, opacity, dark, externalTitle, new GroupAppearance { Heading = heading, ShowDivider = divider,
+        select Vector(fill, opacity, dark, externalTitle, new GroupAppearance { ShowTitle = showTitle, Heading = heading, ShowDivider = divider,
             Text = manual ? "#123456" : null, Accent = manual ? "#ABCDEF" : null, Border = manual ? "#654321" : null })).ToArray();
 
     static object Vector(string fill, double opacity, bool dark, bool externalTitle, GroupAppearance appearance) => new

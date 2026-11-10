@@ -81,6 +81,19 @@ def run():
                 graphics.Dispose()
             try:
                 bitmap.Save(str(output / (name + '.png')), ImageFormat.Png)
+                if name == 'selected':
+                    # This edge lies wholly over the outer dark group on both sides.
+                    x, y = int(group.Attributes.Bounds.Left), int(group.Attributes.Bounds.MiddleY)
+                    def luminance(colour):
+                        rgb = [v / 255 for v in (colour.Rb, colour.Gb, colour.Bb)]
+                        linear = [v / 12.92 if v <= .04045 else ((v + .055) / 1.055) ** 2.4 for v in rgb]
+                        return sum(w * v for w, v in zip((.2126, .7152, .0722), linear))
+                    surface = luminance(bitmap.GetPixel(x - 6, y))
+                    contrast = 0
+                    for pixel in range(x - 3, x + 4):
+                        edge = luminance(bitmap.GetPixel(pixel, y))
+                        contrast = max(contrast, (max(edge, surface) + .05) / (min(edge, surface) + .05))
+                    check(contrast >= 3, 'selected border contrasts with the nested dark surface')
                 title = title_region.GetValue(group.Attributes)
                 if title.IsEmpty:
                     return set()

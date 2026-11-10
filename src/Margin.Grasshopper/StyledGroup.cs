@@ -146,11 +146,20 @@ public sealed class StyledGroup : GroupAttributes
             }
             if (appearance.ShowAccent)
                 g.FillRectangle(accent, frame.X + 1, frame.Y + 8, 3, frame.Height - 16);
-            if (appearance.BorderWidth > 0 || group.Selected)
+            if (group.Selected)
             {
-                var border = group.Selected ? skin.Shades[ShadeKind.NormalSelected].Edge : Color.Parse(resolved.Border);
-                var weight = (float)appearance.BorderWidth;
-                using var pen = new Pen(border, group.Selected ? Math.Max(2.5f, weight) : weight);
+                // Native selection normally changes the entire group fill. Keep the
+                // author's fill and use both native selection tones on its outline.
+                var selection = skin.Shades[ShadeKind.NormalSelected];
+                var weight = Math.Max(2.5f, (float)appearance.BorderWidth);
+                using var outer = new Pen(selection.Text, weight + 2);
+                using var inner = new Pen(selection.Apex, weight);
+                g.DrawPath(outer, path);
+                g.DrawPath(inner, path);
+            }
+            else if (appearance.BorderWidth > 0)
+            {
+                using var pen = new Pen(Color.Parse(resolved.Border), (float)appearance.BorderWidth);
                 g.DrawPath(pen, path);
             }
             if (header == 0) return;

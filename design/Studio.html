@@ -528,7 +528,7 @@ function setGroups(data,message,preserveDraft=false){
   groupStatus(message||'Finish these edits before changing the selected group.');return;
  }
  const switched=groupDirty&&data.Document!==groupData.Document;
- groupData=data;groupPending=false;$('createGroup').hidden=data.Host==='Grasshopper 2';$('saveGroupDefaults').hidden=data.Host==='Grasshopper 2';
+ groupData=data;groupPending=false;
  const selected=data.Items.filter(g=>g.Selected);
  selectGroup(selected.length===1?selected[0].Id:null);
  if(selected.length>1)$('groupDocInfo').textContent='Select one group on the canvas to edit it.';

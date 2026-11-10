@@ -45,6 +45,7 @@ public static class Runtime
     static void Ready(object? sender, EventArgs e)
     {
         var editor = Editor.Instance;
+        Groups.WatchCanvas(editor?.Canvas);
         session.Attach(editor?.Canvas);
         if (editor?.Canvas is null || editor.Menu is null) return;
         var display = editor.Menu.Items.OfType<ButtonMenuItem>()

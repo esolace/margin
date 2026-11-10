@@ -18,6 +18,13 @@ try {
     MarginStudio.connect({native:true,theme:defaults,presets:[defaults],fonts:['Arial'],enabled:true,userPresets:[],groups:fixture});
   });
   await page.locator('#groupsTab').click();
+  await page.evaluate(()=>MarginStudio.setGroups({...fixture,Host:'Grasshopper 2'}));
+  assert(await page.locator('#createGroup').isVisible(),'GH2 offers native grouping in Studio');
+  assert(await page.locator('#saveGroupDefaults').isVisible(),'GH2 offers saved group defaults');
+  await page.locator('#createGroup').click();
+  assert.equal(await page.evaluate(()=>messages.at(-1).action),'group-create');
+  await page.locator('#saveGroupDefaults').click();
+  assert.equal(await page.evaluate(()=>messages.at(-1).action),'group-defaults');
   for(const outline of ['Blob','Rectangles','None']){
     await page.evaluate(outline=>{
       fixture.Items[0].Outline=outline;

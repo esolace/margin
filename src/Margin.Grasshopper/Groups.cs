@@ -4,6 +4,7 @@ using System.Text.Json;
 using Grasshopper2.Doc;
 using Grasshopper2.SpecialObjects;
 using Grasshopper2.UI;
+using Grasshopper2.UI.Canvas;
 using Grasshopper2.Undo;
 using Grasshopper2.Undo.Actions;
 using Eto.Drawing;
@@ -138,10 +139,7 @@ public static class Groups
         var actions = new Grasshopper2.Undo.Action[] { new RenameAction(g), new CustomValueAction(g, Key, Effects.ExpireLayout), new PropertyAction(g, nameof(GroupObject.GroupColour), Effects.ExpireLayout, false) };
         g.AddUndoRecord(new Record(new VerbNoun("Edit", "group"), actions));
         g.UserName = name;
-        g.GroupColour = Grasshopper2.Eto.Drawing.OpenColor.MatchFamily(Color.Parse(style.Fill));
-        g.CustomValues.Set(Key, JsonSerializer.Serialize(style));
-        g.Attributes.InvalidateLayout();
-        g.OnLayoutChanged();
+        SetStyle(g, style);
 #else
         var next = Color.FromArgb(alpha, Convert.ToInt32(style.Fill[1..3],16), Convert.ToInt32(style.Fill[3..5],16), Convert.ToInt32(style.Fill[5..7],16));
         g.RecordUndoEvent("Margin: edit group", new EditGroupAction(g, name, next, JsonSerializer.Serialize(style)));
@@ -194,11 +192,72 @@ public static class Groups
         catch (Exception ex) { LastError = ex.Message; Rhino.RhinoApp.Idle -= Scan; }
     }
 #if MARGIN_GH2
+    static Canvas? watchedCanvas;
+    internal static void WatchCanvas(Canvas? canvas)
+    {
+        if (ReferenceEquals(watchedCanvas, canvas)) return;
+        if (watchedCanvas is not null) watchedCanvas.DocumentChanged -= ChangedDocument;
+        watchedCanvas = canvas;
+        if (canvas is null) return;
+        canvas.DocumentChanged += ChangedDocument;
+        if (canvas.Document is { } d) Attach(d);
+    }
+    static void ChangedDocument(object? sender, EventArgs e)
+    {
+        if (watchedCanvas?.Document is { } d) Attach(d);
+    }
+    static void SetStyle(GroupObject g, GroupStyle style)
+    {
+        g.GroupColour = Grasshopper2.Eto.Drawing.OpenColor.MatchFamily(Color.Parse(style.Fill));
+        g.CustomValues.Set(Key, JsonSerializer.Serialize(style));
+        g.Attributes.InvalidateLayout();
+        g.OnLayoutChanged();
+    }
+    // Record.AssociatedIds excludes CreateObjectAction. Bind GH2's typed indexer to
+    // read the actual new instance ID without depending on object order or selection.
+    [System.Runtime.CompilerServices.UnsafeAccessor(System.Runtime.CompilerServices.UnsafeAccessorKind.Method, Name = "get_Item")]
+    static extern Grasshopper2.Undo.Action RecordAction(Record record, int index);
+    static void Created(object? sender, UndoNodeEventArgs e)
+    {
+        // GH2 GroupSelection records this action after inserting the group. Paste has a
+        // separate record, and reopening or moving through undo history creates no node.
+        var record = e.Node.Record;
+        if (!preferences.UseGroupColour || record.Count != 1 ||
+            record.Name.Verbs is not ["Create"] || record.Name.Nouns is not ["Group"]) return;
+        try
+        {
+            if (RecordAction(record, 0) is not CreateObjectAction action ||
+                e.History.Document.Objects.FindGroup(action.InstanceId) is not { } group) return;
+            InstallAttributes(group);
+            SetStyle(group, Defaults);
+            Refresh();
+        }
+        catch (Exception ex) { LastError = ex.Message; Rhino.RhinoApp.WriteLine("Margin group defaults: " + ex.Message); }
+    }
+    static void InstallAttributes(GroupObject g)
+    {
+        if (g.Attributes?.GetType() == typeof(GroupAttributes)) g.OverrideAttributes(new StyledGroup(g));
+    }
+    public static GroupObject Create() => Create(Active ?? throw new InvalidOperationException("Open a Grasshopper definition first."));
+    public static GroupObject Create(Document d)
+    {
+        Attach(d);
+        var group = d.Methods.GroupSelection(null, null, null)
+            ?? throw new InvalidOperationException("Select components on the canvas first.");
+        if (preferences.UseGroupColour && GroupStyle.Parse(Read(group)) != Defaults)
+            throw new InvalidOperationException("The selection was grouped, but its saved appearance could not be applied.");
+        Refresh();
+        return group;
+    }
     public static void Attach(Document d)
     {
         documents.RemoveAll(w => !w.TryGetTarget(out _));
-        if (!documents.Any(w => w.TryGetTarget(out var target) && ReferenceEquals(target, d))) documents.Add(new(d));
-        foreach (var g in Items(d)) if (g.Attributes?.GetType() == typeof(GroupAttributes)) g.OverrideAttributes(new StyledGroup(g));
+        if (!documents.Any(w => w.TryGetTarget(out var target) && ReferenceEquals(target, d)))
+        {
+            documents.Add(new(d));
+            d.Undo.NodeAdded += Created;
+        }
+        foreach (var g in Items(d)) InstallAttributes(g);
     }
     static void Refresh() => Editor.Instance?.Canvas?.Invalidate();
 #else
@@ -285,7 +344,10 @@ public static class Groups
     public static void Stop()
     {
         Rhino.RhinoApp.Idle -= Scan; started = false;
-#if !MARGIN_GH2
+#if MARGIN_GH2
+        WatchCanvas(null);
+        foreach (var weak in documents) if (weak.TryGetTarget(out var doc)) doc.Undo.NodeAdded -= Created;
+#else
         Instances.CanvasCreated -= WatchCanvas;
         if (watchedCanvas is not null) watchedCanvas.DocumentChanged -= ChangedDocument;
         watchedCanvas = null;

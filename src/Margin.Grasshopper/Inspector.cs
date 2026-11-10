@@ -89,13 +89,11 @@ public sealed class Inspector : Form
                     break;
                 case "studio-section": groupsVisible = root.GetProperty("groups").GetBoolean(); break;
                 case "groups-refresh": await GroupReply(); break;
-#if !MARGIN_GH2
                 case "group-create":
                     Groups.Create(); await GroupReply("Selection grouped. Double-click its title on the canvas to edit it."); break;
                 case "group-defaults":
                     Groups.SaveDefaults(JsonSerializer.Deserialize<GroupStyle>(root.GetProperty("style").GetRawText()) ?? throw new InvalidDataException("Missing group style."));
                     await GroupReply("Appearance saved for future groups, including Cmd/Ctrl+G.", preserveDraft: true); break;
-#endif
                 case "group-apply":
                     Groups.BeginEdit(root.GetProperty("document").GetString()!, root.GetProperty("id").GetString()!,
                         root.GetProperty("revision").GetString()!).Save(root.GetProperty("name").GetString() ?? "",

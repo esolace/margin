@@ -3,6 +3,73 @@
 This is a preview. Compilation, package checks and live-host testing are separate
 levels of evidence; none is a claim that every host configuration is supported.
 
+## Installed Mac group candidate, 2026-11-10
+
+The local alpha.7 candidate was exercised on Apple Silicon, macOS 27.0.1
+(26A434), Rhino 9.0.26300.9402 and Grasshopper 2 9.0.26300.9402. The Rhino
+package loaded Margin.GH2 0.5.0.7. The final GH2 assembly module ID was
+`ba90702d-7083-4d1e-965c-249276b76b87`. Public Package Manager alpha.4
+predates these changes.
+
+- **Studio and creation.** In a disposable definition, Studio saved a purple
+  fill at 72% with a 22 px uppercase gold title. Both the native Group command
+  implementation and Studio’s WebKit button produced native groups with that
+  precise style, empty name and selected member. Saving a teal 48% default with
+  the title hidden left the selected purple group intact. Both routes produced
+  the new style, and the original retained its visible title and member
+  relationships when pasted in the same file and in a second definition.
+  Physical Cmd+G also grouped two selected components with the hidden teal style.
+  Empty Studio selection displayed “Select components on the canvas first.”
+  Studio’s document picker found the hidden unnamed group, restored its heading
+  and left its name, members and computer-wide defaults intact. One undo hid
+  the heading again. A fresh process loaded the same module, displayed the
+  saved hidden default in Studio and created matching groups through both
+  routes. Closing and reopening the destination preserved the original purple
+  design under the teal default. Canvas captures of both routes were inspected.
+- **Title editing and mouse.** Double-clicking the heading opened Margin’s editor.
+  The physical Show title and Save controls hid the heading. A right-click
+  opened GH2’s native menu. These mouse checks used the immediately preceding
+  installed build (module ID `ca4536f5-71f5-4f2a-8047-7bf72adadab7`).
+  The final build changed selected-frame contrast. Real Eto controls also
+  exercised Cancel, blank names, display casing, Save and native undo/redo.
+- **GH2 geometry.** The tested host offers a rectangular group. Native light
+  and dark renders show readable automatic titles on their respective
+  backgrounds, including nested frames. A member drag of 70 by 20
+  canvas units expanded the frame. Dragging the hidden-title group’s edge by
+  30 by 30 moved both members without resizing the frame. The native picking
+  and rendering checks cover interior window selection, nested bounds and the
+  space reclaimed by a hidden heading. All 13 checks passed on the final build.
+  The selected edge reached 7.9:1 contrast on the dark-fill fixture.
+  Member and frame drags used the preceding installed build.
+- **Copy and reopen.** The host’s app-local Copy/Paste commands transferred
+  independently styled, identically named siblings and a hidden unnamed parent.
+  Checks resolved copied member IDs, edited source and copies independently,
+  exercised undo/redo, closed and reopened the saved destination, and opened
+  an existing unstyled native group with defaults active. No system clipboard
+  was used.
+- **Mac GH1.** The installed Margin.gha (module ID
+  `e051d243-b27c-4cdf-9231-d212c3f5b789`) passed 58 group workflow, 21 Eto
+  editor and 19 movement checks. Hiding a heading preserved the native name,
+  removed the former pick area, recovered the space and survived undo/redo.
+- **Portable and package checks.** The shared suite passed 77 checks. Studio
+  and C# agreed on 1,536 appearance combinations, 60 casing scenarios and
+  2,987 Unicode mappings. The Playwright Studio workflow passed in Chrome.
+  Both Mac and Windows Yak archives passed the binary and exact-content
+  audits. Interactive Windows testing remains outstanding.
+
+The installed defaults test is in `tools/test_gh2_group_defaults.py`. Its
+before/after phases require two disposable Rhino processes with the same
+installed candidate and a backup of the original Margin preferences. Native
+copy, editor and outline checks use the adjacent GH2 host scripts. Detailed
+local reports and images are under `artifacts/gh2-groups/`. The paired
+restart results are `defaults-before-restart.json` and
+`defaults-after-restart.json`. The `reopened-defaults/` folder contains the
+repeat with a saved .ghz file and the inspected, uncropped images. An initial
+repeat clicked Group selection while Studio was still processing undo. The
+test now waits for Studio’s acknowledgement before checking the next action.
+After verification the original GH2 session, autosave, theme, presets and
+preferences were restored byte for byte. The candidate remains unpublished.
+
 ## Mac
 
 Rhino 9.0.26300.9402, Apple Silicon, .NET 10. GH1 and GH2 were exercised in the

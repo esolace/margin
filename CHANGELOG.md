@@ -2,6 +2,10 @@
 
 ## 0.5.0-alpha.7 — local development
 
+- Create GH2 groups with the saved appearance through Studio and the native Group command. Double-click a visible group title to edit its name and styling.
+- Hide or restore a group heading in GH1 and GH2. The group picker in Studio can recover a hidden unnamed group. Older appearances keep their headings visible.
+- Retain the native GH2 rectangular frame for selection, movement and context menus, including on groups with separated members.
+
 - Apply saved future-group styling to Grasshopper's native Group command, which assigns a standard colour before adding the group. Preserve existing native appearances when copying.
 - Match Studio's automatic title contrast and external heading preview to Blob, Rectangles and None.
 - Keep component labels clear of group titles, including borderless groups.
@@ -10,7 +14,7 @@
 - Keep Box heading bands, accents and corner styling; retain those settings when switching to an outline where they do not apply. Automatic freeform title contrast uses the actual canvas background.
 - Display “Group” for unnamed groups on the canvas and in Studio. Preserve blank native names and distinguish a selected unnamed group from future defaults.
 - Carry complete GH1 group appearance through copying within and between definitions, independent edits, undo/redo and save/reopen. Promote legacy saved styles before copying.
-- Extend native and Studio regression coverage. Windows/GH2 interactive validation remains outstanding; this is not a stable or published release.
+- Extend native and Studio regression coverage. See the November 10 testing record for GH2 candidate coverage. Interactive Windows testing remains outstanding.
 
 ## 0.5.0-alpha.6 — local development
 

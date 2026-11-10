@@ -8,13 +8,12 @@ description: >
   colours, backgrounds, borders and spacing. Includes installed fonts, five
   label styles, eight vivid group presets and a personal label preset library.
   No canvas component is required. Label visibility is remembered across files
-  and restarts. Native GH1 groups get editable canvas titles and saved defaults.
+  and restarts. Native groups support editable or hidden titles and saved appearance defaults.
 
   Experimental Rhino 9 / .NET 10 preview. macOS Apple Silicon has been tested
-  live. Windows builds are available for evaluation; interactive Windows Rhino
-  behavior remains unverified. Use Rhino 9.0.26300 or newer. Rhino 8 is not
-  supported. New group editing and defaults have been live-tested in GH1;
-  GH2 group controls have build coverage only in this update.
+  live. See the bundled README and source testing record for host-specific checks.
+  Windows builds are available for evaluation pending interactive Rhino testing.
+  Requires Rhino 9.0.26300 or newer.
 url: https://github.com/esolace/margin
 icon: icon.png
 keywords:

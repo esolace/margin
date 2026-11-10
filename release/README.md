@@ -18,7 +18,7 @@ The 0.5.0 local preview remembers your label switch across files and Rhino resta
 Rhino chooses the matching Mac or Windows package. Both Grasshopper adapters
 are included; GH2 must also be available in your Rhino installation.
 
-## Groups (0.5.0 preview)
+## Groups in the public alpha.4 preview
 
 In GH1, create groups normally with **Cmd/Ctrl+G**, or use **Group selection** in Studio. Groups receive the designed frame automatically: a
 larger internal heading, accent edge, and divider, distinct from component labels.
@@ -37,18 +37,25 @@ Changing defaults does not recolour existing groups; pasted groups with explicit
 colours keep them. Native background colours work with any canvas or workspace.
 Component label presets, including Petal, remain independent.
 
-GH2 retains its existing group editor. This update adds remembered label visibility
-to both GH1 and GH2; new native-group defaults and on-canvas heading editing are
-currently GH1 features. Names and membership stay native. GH1 retains exact native
-fill colours without Margin; the designed heading requires Margin. The local alpha.7 preview carries complete GH1 group appearance with copied groups,
-including across definitions and after save/reopen. Older saved appearances are
-promoted automatically. Public alpha.4 retains the earlier copy-appearance limitation.
+In the public alpha.4 package, GH2 uses its existing group editor. GH1 stores
+the group name, membership and fill in the native file. Margin supplies the
+designed heading. Public alpha.4 has limited support for copying custom appearance.
 
 0.5.0-alpha.4 is an experimental Package Manager prerelease. Mac GH1 group editing,
 undo/redo, failure recovery and restart persistence have been tested live. Windows
 packages compile; interactive Windows Rhino testing remains outstanding.
 
 ## Local alpha.7 group improvements
+
+In the Mac GH2 candidate, **Use appearance for future groups** saves a style on
+this computer. Both the native **Group** command and Studio’s **Group selection**
+use it. Double-click a visible title to edit it. GH2 keeps its rectangular
+frame, draggable edge and native group menu.
+
+In GH1 and GH2, turn off **Show title** to remove the heading and its space.
+The name and members stay with the group. To restore a hidden heading, open
+the Groups tab, choose the group under **Edit group from this definition**,
+enable **Show title** and click **Apply to group**.
 
 The local alpha.7 build respects GH1's native **Box, Blob, Rectangles and None**
 outline choices for drawing, selection and context menus. Box retains its internal

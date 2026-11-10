@@ -18,7 +18,8 @@ def public_files():
              'design/Studio.html', 'design/group-appearance-policy.json', 'design/group-appearance.js', 'tools/sync_studio_policy.py', 'tools/test_studio_appearance.mjs', 'docs/TESTING.md', 'docs/images/studio.png',
              'release/BUILDING.md', 'release/README.md', 'release/manifest.yml',
              'release/icon.png', 'release/icon.svg', 'tools/build_release.py',
-             'tools/build_gh2.py', 'tools/test_gh2_staging.py', 'tools/test_gh2_group_editor.py', 'tools/test_gh2_group_copy.py',
+             'tools/build_gh2.py', 'tools/test_gh2_staging.py', 'tools/test_gh2_group_editor.py',
+             'tools/test_gh2_group_outline.py', 'tools/test_gh2_group_copy.py',
              'tools/test_gh1_group_movement.py', 'tools/test_gh1_group_workflow.py', 'tools/test_gh1_group_editor.py',
              '.github/workflows/ci.yml', '.github/ISSUE_TEMPLATE/bug_report.yml']
     result = [ROOT / name for name in fixed]

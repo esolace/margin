@@ -8,7 +8,7 @@ Margin gives Grasshopper component labels and groups a considered visual appeara
 The visual treatment of a Grasshopper group, including its fill, frame and title styling.
 
 **Native outline**:
-The group boundary chosen in Grasshopper: None, Box, Blob or Rectangles. Margin's visual treatment respects this choice.
+The boundary Grasshopper uses to enclose group members. Grasshopper 1 offers None, Box, Blob and Rectangles. The tested Grasshopper 2 build uses a rectangular frame, with a draggable border and an interior available for window selection.
 
 **Title casing**:
 The way a group's name is displayed using uppercase, lowercase or other capitalisation, without changing the name itself.

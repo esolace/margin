@@ -8,7 +8,7 @@ levels of evidence; none is a claim that every host configuration is supported.
 The local alpha.7 candidate was exercised on Apple Silicon, macOS 27.0.1
 (26A434), Rhino 9.0.26300.9402 and Grasshopper 2 9.0.26300.9402. The Rhino
 package loaded Margin.GH2 0.5.0.7. The final GH2 assembly module ID was
-`ba90702d-7083-4d1e-965c-249276b76b87`. Public Package Manager alpha.4
+`488d5fbe-d1ea-4976-b40d-5431804de3af`. Public Package Manager alpha.4
 predates these changes.
 
 - **Studio and creation.** In a disposable definition, Studio saved a purple
@@ -26,29 +26,34 @@ predates these changes.
   saved hidden default in Studio and created matching groups through both
   routes. Closing and reopening the destination preserved the original purple
   design under the teal default. Canvas captures of both routes were inspected.
-- **Title editing and mouse.** Double-clicking the heading opened Margin’s editor.
-  The physical Show title and Save controls hid the heading. A right-click
-  opened GH2’s native menu. These mouse checks used the immediately preceding
-  installed build (module ID `ca4536f5-71f5-4f2a-8047-7bf72adadab7`).
-  The final build changed selected-frame contrast. Real Eto controls also
-  exercised Cancel, blank names, display casing, Save and native undo/redo.
+- **Title editing and mouse.** On the final installed build, double-clicking
+  a heading opened Margin’s editor. Saving a rename and cancelling a second
+  rename retained the first name. Clearing the name and switching off Show
+  title hid the entire heading. Cmd+Z restored the name and heading together.
+  Redo restored the blank, hidden state. Right-click opened GH2’s own group
+  menu with its name, colour, member and state controls.
 - **GH2 geometry.** The tested host offers a rectangular group. Native light
   and dark renders show readable automatic titles on their respective
   backgrounds, including nested frames. A member drag of 70 by 20
   canvas units expanded the frame. Dragging the hidden-title group’s edge by
   30 by 30 moved both members without resizing the frame. The native picking
   and rendering checks cover interior window selection, nested bounds and the
-  space reclaimed by a hidden heading. All 13 checks passed on the final build.
+  space reclaimed by a hidden heading. All 20 native picking, rendering and editor-colour checks passed on the reviewed build.
   The selected edge reached 7.9:1 contrast on the dark-fill fixture.
-  Member and frame drags used the preceding installed build.
+  Both mouse drags were repeated on the final installed build.
+- **Native appearance.** Show title is available in both hosts with Margin styling off. Hiding a named group removes its heading and restores the native frame used for a blank name. Turning the title back on restores the host’s original presentation. A blank native name follows the host’s own display rules in this mode. A blank Margin-styled title displays “Group” when shown. The GH2 editor’s automatic colour swatch matches the title drawn over a nested group on both canvas skins.
 - **Copy and reopen.** The host’s app-local Copy/Paste commands transferred
   independently styled, identically named siblings and a hidden unnamed parent.
   Checks resolved copied member IDs, edited source and copies independently,
   exercised undo/redo, closed and reopened the saved destination, and opened
   an existing unstyled native group with defaults active. No system clipboard
   was used.
+  This GH2 Edit menu has no separate Ungroup command. Deleting just the
+  group through native selection preserved both members and their positions.
+  Undo restored its original membership and appearance. Redo removed only
+  the group.
 - **Mac GH1.** The installed Margin.gha (module ID
-  `e051d243-b27c-4cdf-9231-d212c3f5b789`) passed 58 group workflow, 21 Eto
+  `28697b4d-5372-477e-9e55-ec50eb9ec02c`) passed 63 group workflow, 21 Eto
   editor and 19 movement checks. Hiding a heading preserved the native name,
   removed the former pick area, recovered the space and survived undo/redo.
 - **Portable and package checks.** The shared suite passed 77 checks. Studio
@@ -63,11 +68,7 @@ installed candidate and a backup of the original Margin preferences. Native
 copy, editor and outline checks use the adjacent GH2 host scripts. Detailed
 local reports and images are under `artifacts/gh2-groups/`. The paired
 restart results are `defaults-before-restart.json` and
-`defaults-after-restart.json`. The `reopened-defaults/` folder contains the
-repeat with a saved .ghz file and the inspected, uncropped images. An initial
-repeat clicked Group selection while Studio was still processing undo. The
-test now waits for Studio’s acknowledgement before checking the next action.
-After verification the original GH2 session, autosave, theme, presets and
+`defaults-after-restart.json`. The before phase also exercises reopening the saved .ghz file. Native light and dark renders are in `outline/`. After verification the original GH2 session, autosave, theme, presets and
 preferences were restored byte for byte. The candidate remains unpublished.
 
 ## Mac

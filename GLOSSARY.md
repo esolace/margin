@@ -17,5 +17,9 @@ The way a group's name is displayed using uppercase, lowercase or other capitali
 A duplicate of an existing group that retains its appearance and can be edited independently of the original.
 
 **Unnamed group**:
-A group without a user-supplied name, displayed as “Group” on the canvas and in Studio.
+A group without a user-supplied name. Studio identifies it as “Group”, and the canvas displays “Group” when its title is visible.
 _Avoid_: Untitled group
+
+
+**Title visibility**:
+Whether the canvas displays a group’s title. A hidden title preserves the group’s name and appearance.

@@ -47,8 +47,11 @@ static class SessionChecks
             // A real filesystem failure must not flip the saved or active choice.
             File.Delete(path); Directory.CreateDirectory(path);
             try { session.SetEnabled(false); throw new Exception("Expected preferences failure"); }
-            catch (IOException) { check(session.DesiredEnabled && session.EffectiveEnabled && first.Draw() == 1,
-                "failed preference save leaves desired and effective visibility unchanged"); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                check(session.DesiredEnabled && session.EffectiveEnabled && first.Draw() == 1,
+                    "failed preference save leaves desired and effective visibility unchanged");
+            }
             Directory.Delete(path);
             session.SetEnabled(false);
             check(!session.DesiredEnabled && !session.EffectiveEnabled && !PreferencesStore.Load(path).LabelsEnabled,

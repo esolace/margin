@@ -53,7 +53,7 @@ public static class GroupAppearancePolicy
     static double Luminance(double[] rgb) => rgb.Select((v, i) => v * rules.LuminanceWeights[i]).Sum() / 255;
     static string Hex(IEnumerable<double> rgb) => "#" + string.Concat(rgb.Select(v => ((int)v).ToString("X2")));
     public static bool IsHeading(string heading) => heading is not null && rules.Headings.ContainsKey(heading);
-    public static double ExtraHeaderSpace(GroupAppearance appearance) => Math.Max(0, (appearance.TitleSize - 15) * 1.5) + rules.Headings[appearance.Heading].ExtraSpace;
+    public static double ExtraHeaderSpace(GroupAppearance appearance) => !appearance.ShowTitle ? 0 : Math.Max(0, (appearance.TitleSize - 15) * 1.5) + rules.Headings[appearance.Heading].ExtraSpace;
 
     public static ResolvedGroupAppearance Resolve(GroupAppearance appearance, string fill, double opacity, string canvas, bool externalTitle = false)
     {
@@ -68,6 +68,6 @@ public static class GroupAppearancePolicy
         var background = Rgb(canvas);
         var behind = externalTitle ? background : heading.Band ? Rgb(accent) : rgb.Select((v, i) => v * opacity / 100 + background[i] * (1 - opacity / 100)).ToArray();
         var ink = appearance.Text ?? (Luminance(behind) > rules.LightThreshold ? rules.DarkInk : rules.LightInk);
-        return new(ink, accent, appearance.Border ?? edge, !externalTitle && heading.Band, !externalTitle && heading.Divider && appearance.ShowDivider);
+        return new(ink, accent, appearance.Border ?? edge, appearance.ShowTitle && !externalTitle && heading.Band, appearance.ShowTitle && !externalTitle && heading.Divider && appearance.ShowDivider);
     }
 }

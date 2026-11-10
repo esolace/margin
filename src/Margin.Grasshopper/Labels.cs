@@ -31,7 +31,7 @@ public sealed class Labels : ILabelRenderer
             // Component labels must leave the group heading readable, including None.
             var headings = sender.Document.Objects.OfType<Grasshopper.Kernel.Special.GH_Group>()
                 .Where(g => Groups.Style(g).Designed && g.Attributes is StyledGroup)
-                .Select(g => From(((StyledGroup)g.Attributes).TitleRegion)).ToArray();
+                .Select(g => From(((StyledGroup)g.Attributes).TitleRegion)).Where(b => b.Valid).ToArray();
             LastDrawn = Draw(sender.Graphics, items, Theme, headings);
         }
         catch (Exception ex)

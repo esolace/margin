@@ -20,6 +20,9 @@ var label=LabelLayout.Place(component,100,30,theme,new[]{component});
 Check(label==new Box(80,58,100,30),"label centred above component");
 Check(LabelLayout.Place(component,100,30,theme,new[]{component,label!.Value})==new Box(80,152,100,30),"collision moves label to other side");
 Check(LabelLayout.Place(component,100,30,theme,new[]{component,label.Value,new Box(80,152,100,30)}) is null,"crowded labels hidden");
+var overlapsAllowed = theme with { AvoidOverlap = false };
+Check(LabelLayout.Place(component, 100, 30, overlapsAllowed, [], [label.Value]) == new Box(80,152,100,30),
+    "a component label clears a group heading even when label-to-label overlap is allowed");
 Check(LabelLayout.Place(component,double.NaN,30,theme,Array.Empty<Box>()) is null,"invalid label dimensions ignored");
 Check(SnapEngine.Find(component,new[]{new Box(105,250,60,40)},1).Dx==5,"nearest horizontal snap");
 Check(SnapEngine.Find(component,new[]{new Box(110,250,60,40)},1).GuideX is null,"outside tolerance does not snap");

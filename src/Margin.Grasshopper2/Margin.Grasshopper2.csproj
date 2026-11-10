@@ -18,6 +18,7 @@
     <Using Remove="System.Drawing" />
     <Compile Include="../Margin.Grasshopper/Groups.cs" Link="Groups.cs" />
     <Compile Include="../Margin.Grasshopper/GroupEditing.cs" Link="GroupEditing.cs" />
+    <Compile Include="../Margin.Grasshopper/GroupEditor.cs" Link="GroupEditor.cs" />
     <Compile Include="../Margin.Grasshopper/StyledGroup.cs" Link="StyledGroup.cs" />
     <Compile Include="../Margin.Grasshopper/Inspector.cs" Link="Studio/Inspector.cs" />
     <Compile Include="../Margin.Grasshopper/StudioWindow.cs" Link="Studio/StudioWindow.cs" />

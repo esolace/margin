@@ -29,7 +29,7 @@ globalThis.MarginGroupAppearance = Object.freeze({
     return {
       rgb: fill, accent, border: a.Border || edge,
       ink: a.Text || (luminance(behind) > policy.lightThreshold ? policy.darkInk : policy.lightInk),
-      band: !externalTitle && heading.band, divider: !externalTitle && heading.divider && a.ShowDivider
+      band: a.ShowTitle !== false && !externalTitle && heading.band, divider: a.ShowTitle !== false && !externalTitle && heading.divider && a.ShowDivider
     };
   }
 });

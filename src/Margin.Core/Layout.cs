@@ -16,13 +16,21 @@ public static class LabelLayout
     // Keep labels associated with their component. If all nearby placements collide,
     // omit the label instead of drifting it across someone else's definition.
     public static Box? Place(Box component, double width, double height, Theme theme, IReadOnlyList<Box> occupied)
+        => Place(component, width, height, theme, occupied, Array.Empty<Box>());
+
+    public static Box? Place(Box component, double width, double height, Theme theme, IReadOnlyList<Box> occupied, IReadOnlyList<Box> headings)
     {
         if (!component.Valid || !double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0) return null;
         double x = component.CenterX - width / 2;
         var preferred = new Box(x, theme.Below ? component.Bottom + theme.Gap : component.Y - theme.Gap - height, width, height);
-        if (!theme.AvoidOverlap) return preferred;
+        if (!theme.AvoidOverlap && headings.Count == 0) return preferred;
         var alternatives = new[] { preferred, new Box(x, theme.Below ? component.Y - theme.Gap - height : component.Bottom + theme.Gap, width, height) };
-        foreach (var b in alternatives) if (!occupied.Any(o => o.Intersects(b.Inflate(3)))) return b;
+        foreach (var candidate in alternatives)
+        {
+            var padded = candidate.Inflate(3);
+            if (headings.Any(h => h.Intersects(padded))) continue;
+            if (!theme.AvoidOverlap || !occupied.Any(o => o.Intersects(padded))) return candidate;
+        }
         return null;
     }
 }

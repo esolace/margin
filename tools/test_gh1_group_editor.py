@@ -68,6 +68,20 @@ def run():
         io2=GH_DocumentIO();check(io2.Open(file),'title fixture reopens');docs.append(io2.Document)
         restored=io2.Document.FindObject(group.InstanceGuid,True)
         check(native.Groups.Style(restored).Appearance.Text=='#FF35A0' and native.Groups.Style(restored).Appearance.TitleCase=='Uppercase','reopened definition retains colour and letter case')
+        show_title=reopenedDialog.FindChild(clr.GetClrType(Control),'group-show-title')
+        check(show_title.Checked==True,'existing native group title defaults to visible')
+        before=group.Attributes.Bounds
+        show_title.Checked=False;reopenedDialog.AbortButton.PerformClick()
+        check(native.Groups.Style(group).Appearance.ShowTitle,'Cancel keeps visible title')
+        dialog=edit();dialog.FindChild(clr.GetClrType(Control),'group-show-title').Checked=False;dialog.DefaultButton.PerformClick()
+        check(native.Groups.Style(group).Designed and not native.Groups.Style(group).Appearance.ShowTitle and group.NickName=='Guide curves','hiding the title preserves name and styling')
+        after=group.Attributes.Bounds
+        check(after.Top>before.Top and after.Bottom==before.Bottom,'hidden title reclaims header without moving members')
+        from System.Drawing import PointF
+        old_heading=PointF(before.X+25,before.Y+19)
+        check(not group.Attributes.IsPickRegion(old_heading) and not group.Attributes.IsMenuRegion(old_heading),'former heading has no pick or menu target')
+        d.UndoServer.PerformUndo();check(native.Groups.Style(group).Appearance.ShowTitle and group.Attributes.Bounds==before,'undo restores heading and layout')
+        d.UndoServer.PerformRedo();check(not native.Groups.Style(group).Appearance.ShowTitle and group.Attributes.Bounds==after,'redo hides the heading again')
         from Grasshopper.GUI.Canvas import GH_Skin
         from Grasshopper.Kernel.Special import GH_GroupBorder
         from System.Drawing import Color as DrawingColor

@@ -72,7 +72,7 @@ def verify_cross_definition(Groups, GroupStyle, source, original, check):
         source.AddObject(outer, False)
         snapshot = Groups.Snapshot(source); entry = next(e for e in snapshot.Items if e.Id == str(outer.InstanceGuid))
         other = GroupStyle.Parse(json.dumps({'Fill':'#117755','Opacity':80,'Designed':True,
-            'Appearance':{'TitleCase':'Lowercase','Text':'#FFFFFF','TitleSize':19,'Heading':'Plain'}}))
+            'Appearance':{'ShowTitle':False,'TitleCase':'Lowercase','Text':'#FFFFFF','TitleSize':19,'Heading':'Plain'}}))
         Groups.BeginEdit(source, snapshot.Document, entry.Id, entry.Revision).Save('', other)
         original.Border = GH_GroupBorder.Blob
         members = [o for o in source.Objects if not isinstance(o, GH_Group)]
@@ -132,7 +132,7 @@ def verify_legacy(Groups, GroupStyle, check):
         # Fixture in the pre-portable format; observe behaviour only through the native group workflow.
         d.ValueTable.SetValue('Margin.GroupStyle.'+group.InstanceGuid.ToString('N'),legacy)
         Groups.Attach(d)
-        check(Groups.Style(group).Appearance.Equals(GroupStyle.Parse(legacy).Appearance), 'existing definition appearance loads unchanged')
+        check(Groups.Style(group).Appearance.ShowTitle and Groups.Style(group).Appearance.Equals(GroupStyle.Parse(legacy).Appearance), 'existing definition keeps its visible title and original appearance')
         duplicate=GH_Document.DuplicateDocument(d);duplicate.MutateAllIds();Groups.Attach(duplicate)
         copied=next(g for g in duplicate.Objects if isinstance(g,GH_Group))
         check(Groups.Style(copied).Equals(Groups.Style(group)), 'legacy appearance survives first copy without an intervening edit')

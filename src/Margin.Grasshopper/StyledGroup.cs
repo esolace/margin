@@ -1,4 +1,5 @@
 using Margin.Core;
+using System.Runtime.CompilerServices;
 
 #if MARGIN_GH2
 using Eto.Drawing;
@@ -8,7 +9,6 @@ using Grasshopper2.UI.Skinning;
 using Grasshopper2.Doc.Attributes;
 using Grasshopper2.Extensions;
 using Grasshopper2.UI.Animation;
-using System.Runtime.CompilerServices;
 #else
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -56,7 +56,7 @@ public sealed class StyledGroup : GroupAttributes
         // Match GH2's native member/pin padding and empty-group width.
         var frame = members.AdjustSides(members.Width == 0 ? 42 : 14, 14);
         float header = style.Designed && !failed ? HeaderHeight(style)
-            : string.IsNullOrWhiteSpace(group.DisplayName) ? 0 : 18;
+            : style.Appearance.ShowTitle && !string.IsNullOrWhiteSpace(group.DisplayName) ? 18 : 0;
         Bounds = frame.AdjustSides(0, header, 0, 0);
         PinAttributes.LayoutPins(group);
     }
@@ -77,9 +77,11 @@ public sealed class StyledGroup : GroupAttributes
         FitMembers(Groups.Style(group), 0);
     }
 
-    Color BackdropAt(PointF point, Skin skin)
+    PointF TitleOrigin => new(Bounds.X + 8, Bounds.Y + 4);
+
+    internal Color TitleBackdrop(Color background)
     {
-        var background = skin.Canvas.Background;
+        var point = TitleOrigin;
         if (group.Document is not { } document) return background;
         // Groups are painted in native z-order. An inner heading can sit over
         // its parent's translucent fill even when both titles use automatic ink.
@@ -93,6 +95,43 @@ public sealed class StyledGroup : GroupAttributes
         return background;
     }
 
+    // GH2 draws frame, hover and title in a single method. Match its unnamed
+    // frame when hiding a title, using the same skin, pin and drag interfaces.
+    void DrawNativeFrame(Context context, Skin skin, bool showTitle)
+    {
+        var fill = group.Selected ? skin.Shades[ShadeKind.NormalSelected].Apex : OpenColor.Create(group.GroupColour, 3);
+        var edge = group.Selected ? skin.Shades[ShadeKind.NormalSelected].Edge : OpenColor.Create(group.GroupColour, 8);
+        paintedFill = fill.WithA(.7f);
+        if (showTitle)
+        {
+            if (!string.IsNullOrWhiteSpace(group.DisplayName))
+            {
+                bandBounds = new RectangleF(Bounds.X, Bounds.Y, Bounds.Width, 18);
+                paintedBand = edge;
+            }
+            base.Draw(context, skin);
+            return;
+        }
+        var corners = skin.Shape.Corners;
+        if (PinAttributes.DrawPinsAbove(context, skin, group) > 0) corners = corners.WithRadii(0f, null, 0f);
+        if (PinAttributes.DrawPinsBelow(context, skin, group) > 0) corners = corners.WithRadii(null, 0f, null, 0f);
+        using var outline = Bounds.ToRoundedRectangle(corners);
+        var graphics = context.Graphics;
+        graphics.FillPath(paintedFill, outline);
+        var hover = context.Animate(DragAnimation(this));
+        var interior = Bounds.AdjustSides(-12 * hover);
+        SetDraggingBounds(this, interior);
+        if (hover > 0)
+        {
+            var hoverColour = group.Selected ? fill.Darken(.2f) : OpenColor.Create(group.GroupColour, 4);
+            using var border = new GraphicsPath();
+            border.AddRectangle(interior);
+            border.AddPath(outline);
+            graphics.FillPath(hoverColour.WithA(.5f), border);
+        }
+        graphics.DrawPath(edge, outline);
+    }
+
     public override void Draw(Context context, Skin skin)
     {
         var style = Groups.Style(group);
@@ -101,9 +140,7 @@ public sealed class StyledGroup : GroupAttributes
         bandBounds = RectangleF.Empty;
         if (failed || !style.Designed)
         {
-            paintedFill = (group.Selected ? skin.Shades[ShadeKind.NormalSelected].Apex
-                : OpenColor.Create(group.GroupColour, 3)).WithA(.7f);
-            base.Draw(context, skin);
+            DrawNativeFrame(context, skin, style.Appearance.ShowTitle);
             return;
         }
         try
@@ -121,8 +158,8 @@ public sealed class StyledGroup : GroupAttributes
             g.FillPath(paintedFill, path);
 
             var header = HeaderHeight(style);
-            var textOrigin = new PointF(frame.X + 8, frame.Y + 4);
-            var background = BackdropAt(textOrigin, skin).ToHex(false);
+            var textOrigin = TitleOrigin;
+            var background = TitleBackdrop(skin.Canvas.Background).ToHex(false);
             var resolved = GroupAppearancePolicy.Resolve(appearance, style.Fill, style.Opacity, background);
             var accent = Color.Parse(resolved.Accent);
             if (resolved.Band && header > 0)
@@ -277,10 +314,27 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
         }
         return base.RespondToMouseDoubleClick(sender, e);
     }
+    // The native renderer has separate shape and tag passes. Keep the exact
+    // shape, selection colours and zoom culling when suppressing its tags.
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "IsOutlineValid")]
+    static extern bool IsNativeOutlineValid(GH_GroupAttributes attributes);
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RenderGroupShape")]
+    static extern void DrawNativeShape(GH_GroupAttributes attributes, GH_Canvas canvas);
+
     public new void RenderToCanvas(GH_Canvas canvas, GH_CanvasChannel channel)
     {
         var style = Groups.Style(group);
-        if (failed || !style.Designed) { base.RenderToCanvas(canvas,channel); return; }
+        if (failed || !style.Designed)
+        {
+            if (style.Appearance.ShowTitle) base.RenderToCanvas(canvas, channel);
+            else if (channel == GH_CanvasChannel.Groups)
+            {
+                if (!IsNativeOutlineValid(this)) base.ExpireLayout();
+                var bounds = base.Bounds;
+                if (!bounds.IsEmpty && canvas.Viewport.IsVisible(ref bounds, 10f)) DrawNativeShape(this, canvas);
+            }
+            return;
+        }
         if(channel != GH_CanvasChannel.Groups) return;
         var g = canvas.Graphics; var state = g.Save();
         try

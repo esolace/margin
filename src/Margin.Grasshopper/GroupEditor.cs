@@ -49,9 +49,10 @@ internal static class GroupEditor
         var colour = new ColorPicker { ID = "group-fill", Value = Color.Parse(entry.Style.Fill) };
         var autoText = new CheckBox { ID = "group-title-auto", Text = "Automatic title contrast", Checked = entry.Style.Appearance.Text is null };
 #if MARGIN_GH2
-        var canvasHex = Editor.Instance?.Canvas?.Skin.Canvas.Background.ToHex(false) ?? "#D4D0C8";
+        var canvasColour = Editor.Instance?.Canvas?.Skin.Canvas.Background ?? Color.Parse("#D4D0C8");
+        var backdrop = group.Attributes is StyledGroup styled ? styled.TitleBackdrop(canvasColour) : canvasColour;
         string TitleInk(GroupAppearance a, string fill, double opacity) =>
-            GroupAppearancePolicy.Resolve(a, fill, opacity, canvasHex).Text;
+            GroupAppearancePolicy.Resolve(a, fill, opacity, backdrop.ToHex(false)).Text;
 #else
         var canvasColour = GH_Skin.canvas_back;
         var canvasHex = $"#{canvasColour.R:X2}{canvasColour.G:X2}{canvasColour.B:X2}";
@@ -75,8 +76,7 @@ internal static class GroupEditor
         colour.ValueChanged += (_, _) => UpdateAutomaticColour();
         opacity.ValueChanged += (_, _) => UpdateAutomaticColour();
         var designed = new CheckBox { Text = "Margin styling", Checked = entry.Style.Designed };
-        var showTitle = new CheckBox { ID = "group-show-title", Text = "Show title", Checked = entry.Style.Appearance.ShowTitle, Enabled = entry.Style.Designed };
-        designed.CheckedChanged += (_, _) => showTitle.Enabled = designed.Checked == true;
+        var showTitle = new CheckBox { ID = "group-show-title", Text = "Show title", Checked = entry.Style.Appearance.ShowTitle };
         var defaults = new CheckBox { Text = "Use this appearance for future groups" };
         var error = new Label { TextColor = Colors.IndianRed, Wrap = WrapMode.Word, Width = 320 };
         var apply = new Button { Text = "Save" };

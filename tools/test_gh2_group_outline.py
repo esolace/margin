@@ -25,6 +25,8 @@ def run():
         assert condition, description
 
     try:
+        import clr
+        from Eto.Forms import Control
         from Eto.Drawing import Bitmap, Graphics, ImageFormat, PixelFormat, PointF
         from Grasshopper2.Doc import Document, ObjectSelection
         from Grasshopper2.Eto.Drawing import Context
@@ -57,8 +59,8 @@ def run():
         attach.Invoke(None, Array[Object]([doc]))
 
         # Seed just this disposable fixture, including a fully transparent rule title.
-        def appearance(item, visible=True, text=None, fill='#FFFFFF', opacity=0):
-            data = {'Fill': fill, 'Opacity': opacity, 'Designed': True,
+        def appearance(item, visible=True, text=None, fill='#FFFFFF', opacity=0, designed=True):
+            data = {'Fill': fill, 'Opacity': opacity, 'Designed': designed,
                     'Appearance': {'ShowTitle': visible, 'Text': text, 'ShowAccent': False,
                                    'Heading': 'Plain', 'BorderWidth': 1, 'TitleSize': 17}}
             item.CustomValues.Set('Margin.GroupStyle', json.dumps(data))
@@ -94,6 +96,12 @@ def run():
                         edge = luminance(bitmap.GetPixel(pixel, y))
                         contrast = max(contrast, (max(edge, surface) + .05) / (min(edge, surface) + .05))
                     check(contrast >= 3, 'selected border contrasts with the nested dark surface')
+                if name.startswith('native-'):
+                    # Read the centre of the top of the frame, away from its text and edges.
+                    b = group.Attributes.Bounds
+                    sample = bitmap.GetPixel(int(b.Left + 8), int(b.Top + 6))
+                    body = bitmap.GetPixel(int(b.Left + 8), int(b.MiddleY))
+                    return sample.ToHex(False), body.ToHex(False)
                 title = title_region.GetValue(group.Attributes)
                 if title.IsEmpty:
                     return set()
@@ -119,6 +127,18 @@ def run():
         appearance(outer, fill='#161B20', opacity=100)
         colours = render(Skin.DefaultLit, 'nested-dark-on-light')
         check(contains_ink(colours, (244, 243, 240)), 'inner transparent heading uses the enclosing dark fill')
+        factory = assembly.GetType('Margin.Native.GroupEditor').GetMethod('CreateDialog', BindingFlags.Static | BindingFlags.NonPublic)
+        def editor_ink():
+            dialog = factory.Invoke(None, Array[Object]([group]))
+            try:
+                return dialog.FindChild(clr.GetClrType(Control), 'group-title-colour').Value.ToHex(False)
+            finally:
+                dialog.Dispose()
+        check(editor_ink() == '#F4F3F0', 'editor swatch matches the light title painted on its enclosing dark group')
+        appearance(outer, fill='#FFFFFF', opacity=100)
+        render(Skin.DefaultDim, 'nested-light-on-dark')
+        check(editor_ink() == '#23282C', 'editor swatch follows a light enclosing group on the dark canvas')
+        appearance(outer, fill='#161B20', opacity=100)
         appearance(group, text='#C71585')
         colours = render(Skin.DefaultDim, 'custom-ink')
         check(contains_ink(colours, (199, 21, 133)), 'explicit title ink survives a dark canvas')
@@ -150,6 +170,29 @@ def run():
         check(title_region.GetValue(group.Attributes).IsEmpty, 'hidden heading has no label exclusion or edit region')
         check(group.Attributes.Bounds.Top > prior.Top and group.Attributes.Bounds.Bottom == prior.Bottom,
               'hiding the heading reclaims its space and keeps member padding')
+        group.Selection = ObjectSelection.Unselected
+        group.Attributes.HideDraggingBorder()
+        System.Threading.Thread.Sleep(350)
+        appearance(group, designed=False)
+        visible = render(Skin.DefaultLit, 'native-visible')
+        shown_bounds = group.Attributes.Bounds
+        check(visible[0] != visible[1], 'visible native GH2 heading has its original coloured band')
+        appearance(group, designed=False, visible=False)
+        hidden = render(Skin.DefaultLit, 'native-hidden')
+        hidden_bounds = group.Attributes.Bounds
+        check(hidden[0] == hidden[1] == visible[1], 'hidden native GH2 heading leaves only the original frame fill')
+        check(hidden_bounds.Top == shown_bounds.Top + 18 and hidden_bounds.Bottom == shown_bounds.Bottom
+              and group.UserName == 'Nested components', 'native GH2 title space is reclaimed without renaming the group')
+        dialog = factory.Invoke(None, Array[Object]([group]))
+        try:
+            show = dialog.FindChild(clr.GetClrType(Control), 'group-show-title')
+            check(show.Enabled and not show.Checked, 'native GH2 editor can restore its hidden title')
+            show.Checked = True
+            dialog.DefaultButton.PerformClick()
+        finally:
+            dialog.Dispose()
+        check(render(Skin.DefaultLit, 'native-restored') == visible and group.Attributes.Bounds == shown_bounds,
+              'restoring the native title restores its original frame and heading colours')
         report['passed'] = True
     except Exception:
         report['passed'] = False

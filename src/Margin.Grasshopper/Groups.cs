@@ -139,9 +139,10 @@ public static class Groups
         var actions = new Grasshopper2.Undo.Action[] { new RenameAction(g), new CustomValueAction(g, Key, Effects.ExpireLayout), new PropertyAction(g, nameof(GroupObject.GroupColour), Effects.ExpireLayout, false) };
         g.AddUndoRecord(new Record(new VerbNoun("Edit", "group"), actions));
         g.UserName = name;
-        SetStyle(g, style);
+        SetStyle(g, style, updateColour: old.Style.Fill != style.Fill);
 #else
-        var next = Color.FromArgb(alpha, Convert.ToInt32(style.Fill[1..3],16), Convert.ToInt32(style.Fill[3..5],16), Convert.ToInt32(style.Fill[5..7],16));
+        var next = old.Style.Fill == style.Fill && old.Style.Opacity == displayedStyle.Opacity ? g.Colour
+            : Color.FromArgb(alpha, Convert.ToInt32(style.Fill[1..3],16), Convert.ToInt32(style.Fill[3..5],16), Convert.ToInt32(style.Fill[5..7],16));
         g.RecordUndoEvent("Margin: edit group", new EditGroupAction(g, name, next, JsonSerializer.Serialize(style)));
         Set(g, name, next, JsonSerializer.Serialize(style));
 #endif
@@ -206,9 +207,9 @@ public static class Groups
     {
         if (watchedCanvas?.Document is { } d) Attach(d);
     }
-    static void SetStyle(GroupObject g, GroupStyle style)
+    static void SetStyle(GroupObject g, GroupStyle style, bool updateColour = true)
     {
-        g.GroupColour = Grasshopper2.Eto.Drawing.OpenColor.MatchFamily(Color.Parse(style.Fill));
+        if (updateColour) g.GroupColour = Grasshopper2.Eto.Drawing.OpenColor.MatchFamily(Color.Parse(style.Fill));
         g.CustomValues.Set(Key, JsonSerializer.Serialize(style));
         g.Attributes.InvalidateLayout();
         g.OnLayoutChanged();

@@ -142,14 +142,14 @@ def verify_legacy(Groups, GroupStyle, check):
 
 
 @contextmanager
-def distinctive_defaults(Groups, GroupStyle, use_group_colour=True):
+def distinctive_defaults(Groups, GroupStyle, use_group_colour=True, show_title=True, designed=True):
     # Swap only in-memory test state on the UI thread; never write user preferences.
     field = clr.GetClrType(Groups).GetField('preferences', System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
     original = field.GetValue(None)
     sentinel = System.Activator.CreateInstance(field.FieldType)
-    style = GroupStyle.Parse(json.dumps({'Fill':'#742196','Opacity':72,'Designed':True,
-        'Appearance':{'TitleSize':29,'Text':'#FFCA31','TitleCase':'Lowercase','Heading':'Band'}}))
-    for name, value in [('GroupFill',style.Fill),('GroupOpacity',style.Opacity),('StyleGroups',True),
+    style = GroupStyle.Parse(json.dumps({'Fill':'#742196','Opacity':72,'Designed':designed,
+        'Appearance':{'ShowTitle':show_title,'TitleSize':29,'Text':'#FFCA31','TitleCase':'Lowercase','Heading':'Band'}}))
+    for name, value in [('GroupFill',style.Fill),('GroupOpacity',style.Opacity),('StyleGroups',designed),
                         ('UseGroupColour',use_group_colour),('GroupAppearance',style.Appearance)]:
         field.FieldType.GetProperty(name).SetValue(sentinel, value)
     field.SetValue(None, sentinel)
@@ -185,6 +185,80 @@ def verify_native_defaults(Groups, check, use_group_colour=True):
         check(explicit.Colour.ToArgb() == original.ToArgb(), 'explicit custom native colour is preserved')
     finally:
         d.Dispose()
+
+
+def verify_hidden_default_reopens(Groups, check):
+    from Grasshopper.Kernel import GH_Document, GH_DocumentIO
+    from Grasshopper.Kernel.Special import GH_Group, GH_GroupAttributes
+    from Grasshopper.Kernel.Parameters import Param_Curve
+    from Grasshopper.GUI.Canvas import GH_Canvas, GH_CanvasChannel, GH_Skin
+    from System.Drawing import Bitmap, Color, Graphics, PointF, Size
+    from System.Drawing.Imaging import ImageFormat
+    from System.IO import MemoryStream
+    document = GH_Document()
+    reopened = GH_DocumentIO()
+    try:
+        Groups.Attach(document)
+        member = Param_Curve()
+        member.CreateAttributes()
+        document.AddObject(member, False)
+        member.Attributes.Pivot = PointF(150, 110)
+        member.Attributes.ExpireLayout()
+        member.Attributes.PerformLayout()
+        group = GH_Group()
+        group.NickName = 'Native group with a hidden title'
+        group.Colour = GH_Skin.group_back
+        group.AddObject(member.InstanceGuid)
+        document.AddObject(group, False)
+        def hidden(g):
+            style = Groups.Style(g)
+            return not style.Designed and not style.Appearance.ShowTitle and g.NickName == 'Native group with a hidden title'
+        check(hidden(group), 'new native GH1 group inherits a hidden title with native styling')
+        # Supply a bitmap surface to a disposable GH canvas. A normal canvas sets
+        # Graphics during its paint event; this one never needs an active document.
+        canvas = GH_Canvas()
+        try:
+            canvas.Size = Size(320, 220)
+            canvas.Viewport.Zoom = 1
+            canvas.Viewport.Target = PointF(0, 0)
+            canvas.Viewport.ComputeProjection()
+            target = clr.GetClrType(GH_Canvas).GetField('_graphics', System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            def render(attributes):
+                bitmap = Bitmap(320, 220)
+                graphics = Graphics.FromImage(bitmap)
+                stream = MemoryStream()
+                try:
+                    graphics.Clear(Color.White)
+                    target.SetValue(canvas, graphics)
+                    attributes.RenderToCanvas(canvas, GH_CanvasChannel.Groups)
+                    bitmap.Save(stream, ImageFormat.Png)
+                    return bytes(stream.ToArray())
+                finally:
+                    target.SetValue(canvas, None)
+                    stream.Dispose()
+                    graphics.Dispose()
+                    bitmap.Dispose()
+            name = group.NickName
+            named_frame = render(GH_GroupAttributes(group))
+            group.NickName = ''
+            native_frame = render(GH_GroupAttributes(group))
+            group.NickName = name
+            check(native_frame != named_frame, 'GH1 native named and blank renderings have distinct pixels')
+            check(render(group.Attributes) == native_frame and group.NickName == name,
+                  'hiding the native GH1 title removes only its balloon text and preserves the native frame pixels')
+        finally:
+            canvas.Dispose()
+        path = str(OUTPUT / 'Hidden-native-default.gh')
+        check(GH_DocumentIO(document).SaveQuiet(path) and reopened.Open(path), 'hidden native GH1 default fixture saves and reopens')
+        Groups.Attach(reopened.Document)
+        restored = reopened.Document.FindObject(group.InstanceGuid, True)
+        check(hidden(restored) and restored.ObjectIDs.Contains(member.InstanceGuid)
+              and restored.Attributes.Bounds == GH_GroupAttributes(restored).Bounds,
+              'reopened native GH1 group keeps its hidden title, name, native frame and member')
+    finally:
+        if reopened.Document is not None:
+            reopened.Document.Dispose()
+        document.Dispose()
 
 
 def verify_existing_native_copy(Groups, check):
@@ -295,6 +369,8 @@ def run():
         with distinctive_defaults(Groups, GroupStyle):
             verify_native_defaults(Groups, check)
             verify_existing_native_copy(Groups, check)
+        with distinctive_defaults(Groups, GroupStyle, show_title=False, designed=False):
+            verify_hidden_default_reopens(Groups, check)
         with distinctive_defaults(Groups, GroupStyle, use_group_colour=False):
             verify_native_defaults(Groups, check, use_group_colour=False)
         check(System.Object.ReferenceEquals(canvas.Document, current) and ids == [str(o.InstanceGuid) for o in current.Objects]

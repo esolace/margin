@@ -49,13 +49,15 @@ try {
   assert.equal(await page.locator('#groupTarget').innerText(),'Group','selected unnamed group is not future defaults');
   assert.equal(await page.locator('#groupPreviewName').innerText(),'Group','blank name has a neutral canvas preview');
   assert.equal(await page.locator('#groupName').inputValue(),'','fallback does not replace the native blank name');
-  for (const host of ['Grasshopper','Grasshopper 2']) {
-    await page.evaluate(host=>{
+  for (const [host, designed] of [['Grasshopper',true],['Grasshopper',false],['Grasshopper 2',true],['Grasshopper 2',false]]) {
+    await page.evaluate(([host,designed])=>{
       fixture.Host=host;
+      fixture.Items[0].Style.Designed=designed;
       Object.assign(fixture.Items[0],{Name:'',Outline:'None',Selected:false});
       fixture.Items[0].Style.Appearance.ShowTitle=false;
       MarginStudio.setGroups(fixture);
-    },host);
+    },[host,designed]);
+    assert(await page.getByLabel('Edit group from this definition').isVisible(),host+' can recover a hidden title with Margin styling '+designed);
     await page.getByLabel('Edit group from this definition').selectOption('a',{timeout:1800});
     assert.equal(await page.locator('#groupTarget').innerText(),'Group',host+' identifies the unnamed group');
     assert(await page.locator('#groupPreviewName').isHidden(),host+' suppresses the fallback');
@@ -65,10 +67,10 @@ try {
     await page.locator('#applyGroup').click();
     const restore=await page.evaluate(()=>messages.at(-1));
     assert.equal(restore.id,'a'); assert.equal(restore.name,''); assert.equal(restore.style.Appearance.ShowTitle,true);
-    assert.equal(restore.style.Designed,true); assert.equal(restore.style.Fill,'#000000');
+    assert.equal(restore.style.Designed,designed); assert.equal(restore.style.Fill,'#000000');
     await page.evaluate(()=>{fixture.Items[0].Selected=true;fixture.Items[0].Style.Appearance.ShowTitle=true;MarginStudio.setGroups(fixture);});
   }
-  await page.evaluate(()=>{fixture.Host='Grasshopper';fixture.Items[0].Outline='Box';});
+  await page.evaluate(()=>{fixture.Host='Grasshopper';fixture.Items[0].Outline='Box';fixture.Items[0].Style.Designed=true;});
   await page.evaluate(()=>{fixture.Items[0].Name='Guide curves';MarginStudio.setGroups(fixture);});
   assert(await page.locator('#groupText').isVisible(),'title colour is visible in Studio');
   assert(await page.locator('#groupText').isEnabled(),'title colour remains editable in automatic mode');

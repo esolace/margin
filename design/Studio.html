@@ -112,7 +112,7 @@ output { min-width:31px; text-align:right; font-variant-numeric:tabular-nums; }
 <div class="field"><label for="groupHeading">Treatment</label><select id="groupHeading"><option value="Rule">Editorial rule</option><option value="Band">Colour band</option><option value="Plain">Clean title</option></select></div>
 <div class="field"><label for="groupTitleSize">Title size</label><input id="groupTitleSize" type="number" min="10" max="30" step="1" value="15"></div>
 <div class="field"><label for="groupBold">Bold title</label><input id="groupBold" type="checkbox" checked></div>
-<p id="groupCaseHint" class="group-help">Styles the title; your group name stays as typed.</p>
+<p id="groupCaseHint" class="group-help">Hiding the title or changing its letter case keeps the group name.</p>
 <h3>Surface & frame</h3>
 <div class="field"><label for="groupFill">Fill colour</label><div class="color-value"><span id="groupHex" class="mono"></span><input type="color" id="groupFill" value="#253e56"></div></div>
 <div class="field"><label for="groupOpacity">Opacity</label><input type="range" id="groupOpacity" min="0" max="100" value="85"><output id="groupOpacityOut">85%</output></div>
@@ -509,11 +509,9 @@ function groupPreview(){
  const outline=groupData.Items.find(g=>g.Id===groupId)?.Outline||'Box',externalTitle=t.Designed&&outline!=='Box';
  const resolved=groupResolved(t,dark,externalTitle),specimen=$('groupSpecimen');
  specimen.dataset.outline=outline;specimen.dataset.externalTitle=externalTitle;
- const showTitle=!t.Designed||t.Appearance.ShowTitle;
+ const showTitle=t.Appearance.ShowTitle;
  specimen.dataset.showTitle=showTitle;
  $('groupPreviewName').hidden=!showTitle;
- $('groupShowTitle').disabled=!t.Designed;
- $('groupCaseHint').textContent=t.Designed?'Styles the title; your group name stays as typed.':'Turn on Margin styling to control title visibility.';
  $('groupLookup').disabled=groupDirty||groupPending;
  groupVariables(specimen,t,dark,externalTitle);
  for(const key of ['Text','Accent','Border']){const auto=$('groupAuto'+key).checked;if(auto)$('group'+key).value=resolved[key==='Text'?'ink':key.toLowerCase()];}
@@ -553,7 +551,7 @@ function setGroups(data,message,preserveDraft=false){
  const selected=data.Items.filter(g=>g.Selected);
  const options=[new Option('Future groups',''),...data.Items.map((g,i)=>new Option((g.Name?.trim()||'Group')+' · '+(i+1)+' · '+g.Members+(g.Members===1?' member':' members'),g.Id))];
  $('groupLookup').replaceChildren(...options);
- $('groupLookupRow').hidden=!pickedGroup&&!data.Items.some(g=>g.Style.Designed&&g.Style.Appearance?.ShowTitle===false);
+ $('groupLookupRow').hidden=!pickedGroup&&!data.Items.some(g=>g.Style.Appearance?.ShowTitle===false);
  selectGroup(pickedGroup||(selected.length===1?selected[0].Id:null));
  if(!pickedGroup&&selected.length>1)$('groupDocInfo').textContent='Select one group on the canvas to edit it.';
  if(switched)groupStatus('Definition changed. Select a group in this file to edit it.');

@@ -69,7 +69,7 @@ copy, editor and outline checks use the adjacent GH2 host scripts. Detailed
 local reports and images are under `artifacts/gh2-groups/`. The paired
 restart results are `defaults-before-restart.json` and
 `defaults-after-restart.json`. The before phase also exercises reopening the saved .ghz file. Native light and dark renders are in `outline/`. After verification the original GH2 session, autosave, theme, presets and
-preferences were restored byte for byte. The candidate remains unpublished.
+preferences were restored byte for byte. These checks cover the plugin binaries packaged for alpha.7.
 
 ## Mac
 

@@ -10,9 +10,9 @@ description: >
   No canvas component is required. Label visibility is remembered across files
   and restarts. Native groups support editable or hidden titles and saved appearance defaults.
 
-  Experimental Rhino 9 / .NET 10 preview. macOS Apple Silicon has been tested
-  live. See the bundled README and source testing record for host-specific checks.
-  Windows builds are available for evaluation pending interactive Rhino testing.
+  Mac tested on Apple Silicon in Rhino 9 with Grasshopper 1 and 2.
+  Windows experimental. The Windows package passed build and package checks.
+  Interactive Windows testing is pending.
   Requires Rhino 9.0.26300 or newer.
 url: https://github.com/esolace/margin
 icon: icon.png

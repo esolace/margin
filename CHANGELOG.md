@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.5.0-alpha.7 — local development
+## 0.5.0-alpha.7 — 2026-11-10
 
 - Create GH2 groups with the saved appearance through Studio and the native Group command. Double-click a visible group title to edit its name and styling.
 - Hide or restore a group heading in GH1 and GH2. The group picker in Studio can recover a hidden unnamed group. Older appearances keep their headings visible.

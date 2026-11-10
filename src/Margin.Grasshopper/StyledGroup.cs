@@ -5,6 +5,10 @@ using Eto.Drawing;
 using Grasshopper2.SpecialObjects;
 using Grasshopper2.Eto.Drawing;
 using Grasshopper2.UI.Skinning;
+using Grasshopper2.Doc.Attributes;
+using Grasshopper2.Extensions;
+using Grasshopper2.UI.Animation;
+using System.Runtime.CompilerServices;
 #else
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -20,57 +24,149 @@ public sealed class StyledGroup : GroupAttributes
     readonly GroupObject group;
     bool failed;
     public StyledGroup(GroupObject group) : base(group) => this.group = group;
+    internal RectangleF TitleRegion { get; private set; }
+    long frameTick;
+    Color paintedFill, paintedBand;
+    RectangleF bandBounds;
+
+    // GH2's selection and cursor code read this private-set property directly.
+    // Share its native hover animation and interior instead of handling mouse drags.
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "set_DraggingBounds")]
+    static extern void SetDraggingBounds(GroupAttributes attributes, RectangleF bounds);
+    [UnsafeAccessor(UnsafeAccessorKind.Field, Name = "_uxDragBorder")]
+    static extern ref Animated<float> DragAnimation(GroupAttributes attributes);
+
+    static float HeaderHeight(GroupStyle style) => style.Appearance.ShowTitle
+        ? 28 + (float)style.Appearance.ExtraHeaderSpace : 0;
+
+    // The live canvas calls a non-virtual cached Layout overload and infers nested
+    // bounds privately. Finalise child frames before their parents are painted.
+    void FitMembers(GroupStyle style, long tick)
+    {
+        if (tick != 0 && frameTick == tick) return;
+        frameTick = tick;
+        var members = new RectangleF(Pivot, SizeF.Empty);
+        foreach (var member in group.Content)
+        {
+            if (member.Attributes is StyledGroup child)
+                child.FitMembers(Groups.Style(child.group), tick);
+            var bounds = member.Attributes.AggregateBounds;
+            members = members.IsEmpty ? bounds : RectangleF.Union(members, bounds);
+        }
+        // Match GH2's native member/pin padding and empty-group width.
+        var frame = members.AdjustSides(members.Width == 0 ? 42 : 14, 14);
+        float header = style.Designed && !failed ? HeaderHeight(style)
+            : string.IsNullOrWhiteSpace(group.DisplayName) ? 0 : 18;
+        Bounds = frame.AdjustSides(0, header, 0, 0);
+        PinAttributes.LayoutPins(group);
+    }
+
     public override void Layout(Shape shape)
     {
         base.Layout(shape);
-        if (!Groups.Style(group).Designed) return;
-        var b = Bounds; b.Inflate(12, 12); var header = 48 + (float)Groups.Style(group).Appearance.ExtraHeaderSpace; b.Y -= header; b.Height += header;
-        if (b.Width < 180) b.Width = 180;
-        Bounds = b;
+        FitMembers(Groups.Style(group), 0);
     }
+
+    Color BackdropAt(PointF point, Skin skin)
+    {
+        var background = skin.Canvas.Background;
+        if (group.Document is not { } document) return background;
+        // Groups are painted in native z-order. An inner heading can sit over
+        // its parent's translucent fill even when both titles use automatic ink.
+        foreach (var behind in document.Objects.Groups)
+        {
+            if (ReferenceEquals(behind, group)) break;
+            if (!behind.Attributes.Bounds.Contains(point)) continue;
+            if (behind.Attributes is StyledGroup styled)
+                background = Color.Blend(background, styled.bandBounds.Contains(point) ? styled.paintedBand : styled.paintedFill);
+        }
+        return background;
+    }
+
     public override void Draw(Context context, Skin skin)
     {
         var style = Groups.Style(group);
-        if (failed || !style.Designed) { base.Draw(context, skin); return; }
+        FitMembers(style, context.Control?.DrawStartTime.Ticks ?? 0);
+        TitleRegion = RectangleF.Empty;
+        bandBounds = RectangleF.Empty;
+        if (failed || !style.Designed)
+        {
+            paintedFill = (group.Selected ? skin.Shades[ShadeKind.NormalSelected].Apex
+                : OpenColor.Create(group.GroupColour, 3)).WithA(.7f);
+            base.Draw(context, skin);
+            return;
+        }
         try
         {
-            var b = Bounds;
+            var frame = Bounds;
             var appearance = style.Appearance;
             var g = context.Graphics;
-            var fill = Color.Parse(style.Fill); fill.A = (float)(style.Opacity / 100);
-            var resolved = GroupAppearancePolicy.Resolve(appearance, style.Fill, style.Opacity, context.BackColour.ToHex(false));
-            var accentColour = Color.Parse(resolved.Accent);
-            var borderColour = Color.Parse(resolved.Border);
-            using var path = GroupFrame.Path(b.X,b.Y,b.Width,b.Height,(float)appearance.Radius);
-            using var brush = new SolidBrush(fill);
-            g.FillPath(brush,path);
-            if (resolved.Band)
+            var above = PinAttributes.DrawPinsAbove(context, skin, group);
+            var below = PinAttributes.DrawPinsBelow(context, skin, group);
+            var corners = new CornerRadii((float)Math.Min(appearance.Radius, Math.Min(frame.Width, frame.Height) / 2));
+            if (above > 0) corners = corners.WithRadii(0f, null, 0f);
+            if (below > 0) corners = corners.WithRadii(null, 0f, null, 0f);
+            using var path = frame.ToRoundedRectangle(corners);
+            paintedFill = Color.Parse(style.Fill).WithA((float)(style.Opacity / 100));
+            g.FillPath(paintedFill, path);
+
+            var header = HeaderHeight(style);
+            var textOrigin = new PointF(frame.X + 8, frame.Y + 4);
+            var background = BackdropAt(textOrigin, skin).ToHex(false);
+            var resolved = GroupAppearancePolicy.Resolve(appearance, style.Fill, style.Opacity, background);
+            var accent = Color.Parse(resolved.Accent);
+            if (resolved.Band && header > 0)
             {
-                using var band = GroupFrame.Path(b.X,b.Y,b.Width,(float)appearance.TitleSize*1.3f+24,(float)appearance.Radius,true);
-                using var bandFill = new SolidBrush(accentColour); g.FillPath(bandFill,band);
+                bandBounds = new RectangleF(frame.X, frame.Y, frame.Width, header);
+                paintedBand = accent;
+                using var band = bandBounds.ToRoundedRectangle(corners.WithRadii(null, 0f, null, 0f));
+                g.FillPath(accent, band);
             }
-            if (appearance.BorderWidth > 0 || group.Selected)
+
+            // A press in the gap between separated members starts a native window
+            // selection. Hovering the edge or heading exposes the group drag border.
+            var hover = context.Animate(DragAnimation(this));
+            var inset = -12 * hover;
+            var interior = frame.AdjustSides(inset, inset - header * hover, inset, inset);
+            SetDraggingBounds(this, interior);
+            if (hover > 0 && !interior.IsEmpty)
             {
-                using var pen = new Pen(borderColour, group.Selected ? Math.Max(2.5f,(float)appearance.BorderWidth) : (float)appearance.BorderWidth);
-                g.DrawPath(pen,path);
+                using var edge = interior.ToRoundedRectangle(0);
+                g.DrawPath(accent.WithA(.5f * hover), edge);
             }
             if (appearance.ShowAccent)
-            { using var accent = new SolidBrush(accentColour); g.FillRectangle(accent,b.X+1,b.Y+10,4,b.Height-20); }
+                g.FillRectangle(accent, frame.X + 1, frame.Y + 8, 3, frame.Height - 16);
+            if (appearance.BorderWidth > 0 || group.Selected)
+            {
+                var border = group.Selected ? skin.Shades[ShadeKind.NormalSelected].Edge : Color.Parse(resolved.Border);
+                var weight = (float)appearance.BorderWidth;
+                using var pen = new Pen(border, group.Selected ? Math.Max(2.5f, weight) : weight);
+                g.DrawPath(pen, path);
+            }
+            if (header == 0) return;
 #if MARGIN_MAC
             const float scale = 1;
 #else
             const float scale = .75f;
 #endif
             using var font = new Font(SystemFonts.Default().Family, (float)appearance.TitleSize * scale, appearance.Bold ? FontStyle.Bold : FontStyle.None);
-            string name = string.IsNullOrWhiteSpace(group.UserName) ? "Group" : group.UserName;
-            name = GroupAppearancePolicy.FormatTitle(name, appearance.TitleCase);
-            while (name.Length > 2 && g.MeasureString(font,name).Width > b.Width - 34) name = name[..^2] + "…";
-            var ink = Color.Parse(resolved.Text);
-            using var text = new SolidBrush(ink); g.DrawText(font,text,b.X+18,b.Y+12,name);
+            var name = GroupAppearancePolicy.FormatTitle(string.IsNullOrWhiteSpace(group.UserName) ? "Group" : group.UserName, appearance.TitleCase);
+            var available = frame.Width - 16;
+            while (name.Length > 1 && g.MeasureString(font, name).Width > available)
+                name = name[..^2] + "…";
+            var size = g.MeasureString(font, name);
+            TitleRegion = new RectangleF(textOrigin, size);
+            g.DrawText(font, Color.Parse(resolved.Text), textOrigin, name);
             if (resolved.Divider)
-            { using var rule = new Pen(accentColour,1.5f); var y=b.Y+(float)appearance.TitleSize*1.3f+17; g.DrawLine(rule,b.X+18,y,b.X+Math.Min(b.Width-18,170),y); }
+                g.DrawLine(accent, frame.Left + 8, frame.Top + header - 1, Math.Min(frame.Right - 8, frame.Left + 170), frame.Top + header - 1);
         }
-        catch (Exception ex) { failed = true; Rhino.RhinoApp.WriteLine("Margin group styling paused: " + ex.Message); base.Draw(context,skin); }
+        catch (Exception ex)
+        {
+            failed = true;
+            TitleRegion = RectangleF.Empty;
+            Rhino.RhinoApp.WriteLine("Margin group styling paused: " + ex.Message);
+            base.Draw(context, skin);
+        }
     }
 }
 #else

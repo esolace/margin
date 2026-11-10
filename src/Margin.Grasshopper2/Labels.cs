@@ -3,6 +3,7 @@ using Grasshopper2.Components;
 using Grasshopper2.Parameters;
 using Grasshopper2.UI.Canvas;
 using Margin.Core;
+using Margin.Native;
 
 namespace Margin.GH2;
 
@@ -48,6 +49,9 @@ public sealed class Labels : ILabelRenderer
                 .Where(o => o.Attributes is not null && From(o.Attributes.Bounds) is var b && b.Valid && b.Intersects(nearby))
                 .ToArray();
             var occupied = items.Select(o => From(o.Attributes.Bounds)).ToList();
+            var headings = document.Objects.Groups.Select(group => group.Attributes is StyledGroup styled
+                    ? styled.TitleRegion : RectangleF.Empty)
+                .Select(From).Where(box => box.Valid && box.Intersects(nearby)).ToArray();
             using var fill = new SolidBrush(Colour(theme.Fill, theme.Opacity / 100));
             using var ink = new SolidBrush(Colour(theme.Text));
             using var caption = new SolidBrush(Colour(theme.Text, .75));
@@ -66,7 +70,7 @@ public sealed class Labels : ILabelRenderer
                 float extra = theme.ShowAccent ? 5 : 0;
                 var width = Math.Max(size.Width, sub.Width) + theme.PaddingX * 2 + extra;
                 var height = size.Height + (theme.ShowCategory ? sub.Height + 3 : 0) + theme.PaddingY * 2;
-                var place = LabelLayout.Place(From(item.Attributes.Bounds), width, height, theme, occupied);
+                var place = LabelLayout.Place(From(item.Attributes.Bounds), width, height, theme, occupied, headings);
                 if (place is not Box box) continue;
                 var rect = new RectangleF((float)box.X, (float)box.Y, (float)box.Width, (float)box.Height);
                 using var path = new GraphicsPath();

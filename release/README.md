@@ -11,7 +11,7 @@ No extra component is added to your definition.
 ## Install
 
 In Rhino 8.21 or newer (including Rhino 9), open **PackageManager**, enable **Include prereleases**, search for
-**Margin**, and install **0.5.0-alpha.8**. Save your work before restarting Rhino.
+**Margin**, and install **0.5.0-alpha.9**. Save your work before restarting Rhino.
 In GH1 or GH2, choose **Display → Margin → Open Studio…** and turn labels on.
 Margin remembers your label switch across files and Rhino restarts.
 
@@ -48,19 +48,34 @@ The Studio runs offline. Margin has no account requirement or telemetry.
 No fonts are bundled. If an imported font is unavailable, an installed fallback
 is used. GH1 and GH2 share the local preset library.
 
+## Language
+
+Margin supports all 13 Rhino languages: English, Czech, German, Spanish, French,
+Italian, Japanese, Korean, Polish, Brazilian Portuguese, Russian, Simplified
+Chinese and Traditional Chinese. Studio follows Rhino's language automatically;
+use **Language** to choose another. Your choice is saved across restarts.
+Group names and personal preset names stay exactly as you entered them.
+
 ## Compatibility
 
 | Host | Mac (Apple Silicon) | Windows |
 | --- | --- | --- |
 | Rhino 8.21+ · Grasshopper 1 | Tested on Rhino 8.37 | Experimental |
-| Rhino 9 · Grasshopper 1 and 2 | Alpha.7 tested; alpha.8 build checked | Experimental |
+| Rhino 9 · Grasshopper 2 | Tested on Rhino 9.1 | Experimental |
+| Rhino 9 · Grasshopper 1 | Prior alpha.7 native coverage; current shared GH1 code tested in Rhino 8 | Experimental |
 
 The Rhino 8 package targets .NET 8 and the Rhino 8.21 SDK. Native testing uses
 Rhino 8.37.26307.15002 with its bundled .NET 10 runtime; older Rhino 8 builds
 have not been tested interactively. Update Rhino 8 if Margin does not appear.
-Rhino 9 requires build 9.0.26300 or newer with .NET 10 for GH2 APIs.
+Rhino 9 Mac packages require Rhino 9.1; Windows packages require build
+9.0.26300 or newer. Both use .NET 10.
 .NET Framework mode and Linux are not supported. Windows builds and package
 checks are automated; interactive Windows testing is pending.
+Mac testing covers all 13 manual language choices, automatic selection in an
+English Rhino host, native group workflows and full restart persistence. Physical
+canvas title double-click targeting could not be reverified reliably with the
+automation tool; the native title handler and editor passed. Independent
+native-speaker review is pending. Rhino 7 is not part of this public release.
 See [testing status](https://github.com/esolace/margin/blob/main/docs/TESTING.md) for coverage and remaining limits.
 
 Your presets stay in your user account:

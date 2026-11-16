@@ -43,7 +43,7 @@ static void Inspect(Stream stream, bool windows, bool gh2, int rhino = 9, int? m
         throw new Exception("Windows payload references Apple libraries");
     if (!reader.ManifestResources.Any(h => reader.GetString(reader.GetManifestResource(h).Name) == "Margin.Studio.html"))
         throw new Exception("Studio resource is missing");
-    if (reader.GetAssemblyDefinition().Version != new Version(0, 5, 0, rhino == 7 ? 9 : 8))
+    if (reader.GetAssemblyDefinition().Version != new Version(0, 5, 0, 9))
         throw new Exception("Incorrect assembly version");
 }
 

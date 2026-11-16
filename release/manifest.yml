@@ -1,5 +1,5 @@
 name: Margin
-version: 0.5.0-alpha.8
+version: 0.5.0-alpha.9
 authors:
   - Solace
 description: >
@@ -10,13 +10,15 @@ description: >
   No canvas component is required. Label visibility is remembered across files
   and restarts. Native groups support editable or hidden titles and saved appearance defaults.
 
-  Mac tested on Apple Silicon in Rhino 8.37 with Grasshopper 1,
-  Rhino 9 Grasshopper 1 and 2 have prior alpha.7 native coverage;
-  alpha.8 Rhino 9 builds passed automated checks.
-  Windows experimental. The Windows package passed build and package checks.
-  Interactive Windows testing is pending.
-  Requires Rhino 8.21 or newer with .NET 8+, or Rhino 9.0.26300 or newer
-  with .NET 10. Grasshopper 2 requires Rhino 9.
+  All 13 Rhino languages, with automatic selection and a saved manual override.
+  Mac tested on Apple Silicon: Rhino 8.37 with Grasshopper 1 and Rhino 9.1
+  with Grasshopper 2, including native workflows and full restart persistence.
+  Rhino 9 GH1 retains prior alpha.7 native coverage; current shared GH1 code
+  was tested in Rhino 8. Windows experimental: build and package checks passed,
+  interactive validation pending. Physical canvas title double-click retesting
+  is incomplete; native handler and editor checks passed. Translation review pending.
+  Requires Rhino 8.21+ with .NET 8+, or Rhino 9 with .NET 10.
+  Rhino 9 Mac requires 9.1; Windows requires 9.0.26300+. GH2 requires Rhino 9.
 url: https://github.com/esolace/margin
 icon: icon.png
 keywords:

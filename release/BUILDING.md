@@ -17,14 +17,14 @@ Windows can be cross-compiled on Mac; running it requires Windows Rhino.
 
 Set `MARGIN_DOTNET`, `MARGIN_NODE` or `MARGIN_YAK` for custom tool paths. For direct Mac builds,
 override `RhinoResources` if Rhino is not in `/Applications/Rhino 9.app`.
-For repeatable Rhino 9 minimum-version targeting, use the intended SDK: alpha.8
-Mac uses the installed 9.0.26293.12304 SDK, while Windows uses NuGet
+For repeatable Rhino 9 minimum-version targeting, use the intended SDK: alpha.9
+Mac uses the installed 9.1.26314.9002 SDK, while Windows uses NuGet
 9.0.26300.9401. A newer installed Mac SDK produces its corresponding Yak tag.
 For GH2-only development use `python3 tools/build_gh2.py --platform mac`.
 
 `net10.0/` contains Margin.gha, Margin.GH2.rhp, its grasshopper-only loader marker,
 and Margin.Core.dll for Rhino 9. Rhino 8 uses `net8.0/` with Margin.gha and
-Margin.Core.dll only. Distributions are tagged `rh8_21` or `rh9_0`, plus
+Margin.Core.dll only. Distributions are tagged `rh8_21`, `rh9_1` (Mac) or `rh9_0` (Windows), plus
 `mac` or `win`, so Package Manager selects a compatible build. The audit checks
 the embedded Rhino and .NET dependencies against that tag.
 Rhino/Eto/OS assemblies are never bundled. The package also

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0-alpha.9 — 2026-11-16
+
+- Add all 13 Rhino languages across Studio, menus, group editing and feedback. Follow Rhino automatically or save a manual language choice.
+- Preserve literal group and preset names when switching languages, including Unicode names.
+- Keep translated feedback consistent and recover invalid saved language preferences.
+- Fix a crash when Studio closes or is disposed while a timer or browser callback is pending.
+- Verify native group workflows, future defaults and full restart persistence on Mac Rhino 8/GH1 and Rhino 9/GH2. Windows remains experimental. Physical canvas title double-click retesting and independent translation review remain incomplete; see the testing record.
+- Publish Rhino 8 and Rhino 9 packages. Rhino 7 remains an unpublished compatibility candidate.
+
 ## 0.5.0-alpha.8 — 2026-11-16
 
 - Add Rhino 8.21+ packages for Grasshopper 1, compiled against the Rhino 8 SDK and .NET 8. Package Manager selects the correct Rhino version and operating system.

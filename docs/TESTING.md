@@ -414,11 +414,21 @@ The fix stops and detaches the timer on both close and disposal, unsubscribes
 browser callbacks, rejects callbacks after disposal, and safely finishes browser
 operations already in flight. A standalone regression using the **actual
 compiled Inspector and Eto disposed state** reproduced the exact exception
-before the fix and passes afterwards for the Rhino 8 GH1 and Rhino 9 GH2
+before the fix and passes afterwards for Rhino 8 GH1, Rhino 9 GH1 and Rhino 9 GH2
 assemblies. It creates no native window and does not establish that native
 timer teardown or post-fix close/reopen was tested in Rhino. The Windows build
 job also runs this regression. Local Mac Rhino 7/8/9 GH1 and Rhino 9 GH2 builds
 pass; 124 shared checks and the existing appearance/casing parity checks pass.
+The existing all-13-language browser workflow also passes under headless
+WebKit 27.2, using the same assertions as the Chromium suite. This is additional
+browser coverage, not a substitute for Rhino's embedded WebView lifecycle.
+Both spec and standards reviews found no remaining actionable code issues;
+the native evidence limits below remain explicit.
+
+Code commit `4e25736` is pushed to `feature/multilingual`.
+[GitHub run 43934998535](https://github.com/esolace/margin/actions/runs/43934998535)
+was still queued without assigned jobs at the end of this verification pass;
+no successful CI result is claimed for this commit yet.
 
 Isolation: no tool targeted the user's working Rhino 9 process, no working
 definition was opened or edited, and checksums of the personal Margin files

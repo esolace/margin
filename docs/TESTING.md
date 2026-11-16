@@ -3,6 +3,52 @@
 This is a preview. Compilation, package checks and live-host testing are separate
 levels of evidence; none is a claim that every host configuration is supported.
 
+## Multilingual native follow-up — 2026-11-16
+
+The fixed multilingual candidate (production code through `4e25736`) was tested
+in dedicated Mac Rhino 8.37.26307.15002 / GH1 and Rhino 9.1.26314.9002 / GH2
+processes. Candidates were loaded from immutable private staging paths, with
+`MARGIN_SETTINGS_DIRECTORY` isolating preferences and presets. This is candidate
+validation, not installation or publication of a new package.
+
+- Rhino 8: 198 native localization/editor checks; all 13 languages through the
+  real Studio WebView bridge (59 checks in visible mode); 63 group workflow and
+  19 movement checks; 11 Studio/defaults checks using the actual native Group
+  command and Studio button. Tests include outlines, picking, copy/paste,
+  independent edits, rename, ungroup, undo/redo and file reopen.
+- Rhino 9 / GH2: 59 real Studio bridge checks across all 13 languages; 124 native
+  editor and disposal checks; native same/cross-definition/nested copy tests;
+  18 Studio/defaults checks including both group creation routes, empty selection,
+  hidden unnamed titles, undo and save/reopen under different defaults.
+- Both hosts: clean shutdown followed by a fresh process loading the identical
+  module ID passed ten persistence checks each. Saved language, all 13 Unicode
+  preset names, complete future-group defaults and saved Unicode group names /
+  appearance survived. Reopened Studio displayed the saved state and newly
+  created groups used those defaults.
+- The disposed-Studio crash regression passed in both hosts: disposal before
+  loading, disposal after loading and closing with an in-flight browser request.
+  Queued callbacks completed without touching disposed controls or crashing Rhino.
+- Visible German and Traditional Chinese Studio layouts and the Unicode group
+  preview were inspected. The language popup was operated through native input.
+  GH2's title hit handler opened the translated native editor; native input
+  cancelled it successfully. Physical canvas double-click targeting remains
+  inconclusive because the mouse tool did not consistently hit the displayed
+  title. This is not recorded as a successful physical gesture test.
+
+The Studio assertion now accounts for GH1's native 8-bit opacity rounding
+(48% becomes 47.8%), while requiring exact GH2 opacity and exact remaining
+appearance fields. No production change was needed during this follow-up.
+The previously fixed disposal defect remains covered by the compiled native
+lifecycle regression in CI.
+
+[GitHub run 43941834171](https://github.com/esolace/margin/actions/runs/43941834171)
+passed all four jobs on `0d63efa`: portable checks, legacy net48 checks, Studio
+workflows and Windows builds / disposed-callback regression. Windows interactive
+validation and independent native-speaker review remain outstanding. Rhino 7
+still cannot launch on this machine; these checks do not extend its host claim.
+Evidence is under `artifacts/multilingual-final/`, with explicit per-host module
+IDs, before/after process IDs and private test definitions.
+
 ## Rhino 8 compatibility candidate, 2026-11-16
 
 Alpha.8's installed Rhino 8 Mac package was tested in Rhino 8.37.26307.15002

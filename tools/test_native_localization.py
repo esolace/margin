@@ -1,8 +1,9 @@
-"""Rhino UI-thread checks on disposable GH1 documents and unshown Eto dialogs.
+"""Rhino UI-thread localization checks using isolated settings and disposable documents.
 
 Call verify(output) only in a disposable, activation-prohibited Rhino process
 with MARGIN_SETTINGS_DIRECTORY pointing at its private settings folder.
-Does not show UI, change the clipboard, or assign the active canvas document.
+verify does not show UI, change the clipboard, or assign the active canvas document.
+verify_studio also supports Margin.GH2 and optionally presents Studio when visible=True.
 """
 from pathlib import Path
 import json
@@ -17,7 +18,8 @@ def cleanup(objects, report):
             except BaseException:
                 report.setdefault('cleanupFailures', []).append(name + ' Close: ' + traceback.format_exc())
         try:
-            obj.Dispose()
+            if hasattr(obj, 'Dispose'): obj.Dispose()
+            else: obj.Close()
         except BaseException:
             report.setdefault('cleanupFailures', []).append(name + ' Dispose: ' + traceback.format_exc())
 
@@ -104,22 +106,38 @@ def verify(output):
     return {'passed': sum(item['passed'] for item in report['checks']), 'failure': report.get('failure'), 'cleanupFailures': report.get('cleanupFailures', [])}
 
 
-def verify_studio(output):
+def verify_studio(output, adapter_name='Margin.Native', visible=False):
     import clr, System, Rhino, time
     from Eto.Forms import Application
     from Eto.Drawing import Size
     from Margin.Core import Localization, PreferencesStore
-    from Margin.Native import Runtime, Inspector, Groups
-    from Grasshopper.Kernel import GH_Document
-    from Grasshopper.Kernel.Parameters import Param_Curve
+    adapter = next(a for a in System.AppDomain.CurrentDomain.GetAssemblies() if a.GetName().Name == adapter_name)
+    gh2 = adapter_name == 'Margin.GH2'
+    def call(type_, name, *args):
+        method = next(m for m in type_.GetMethods() if m.Name == name and len(m.GetParameters()) == len(args))
+        return method.Invoke(None, System.Array[System.Object](args))
+    runtime = adapter.GetType('Margin.GH2.Runtime' if gh2 else 'Margin.Native.Runtime')
+    groups = adapter.GetType('Margin.Native.Groups')
+    class Runtime:
+        PreferencesPath = runtime.GetProperty('PreferencesPath').GetValue(None)
+        Start = staticmethod(lambda: call(runtime, 'Start'))
+        Stop = staticmethod(lambda: call(runtime, 'Stop'))
+    class GroupBridge:
+        @property
+        def Defaults(self): return groups.GetProperty('Defaults').GetValue(None)
+        def Attach(self, doc): return call(groups, 'Attach', doc)
+        def Create(self, doc): return call(groups, 'Create', doc)
+        def Style(self, group): return call(groups, 'Style', group)
+    Groups = GroupBridge()
+    def Inspector(): return System.Activator.CreateInstance(adapter.GetType('Margin.Native.Inspector'))
     output = Path(output).resolve()
     private = System.Environment.GetEnvironmentVariable('MARGIN_SETTINGS_DIRECTORY')
     assert private and Path(Runtime.PreferencesPath).parent.resolve() == Path(private).resolve()
     assert output in Path(private).resolve().parents
     assert not (Path(private) / 'presets.json').exists(), 'Use a fresh private preset library for the Studio test'
     app = Application.Instance.ControlObject
-    assert str(app.ActivationPolicy) == 'Prohibited' and not app.Active
-    report = {'rhino': str(Rhino.RhinoApp.Version), 'checks': []}; forms = []; docs = []
+    if not visible: assert str(app.ActivationPolicy) == 'Prohibited' and not app.Active
+    report = {'rhino': str(Rhino.RhinoApp.Version), 'adapter': adapter_name, 'visible': visible, 'checks': []}; forms = []; docs = []
     def check(condition, name):
         report['checks'].append({'name': name, 'passed': bool(condition)})
         assert condition, name
@@ -131,7 +149,8 @@ def verify_studio(output):
         raise AssertionError('Timed out: ' + name)
     def open_studio():
         form = Inspector(); forms.append(form); form.ClientSize = Size(900, 600)
-        wait(lambda: form.Ready, 'unshown native Studio loads')
+        if visible: form.Present()
+        wait(lambda: form.Ready, 'native Studio loads')
         return form
     def js(source):
         task = studio.InspectAsync(source)
@@ -140,7 +159,7 @@ def verify_studio(output):
     def state(): return json.loads(js('return JSON.stringify(MarginStudio.inspect())'))
     try:
         studio = open_studio()
-        check(studio.FontCount > 0 and not studio.Visible, 'native Studio loads installed fonts without showing a window')
+        check(studio.FontCount > 0 and studio.Visible == visible, 'native Studio loads installed fonts with the requested visibility')
         for language in Localization.Languages.Keys:
             js("const e=document.getElementById('languageChoice');e.value=%s;e.dispatchEvent(new Event('change'));return true;" % json.dumps(language))
             wait(lambda: Localization.Choice == language, language + ': language reaches native adapter')
@@ -155,10 +174,24 @@ def verify_studio(output):
         js("document.getElementById('groupsTab').click();return true;")
         js("for(const [id,value] of Object.entries({groupFill:'#246E64',groupOpacity:48,groupShowTitle:false,groupTitleCase:'Uppercase'})){const e=document.getElementById(id);if(typeof value==='boolean')e.checked=value;else e.value=value;e.dispatchEvent(new Event('input',{bubbles:true}));}document.getElementById('saveGroupDefaults').click();return true;")
         wait(lambda: Groups.Defaults.Fill == '#246E64' and not Groups.Defaults.Appearance.ShowTitle, 'translated Studio saves future group appearance')
-        d = GH_Document(); docs.append(d); Groups.Attach(d)
-        child = Param_Curve(); child.CreateAttributes(); d.AddObject(child, False); child.Attributes.Selected = True
+        if gh2:
+            from Grasshopper2.Doc import Document, ObjectSelection
+            from Grasshopper2.Parameters.Standard import NumberParameter
+            from Eto.Drawing import PointF
+            d = Document.NewInertDocument(); docs.append(d); Groups.Attach(d)
+            child = NumberParameter(); d.Objects.Add(child, PointF(100, 100)); child.Selection = ObjectSelection.Selected
+        else:
+            from Grasshopper.Kernel import GH_Document
+            from Grasshopper.Kernel.Parameters import Param_Curve
+            d = GH_Document(); docs.append(d); Groups.Attach(d)
+            child = Param_Curve(); child.CreateAttributes(); d.AddObject(child, False); child.Attributes.Selected = True
         group = Groups.Create(d)
-        check(Groups.Style(group).Equals(Groups.Defaults) and not group.NickName, 'new native group uses appearance saved in translated Studio and keeps blank name')
+        actual, expected = Groups.Style(group), Groups.Defaults
+        # GH1 stores opacity in an 8-bit native colour (48% becomes 47.8%).
+        check(actual.Fill == expected.Fill and actual.Designed == expected.Designed
+              and actual.Appearance.Equals(expected.Appearance)
+              and (actual.Opacity == expected.Opacity if gh2 else abs(actual.Opacity - expected.Opacity) < .3)
+              and not (group.UserName if gh2 else group.NickName), 'new native group uses appearance saved in translated Studio and keeps blank name')
         before = Path(Runtime.PreferencesPath).read_bytes()
         js("window.eto.postMessage(JSON.stringify({action:'language',choice:'not-a-language'}));return true;")
         wait(lambda: js("return document.getElementById('status').textContent") == Localization.Text('change.failed').replace('{error}', Localization.Text('language.invalid')), 'translated native validation detail')
@@ -170,7 +203,7 @@ def verify_studio(output):
         reopened = state()
         check(reopened['languageChoice'] == 'zh-Hant' and len(reopened['userPresets']) == 13, 'runtime reinitialization and Studio reopen retain language and all multilingual preset names')
         check(Groups.Defaults.Fill == '#246E64' and not Groups.Defaults.Appearance.ShowTitle, 'runtime reinitialization retains complete future group appearance')
-        check(not app.Active and str(app.ActivationPolicy) == 'Prohibited', 'Studio checks complete without activation')
+        if not visible: check(not app.Active and str(app.ActivationPolicy) == 'Prohibited', 'Studio checks complete without activation')
         check(studio.LastError is None, 'native Studio reports no internal error')
     except BaseException:
         report['failure'] = traceback.format_exc()
@@ -178,5 +211,5 @@ def verify_studio(output):
         try:
             cleanup([('Studio', item, True) for item in reversed(forms)] + [('document', item, False) for item in reversed(docs)], report)
         finally:
-            (output / 'native-studio.json').write_text(json.dumps(report, indent=2, ensure_ascii=False))
+            (output / ('native-studio-gh2.json' if gh2 else 'native-studio.json')).write_text(json.dumps(report, indent=2, ensure_ascii=False))
     return {'passed': sum(item['passed'] for item in report['checks']), 'failure': report.get('failure'), 'cleanupFailures': report.get('cleanupFailures', [])}

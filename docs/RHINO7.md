@@ -42,10 +42,12 @@ This exercises the actual older framework without claiming Windows host support.
 
 ## Native verification still required
 
-The local bundled Mono command currently exits with “bad CPU type in executable”;
-its standalone executable is Intel-only. This does not establish whether the
-Rhino app can run. Opening Rhino or changing the machine's translation/runtime
-setup is deliberately deferred until it will not interrupt work.
+A background launch attempt on 2026-11-16 confirmed that Rhino 7 itself cannot
+start on this machine: macOS returned errno 86, “Bad CPU type in executable.”
+Both the Rhino executable and its bundled Mono are Intel-only. A separate Intel
+execution probe also failed. No Rhino 7 process started, and the existing Rhino 9
+session was untouched. Compatible Intel execution support must be available
+before native testing; no system/runtime installation was attempted.
 
 Before installation or publication, use separate disposable definitions and
 back up preferences. Verify plugin discovery, Studio opening and queued commands,

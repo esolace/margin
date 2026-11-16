@@ -409,19 +409,27 @@ Background verification:
 - Legacy Studio transport test verifies ordered commands, Unicode payloads,
   acknowledgement and reuse after draining the queue. This is a JavaScript
   simulation, not a native WebView test.
-- Standards and spec reviews found no actionable issues. The Windows net48
-  CI job is additional runtime evidence; its result must be checked separately
-  before claiming those checks passed.
+- Standards and spec reviews found no actionable issues. GitHub run
+  [43915589372](https://github.com/esolace/margin/actions/runs/43915589372) passed
+  all four jobs on commit `26b1933`: portable checks, Studio browser workflows,
+  Windows Rhino 8/9 builds and the shared net48 runtime suite. This verifies the
+  older framework on Windows, not Mono or Rhino 7 host behavior.
 - Candidate audit checks root-layout payload, dependency presence, Framework
   target, embedded Studio/Unicode data, SDK private group-method signatures,
   dependency licenses and source-archive contents. Two dependencies request
   Unsafe 4.0.4.1 while the package includes 6.0.0.0; actual Mono binding remains
   a native verification requirement.
 
-No Rhino session was launched or manipulated, no package was installed/published,
+During initial preparation no Rhino session was launched or manipulated, no package was installed/published,
 and no live preferences or working definitions were changed. The bundled Mono
 CLI could not run here (“bad CPU type in executable”). Rendering, Studio commands,
 mouse gestures, persistence/restart and loader behavior inside Rhino 7 remain
 unverified. Windows Rhino 7 is excluded; shared net48 CI is not a host-support
 claim. Local logs and the private package are under `artifacts/rhino7/` and
 `dist/Margin-0.5.0-alpha.9-rhino7.1-rh7-mac/` respectively.
+
+Follow-up background native check, 2026-11-16: directly launching the Rhino 7
+executable failed before process creation with macOS errno 86, “Bad CPU type in
+executable.” The app and bundled Mono are x86_64; an independent Intel execution
+probe failed too. No host tests ran. No package was installed and no working
+Rhino session was touched. Evidence: `artifacts/rhino7/native-launch-check.json`.

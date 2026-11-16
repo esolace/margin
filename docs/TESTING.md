@@ -400,6 +400,8 @@ support claims below.
 Background verification:
 
 - Mac adapter and test executable compile against net48; zero warnings/errors.
+- Rhino 8 and Rhino 9 Mac adapters still compile with zero warnings/errors;
+  all 77 portable checks pass on both .NET 8 and .NET 10.
 - Shared compatibility path passes 77 portable checks on .NET 10, including
   preference/preset persistence, saved defaults and optional group titles.
 - Studio/native parity passes 1,536 appearance comparisons, 60 title-case
@@ -407,6 +409,9 @@ Background verification:
 - Legacy Studio transport test verifies ordered commands, Unicode payloads,
   acknowledgement and reuse after draining the queue. This is a JavaScript
   simulation, not a native WebView test.
+- Standards and spec reviews found no actionable issues. The Windows net48
+  CI job is additional runtime evidence; its result must be checked separately
+  before claiming those checks passed.
 - Candidate audit checks root-layout payload, dependency presence, Framework
   target, embedded Studio/Unicode data, SDK private group-method signatures,
   dependency licenses and source-archive contents. Two dependencies request
@@ -420,4 +425,3 @@ mouse gestures, persistence/restart and loader behavior inside Rhino 7 remain
 unverified. Windows Rhino 7 is excluded; shared net48 CI is not a host-support
 claim. Local logs and the private package are under `artifacts/rhino7/` and
 `dist/Margin-0.5.0-alpha.9-rhino7.1-rh7-mac/` respectively.
-

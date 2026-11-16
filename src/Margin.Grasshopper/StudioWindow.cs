@@ -9,7 +9,7 @@ internal static class StudioWindow
     internal static void Prepare(Form form)
     {
 #if MARGIN_MAC && (MARGIN_RHINO8 || MARGIN_RHINO7)
-        // Rhino 8 supplies different macOS bindings across runtime updates.
+        // Rhino 7/8 supply different macOS bindings across runtime versions.
         var window = form.ControlObject;
         var behaviour = window.GetType().GetProperty("CollectionBehavior");
         if (behaviour is not null)

@@ -21,6 +21,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: python tools/build_release.py --rhino all --platform win
+      - name: Check disposed native Studio callbacks
+        run: dotnet run --project tools/NativeLifecycleChecks -c Release -- src/Margin.Grasshopper/bin/Release/net8.0-windows/Margin.Native.dll "$env:USERPROFILE/.nuget/packages/rhinocommon/8.21.25188.17001/lib/net7.0" "$env:USERPROFILE/.nuget/packages/grasshopper/8.21.25188.17001/lib/net7.0"
   legacy-core:
     runs-on: windows-latest
     steps:

@@ -3,6 +3,22 @@ using System.Text.RegularExpressions;
 
 namespace Margin.Core;
 
+public static class SettingsPaths
+{
+    // A process-local override keeps disposable native tests out of personal settings.
+    public static string DirectoryPath
+    {
+        get
+        {
+            var custom = Environment.GetEnvironmentVariable("MARGIN_SETTINGS_DIRECTORY");
+            if (string.IsNullOrWhiteSpace(custom))
+                return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Margin");
+            if (!Path.IsPathRooted(custom)) throw new InvalidOperationException("MARGIN_SETTINGS_DIRECTORY must be an absolute path.");
+            return Path.GetFullPath(custom);
+        }
+    }
+}
+
 public sealed record Preferences
 {
     public string Language { get; init; } = "auto";

@@ -25,7 +25,7 @@ public static class Runtime
     static ButtonMenuItem? menu;
     static ButtonMenuItem? displayMenu;
     static CheckMenuItem? toggle;
-    public static readonly string SettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Margin", "theme.json");
+    public static readonly string SettingsPath = Path.Combine(SettingsPaths.DirectoryPath, "theme.json");
     public static string PreferencesPath => Path.Combine(Path.GetDirectoryName(SettingsPath)!, "preferences.json");
     static readonly LabelSession<Canvas> session = new(PreferencesPath, canvas => new Labels(canvas), Groups.Start, Groups.Stop);
     public static Theme Current => session.Theme;

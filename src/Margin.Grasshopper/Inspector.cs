@@ -43,11 +43,37 @@ public sealed class Inspector : Form
         web.DocumentLoading += (_, e) => { if (e.Uri is not null && e.Uri.Scheme != "about") e.Cancel = true; };
         groupSelectionTimer.Elapsed += SyncGroupSelection;
         groupSelectionTimer.Start();
-        Closed += (_, _) => { closed = true; groupSelectionTimer.Stop(); groupSelectionTimer.Dispose(); };
+        Closed += (_, _) => StopUpdates();
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Margin.Studio.html")
             ?? throw Localization.InvalidOperation("ui.the_margin_studio_resource_is_missing");
         using var reader = new StreamReader(stream);
         web.LoadHtml(reader.ReadToEnd());
+    }
+    void StopUpdates()
+    {
+        if (closed) return;
+        closed = true;
+        Ready = false;
+        groupSelectionTimer.Elapsed -= SyncGroupSelection;
+        groupSelectionTimer.Stop();
+        groupSelectionTimer.Dispose();
+        web.DocumentLoaded -= OnLoaded;
+#if MARGIN_RHINO7
+        web.DocumentLoading -= OnLegacyMessage;
+#else
+        web.MessageReceived -= OnMessage;
+#endif
+    }
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing) StopUpdates();
+        base.Dispose(disposing);
+    }
+    async Task<string> ExecuteScript(string script)
+    {
+        if (closed || IsDisposed) return string.Empty;
+        try { return await web.ExecuteScriptAsync(script); }
+        catch (Exception) when (closed || IsDisposed) { return string.Empty; }
     }
     string[] ReadInstalledFonts()
     {
@@ -57,6 +83,7 @@ public sealed class Inspector : Form
     }
     async void OnLoaded(object? sender, WebViewLoadedEventArgs e)
     {
+        if (closed || IsDisposed) return;
         try
         {
             object? libraryError = null;
@@ -65,16 +92,16 @@ public sealed class Inspector : Form
             catch (Exception ex) { userPresets = new(); libraryError = Localization.Describe(ex); }
             var data = new { language = NativeLanguage.Snapshot(), userPresets, libraryError, theme = Runtime.Current, presets = Theme.Presets.Select(InstalledFonts.Resolve), fonts = ReadInstalledFonts(), enabled = Runtime.DesiredEnabled, session = SessionSnapshot(), groups = Groups.Snapshot(), native = true };
 #if MARGIN_RHINO7
-            await web.ExecuteScriptAsync(LegacyStudioBridge.Script);
+            await ExecuteScript(LegacyStudioBridge.Script);
 #endif
-            await web.ExecuteScriptAsync("window.MarginStudio.connect(" + JsonSerializer.Serialize(data) + ")");
-            Ready = true;
+            await ExecuteScript("window.MarginStudio.connect(" + JsonSerializer.Serialize(data) + ")");
+            Ready = !closed && !IsDisposed;
         }
         catch (Exception ex) { LastError = ex.Message; Rhino.RhinoApp.WriteLine("Margin studio: " + ex.Message); }
     }
     async Task Reply(object message)
     {
-        if (!closed) await web.ExecuteScriptAsync("window.MarginStudio.status(" + JsonSerializer.Serialize(message) + ")");
+        if (!closed) await ExecuteScript("window.MarginStudio.status(" + JsonSerializer.Serialize(message) + ")");
     }
 #if MARGIN_RHINO7
     async void OnLegacyMessage(object? sender, WebViewLoadingEventArgs e)
@@ -89,16 +116,20 @@ public sealed class Inspector : Form
         catch (Exception ex) { LastError = ex.Message; Rhino.RhinoApp.WriteLine("Margin studio: " + ex.Message); }
         finally
         {
-            try { if (!closed) await web.ExecuteScriptAsync("window.MarginLegacyAck()"); }
+            try { if (!closed) await ExecuteScript("window.MarginLegacyAck()"); }
             catch (Exception ex) { LastError = ex.Message; Rhino.RhinoApp.WriteLine("Margin studio: " + ex.Message); }
         }
     }
 #else
-    async void OnMessage(object? sender, WebViewMessageEventArgs e) => await HandleMessage(e.Message);
+    async void OnMessage(object? sender, WebViewMessageEventArgs e)
+    {
+        try { await HandleMessage(e.Message); }
+        catch (Exception ex) { LastError = ex.Message; }
+    }
 #endif
     async Task HandleMessage(string message)
     {
-        if (closed) return;
+        if (closed || IsDisposed) return;
         try
         {
             if (message.Length > 40_000) throw Localization.InvalidData("ui.this_theme_is_too_large");
@@ -115,7 +146,7 @@ public sealed class Inspector : Form
                 case "apply":
                     if (root.GetProperty("theme").GetProperty("FontFamily").GetString() != Runtime.Current.FontFamily)
                     {
-                        await web.ExecuteScriptAsync("window.MarginStudio.setTheme(" + JsonSerializer.Serialize(Runtime.Current) + ")");
+                        await ExecuteScript("window.MarginStudio.setTheme(" + JsonSerializer.Serialize(Runtime.Current) + ")");
                         await Reply(Localization.Message("fonts.fallback", ("name", Runtime.Current.FontFamily)));
                     }
                     break;
@@ -154,7 +185,7 @@ public sealed class Inspector : Form
                     PresetStore.Delete(PresetsPath, root.GetProperty("id").GetString() ?? "");
                     await PresetReply(null, null, Localization.Message("ui.preset_deleted_your_current_style_is_unchanged"));
                     break;
-                case "fonts": await web.ExecuteScriptAsync("window.MarginStudio.setFonts(" + JsonSerializer.Serialize(ReadInstalledFonts()) + ")"); break;
+                case "fonts": await ExecuteScript("window.MarginStudio.setFonts(" + JsonSerializer.Serialize(ReadInstalledFonts()) + ")"); break;
                 case "export":
                     var save = new SaveFileDialog { FileName = "Margin-theme.json" };
                     save.Filters.Add(new FileFilter(Localization.Text("ui.margin_theme"), ".json"));
@@ -168,7 +199,7 @@ public sealed class Inspector : Form
                         if (new FileInfo(open.FileName).Length > 32_768) throw Localization.InvalidData("ui.choose_a_theme_smaller_than_32_kb");
                         var theme = ThemeStore.Load(open.FileName);
                         Runtime.Apply(theme);
-                        await web.ExecuteScriptAsync("window.MarginStudio.setTheme(" + JsonSerializer.Serialize(Runtime.Current) + ")");
+                        await ExecuteScript("window.MarginStudio.setTheme(" + JsonSerializer.Serialize(Runtime.Current) + ")");
                         await Reply(Localization.Message("ui.theme_imported_save_to_keep_it"));
                     }
                     break;
@@ -177,16 +208,16 @@ public sealed class Inspector : Form
         catch (Exception ex)
         {
             LastError = ex.Message;
-            if (!closed) await web.ExecuteScriptAsync("window.MarginStudio.setLanguage(" + JsonSerializer.Serialize(NativeLanguage.Snapshot()) + ")");
+            if (!closed) await ExecuteScript("window.MarginStudio.setLanguage(" + JsonSerializer.Serialize(NativeLanguage.Snapshot()) + ")");
             await SessionReply(true);
             var failure = Localization.Message("change.failed", ("error", Localization.Describe(ex)));
-            if (!closed) await web.ExecuteScriptAsync("window.MarginStudio.reportError(" + JsonSerializer.Serialize(failure) + ")");
+            if (!closed) await ExecuteScript("window.MarginStudio.reportError(" + JsonSerializer.Serialize(failure) + ")");
             await Reply(failure);
         }
     }
     async void SyncGroupSelection(object? sender, EventArgs e)
     {
-        if (closed || !Ready || !Visible || syncingGroups) return;
+        if (closed || IsDisposed || !Ready || !Visible || syncingGroups) return;
         syncingGroups = true;
         try
         {
@@ -195,7 +226,7 @@ public sealed class Inspector : Form
             if (!groupsVisible) return;
             var snapshot = JsonSerializer.Serialize(Groups.Snapshot());
             if (snapshot == lastGroupSnapshot) return;
-            await web.ExecuteScriptAsync("window.MarginStudio.setGroups(" + snapshot + ",null,true)");
+            await ExecuteScript("window.MarginStudio.setGroups(" + snapshot + ",null,true)");
             lastGroupSnapshot = snapshot;
         }
         catch (Exception ex) { LastError = ex.Message; }
@@ -204,7 +235,7 @@ public sealed class Inspector : Form
     async Task LanguageReply(bool force = false)
     {
         if (closed || (!force && languageRevision == Localization.Revision)) return;
-        await web.ExecuteScriptAsync("window.MarginStudio.setLanguage(" + JsonSerializer.Serialize(NativeLanguage.Snapshot()) + ")");
+        await ExecuteScript("window.MarginStudio.setLanguage(" + JsonSerializer.Serialize(NativeLanguage.Snapshot()) + ")");
         languageRevision = Localization.Revision;
     }
     static object SessionSnapshot() => new { desired = Runtime.DesiredEnabled, effective = Runtime.Enabled,
@@ -214,22 +245,22 @@ public sealed class Inspector : Form
         if (closed) return;
         var snapshot = JsonSerializer.Serialize(SessionSnapshot());
         if (!force && snapshot == lastSessionSnapshot) return;
-        await web.ExecuteScriptAsync("window.MarginStudio.setSession(" + snapshot + ")");
+        await ExecuteScript("window.MarginStudio.setSession(" + snapshot + ")");
         lastSessionSnapshot = snapshot;
     }
     async Task GroupReply(object? message = null, bool preserveDraft = false)
     {
         if (closed) return;
         var snapshot = JsonSerializer.Serialize(Groups.Snapshot());
-        await web.ExecuteScriptAsync("window.MarginStudio.setGroups(" + snapshot + "," + JsonSerializer.Serialize(message ?? Localization.Message("group.refreshed")) + "," + (preserveDraft ? "true" : "false") + ")");
+        await ExecuteScript("window.MarginStudio.setGroups(" + snapshot + "," + JsonSerializer.Serialize(message ?? Localization.Message("group.refreshed")) + "," + (preserveDraft ? "true" : "false") + ")");
         lastGroupSnapshot = snapshot;
     }
     async Task PresetReply(string? selectedId, Theme? theme, object message)
     {
-        if (!closed) await web.ExecuteScriptAsync("window.MarginStudio.setUserPresets(" +
+        if (!closed) await ExecuteScript("window.MarginStudio.setUserPresets(" +
             JsonSerializer.Serialize(new { items = PresetStore.Load(PresetsPath), selectedId, theme, message }) + ")");
     }
-    public Task<string> InspectAsync(string script) => web.ExecuteScriptAsync(script);
+    public Task<string> InspectAsync(string script) => ExecuteScript(script);
 
     public void Present()
     {

@@ -390,6 +390,73 @@ This completes the targeted Mac GH1 mouse pass, not an exhaustive interaction or
 stability certification. Windows, new GH2 interactions, multi-monitor behavior
 and prolonged use remain unverified. The package remains a local experimental
 alpha; nothing was published.
+## Background native multilingual check — 2026-11-16
+
+A disposable Rhino **8.37.26307.15002 Mac / GH1** process exercised the
+multilingual candidate with a private Margin settings directory. It passed
+**197 assertions**: all 13 manual language choices persisted; real unshown Eto
+group editors displayed translated controls; multilingual literal names,
+title visibility and casing survived native save, undo/redo, all four outline
+copies, and GH definition save/reopen. Automatic selection was checked against
+this host's English locale. This is not 13 different Rhino interface locales,
+a system-clipboard test, a mouse test or native visual/layout verification.
+
+Studio loaded inside Rhino's actual WebView, connected and read 197 installed
+fonts without showing its window. The Studio language acknowledgement test
+stopped on a test-helper Boolean comparison; the helper was corrected, but
+its rerun could not connect because the test process had crashed during cleanup.
+The crash report identified **ObjectDisposedException in
+Inspector.SyncGroupSelection**: a queued timer accessed `Visible` on a disposed
+Studio. Cleanup previously depended only on `Closed`, which direct disposal
+of an unshown window did not raise.
+
+The fix stops and detaches the timer on both close and disposal, unsubscribes
+browser callbacks, rejects callbacks after disposal, and safely finishes browser
+operations already in flight. A standalone regression using the **actual
+compiled Inspector and Eto disposed state** reproduced the exact exception
+before the fix and passes afterwards for the Rhino 8 GH1 and Rhino 9 GH2
+assemblies. It creates no native window and does not establish that native
+timer teardown or post-fix close/reopen was tested in Rhino. The Windows build
+job also runs this regression. Local Mac Rhino 7/8/9 GH1 and Rhino 9 GH2 builds
+pass; 124 shared checks and the existing appearance/casing parity checks pass.
+
+Isolation: no tool targeted the user's working Rhino 9 process, no working
+definition was opened or edited, and checksums of the personal Margin files
+were unchanged. The test launch briefly activated despite macOS background
+flags; it was hidden, then set to prohibit activation and its visible test
+window was ordered out. No further Rhino instance was launched after that.
+The final editor-suite visibility assertion used macOS `Hidden`, which becomes
+false under the prohibited activation policy; separate inspection confirmed
+`Active=false`. Its 197 functional assertions had already passed. The test now
+checks activation policy instead of interpreting `Hidden` as foreground state.
+
+Remaining: post-fix native Studio language acknowledgement, close/reopen,
+direct disposal during pending browser work, actual Rhino restart persistence,
+native menu discovery, screenshots/glyph and layout review, Rhino 9 GH1/GH2
+interaction, and Rhino 7 host validation. Windows host validation and independent
+native-speaker review remain pending. No candidate was installed or published.
+Raw reports, the crash evidence, personal-file checksum comparison and red/green
+regression logs are under `artifacts/multilingual-native/`.
+
+Repeatable checks: `tools/test_native_localization.py` has `verify(output)` and
+`verify_studio(output)` for a disposable, activation-prohibited Rhino UI thread.
+Set `MARGIN_SETTINGS_DIRECTORY` to an absolute private directory **before**
+loading either Margin adapter. This process-local override covers themes,
+preferences and presets; the normal application-data location is unchanged.
+The Studio helper requires a fresh private preset library. Its runtime
+stop/start check is not a Rhino process restart. Never run these helpers in a
+working Rhino process.
+
+The standalone crash regression takes the built adapter followed by dependency
+directories, for example:
+
+```sh
+dotnet run --project tools/NativeLifecycleChecks -c Release -- \
+  src/Margin.Grasshopper/bin/Release/net8.0/Margin.gha \
+  '/Applications/Rhino 8.app/Contents/Frameworks/RhCore.framework/Versions/A/Resources' \
+  '/Applications/Rhino 8.app/Contents/Frameworks/RhCore.framework/Versions/A/Resources/ManagedPlugIns/GrasshopperPlugin.rhp'
+```
+
 ## Multilingual candidate — 2026-11-16
 
 Implemented all 13 Rhino languages using 218 shared offline messages. Language

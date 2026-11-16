@@ -5,6 +5,19 @@ static class LocalizationChecks
     public sealed record LocaleCase(string Choice, string? Host, string Expected);
     public static void Run(Action<bool,string> check)
     {
+        var settingsOverride = Environment.GetEnvironmentVariable("MARGIN_SETTINGS_DIRECTORY");
+        try
+        {
+            Environment.SetEnvironmentVariable("MARGIN_SETTINGS_DIRECTORY", null);
+            check(SettingsPaths.DirectoryPath == Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Margin"), "normal settings location is unchanged");
+            var isolated = Path.Combine(Path.GetTempPath(), "margin-native-isolated");
+            Environment.SetEnvironmentVariable("MARGIN_SETTINGS_DIRECTORY", isolated);
+            check(SettingsPaths.DirectoryPath == Path.GetFullPath(isolated), "native tests can isolate all Margin settings");
+            Environment.SetEnvironmentVariable("MARGIN_SETTINGS_DIRECTORY", "relative-path");
+            try { _ = SettingsPaths.DirectoryPath; throw new Exception("Relative settings path accepted"); }
+            catch (InvalidOperationException) { check(true, "relative settings overrides fail before accessing personal settings"); }
+        }
+        finally { Environment.SetEnvironmentVariable("MARGIN_SETTINGS_DIRECTORY", settingsOverride); }
         using var casesStream = typeof(LocalizationChecks).Assembly.GetManifestResourceStream("Margin.LocaleCases.json")!;
         var cases = System.Text.Json.JsonSerializer.Deserialize<LocaleCase[]>(casesStream,new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
         foreach(var item in cases) check(Localization.Resolve(item.Choice,item.Host)==item.Expected,"shared locale case: "+item.Choice+"/"+item.Host);

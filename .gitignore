@@ -83,3 +83,7 @@
 !docs/MULTILINGUAL.md
 !tests/LocalizationChecks.cs
 !tests/LocalizationCases.json
+!tools/test_native_localization.py
+!tools/NativeLifecycleChecks/
+!tools/NativeLifecycleChecks/*.cs
+!tools/NativeLifecycleChecks/*.csproj

@@ -81,3 +81,4 @@
 !tools/sync_locales.py
 !tools/browser/localization.mjs
 !docs/MULTILINGUAL.md
+!tests/LocalizationChecks.cs

@@ -62,12 +62,9 @@ Do not translate by searching and replacing rendered DOM text or serialized
 enum values. Escape inserted values; translations must not become HTML or code.
 Retain diagnostic details where useful beneath translated error explanations.
 
-The GH2 adapter currently finds its host menu by the English word `Display`
-(`src/Margin.Grasshopper2/Plugin.cs`). Replace that dependency with an inspected
-stable host identifier or a verified host-language-aware lookup. Inspect the
-GH2 group-command name matching as well; do not assume its verbs/nouns are
-localized or invariant without checking. GH1 already uses the menu identifier
-`mnuDisplay`.
+The GH2 adapter uses the inspected `EditorMainMenu.Display` property instead of
+matching the English caption. SDK inspection confirms its group-command tokens
+are invariant. GH1 uses the menu identifier `mnuDisplay`.
 
 Keep the existing typography and visual hierarchy. Allow translated labels to
 wrap or grow without squeezing colour controls, clipping actions or hiding the
@@ -116,6 +113,8 @@ named built-in styles), font names and actual component names are intentionally
 preserved. Portuguese wording uses Brazilian Portuguese; regional Portuguese
 locales resolve to the same catalog. Numeric member summaries use a label and
 count instead of English singular/plural sentence construction.
+Plugin discovery descriptions remain English constants: Yak reads this metadata
+without loading companion assemblies. Runtime menus and controls use catalogs.
 
 The local Rhino 9 SDK inspection confirms `EditorMainMenu.Display` is a public
 menu property. Margin now uses it directly. `DocumentMethods.GroupSelection`

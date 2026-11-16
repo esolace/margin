@@ -399,14 +399,36 @@ invalid-choice protection, complete catalogs, placeholder integrity and literal
 user content. Browser workflows pass all 13 languages at 900 × 600, including
 host language selection, manual acknowledgement, saved/reopened selection,
 failed saving, typed preset names, group drafts, hidden/blank names and visible
-actions. Screenshots are in `artifacts/multilingual/screenshots/`.
+actions. All languages exercise save/rename/update/delete preset dialogs,
+font-picker keyboard controls, Tab navigation and translated current feedback,
+including nested native validation errors. Screenshots are in
+`artifacts/multilingual/screenshots/`.
+
+Local verification passes 121 shared checks, Mac Rhino 7/8/9 GH1 builds and
+Rhino 9 GH2 builds. Studio/native parity passes 1,536 appearance comparisons,
+60 title-case scenarios and 2,987 Unicode mappings. The Rhino 7 private Yak
+package builds and passes its payload/source audit; its Mono dependency binding
+checks remain pending in the native host.
+
+Spec and standards reviews are clear after fixing language preference recovery,
+feedback translation, .NET Framework exception metadata and dependency-free
+package discovery. Shared locale fixtures now check both native and browser
+resolution, including explicit Chinese script precedence.
 
 No live Rhino process, installed plugin, working definition or personal
 preference file was changed. No native workflow claim is made for this build.
 Rhino 7's Intel launch limitation and the Windows Rhino 7 exclusion remain.
 Independent native-speaker review is pending; completeness tests do not certify
 translation quality. Local build/verification logs are under
-`artifacts/multilingual/`. Final CI results are recorded after verification.
+`artifacts/multilingual/`.
+
+Final code commit `68e424d` passed all four jobs in
+[GitHub run 43926248469](https://github.com/esolace/margin/actions/runs/43926248469):
+legacy-core (net48), portable-checks (net8/net10 and compatibility/parity checks),
+studio-workflows (existing workflows plus all 13 languages), and windows-build
+(Rhino 8/9 GH1 and Rhino 9 GH2). The legacy error-descriptor failure from the
+previous run is fixed and covered by regression checks. Windows build success
+does not constitute interactive Windows host validation.
 
 ## Rhino 7 background preparation — 2026-11-16
 

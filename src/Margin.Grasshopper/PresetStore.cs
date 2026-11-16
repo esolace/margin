@@ -48,7 +48,7 @@ public static class PresetStore
         try
         {
             File.WriteAllText(temp, JsonSerializer.Serialize(items, new JsonSerializerOptions { WriteIndented = true }));
-            File.Move(temp, path, true);
+            RuntimeSupport.ReplaceFile(temp, path);
         }
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }

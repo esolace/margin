@@ -21,6 +21,22 @@ jobs:
         with:
           python-version: '3.12'
       - run: python tools/build_release.py --rhino all --platform win
+  legacy-core:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: dotnet build tests -c Release -p:RhinoMajor=7
+      - run: ./tests/bin/Release/net48/Margin.Tests.exe
+      - run: node tools/test_studio_appearance.mjs
+        env:
+          MARGIN_TEST_EXECUTABLE: tests/bin/Release/net48/Margin.Tests.exe
+      - run: node tools/test_legacy_studio.mjs
   portable-checks:
     runs-on: ubuntu-latest
     steps:
@@ -35,6 +51,9 @@ jobs:
             8.0.x
       - run: dotnet run --project tests -c Release
       - run: dotnet run --project tests -c Release -p:RhinoMajor=8
+      - run: dotnet run --project tools/LegacyUnicode -- src/Margin.Core/LegacyUnicode.json --check
+      - run: dotnet run --project tests -c Release -p:MarginLegacyCheck=true
+      - run: node tools/test_legacy_studio.mjs
       - run: python3 tools/test_gh2_staging.py
       - run: python3 tools/sync_studio_policy.py --check
       - run: node tools/test_studio_appearance.mjs

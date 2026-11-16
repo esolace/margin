@@ -9,7 +9,7 @@ public sealed record GroupStyle(string Fill, double Opacity, bool Designed = tru
     public GroupAppearance Appearance { get; init; } = new();
     public GroupStyle Validate()
     {
-        if (!Regex.IsMatch(Fill ?? "", "^#[0-9a-fA-F]{6}$") || !double.IsFinite(Opacity) || Opacity < 0 || Opacity > 100)
+        if (!Regex.IsMatch(Fill ?? "", "^#[0-9a-fA-F]{6}$") || !RuntimeSupport.IsFinite(Opacity) || Opacity < 0 || Opacity > 100)
             throw new InvalidDataException("Choose a valid colour and an opacity between 0 and 100.");
         return this with { Fill = Fill!.ToUpperInvariant(), Appearance = (Appearance ?? new()).Validate() };
     }

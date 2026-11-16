@@ -7,7 +7,12 @@ import '../design/group-appearance.js';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dotnet = process.env.MARGIN_DOTNET || 'dotnet';
-const run = spawnSync(dotnet, ['run', '--project', resolve(root, 'tests'), '-c', 'Release', '--no-build', '--', '--appearance-vectors'], {encoding: 'utf8'});
+function native(mode) {
+  return process.env.MARGIN_TEST_EXECUTABLE
+    ? spawnSync(resolve(root, process.env.MARGIN_TEST_EXECUTABLE), [mode], {encoding:'utf8'})
+    : spawnSync(dotnet, ['run','--project',resolve(root,'tests'),'-c','Release','--no-build','--',mode], {encoding:'utf8'});
+}
+const run = native('--appearance-vectors');
 assert.equal(run.status, 0, run.stderr);
 const vectors = JSON.parse(run.stdout);
 const policy = JSON.parse(readFileSync(resolve(root, 'design/group-appearance-policy.json'), 'utf8'));
@@ -17,13 +22,13 @@ for (const {style, dark, externalTitle, resolved} of vectors) {
 }
 console.log(`PASS ${vectors.length} Studio/native appearance comparisons`);
 
-const titles = spawnSync(dotnet, ['run', '--project', resolve(root, 'tests'), '-c', 'Release', '--no-build', '--', '--title-vectors'], {encoding:'utf8'});
+const titles = native('--title-vectors');
 assert.equal(titles.status,0,titles.stderr);
 const titleVectors=JSON.parse(titles.stdout);
 for(const {name,casing,text} of titleVectors) assert.equal(globalThis.MarginGroupAppearance.formatTitle(name,casing,policy),text,`${casing}: ${name}`);
 console.log(`PASS ${titleVectors.length} Studio/native title case comparisons`);
 
-const mappingsRun=spawnSync(dotnet,['run','--project',resolve(root,'tests'),'-c','Release','--no-build','--','--case-mappings'],{encoding:'utf8'});
+const mappingsRun=native('--case-mappings');
 assert.equal(mappingsRun.status,0,mappingsRun.stderr);
 const mappings=JSON.parse(mappingsRun.stdout);
 for(const {letter,upper,lower} of mappings){

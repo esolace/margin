@@ -33,7 +33,11 @@ public sealed class Inspector : Form
         MinimumSize = new Size(900, 600);
         BackgroundColor = Color.FromArgb(248, 250, 252);
         Content = web;
+#if MARGIN_RHINO7
+        web.DocumentLoading += OnLegacyMessage;
+#else
         web.MessageReceived += OnMessage;
+#endif
         web.DocumentLoaded += OnLoaded;
         web.DocumentLoading += (_, e) => { if (e.Uri is not null && e.Uri.Scheme != "about") e.Cancel = true; };
         groupSelectionTimer.Elapsed += SyncGroupSelection;
@@ -59,6 +63,9 @@ public sealed class Inspector : Form
             try { userPresets = PresetStore.Load(PresetsPath); }
             catch (Exception ex) { userPresets = new(); libraryError = ex.Message; }
             var data = new { userPresets, libraryError, theme = Runtime.Current, presets = Theme.Presets.Select(InstalledFonts.Resolve), fonts = ReadInstalledFonts(), enabled = Runtime.DesiredEnabled, session = SessionSnapshot(), groups = Groups.Snapshot(), native = true };
+#if MARGIN_RHINO7
+            await web.ExecuteScriptAsync(LegacyStudioBridge.Script);
+#endif
             await web.ExecuteScriptAsync("window.MarginStudio.connect(" + JsonSerializer.Serialize(data) + ")");
             Ready = true;
         }
@@ -68,13 +75,33 @@ public sealed class Inspector : Form
     {
         if (!closed) await web.ExecuteScriptAsync("window.MarginStudio.status(" + JsonSerializer.Serialize(message) + ")");
     }
-    async void OnMessage(object? sender, WebViewMessageEventArgs e)
+#if MARGIN_RHINO7
+    async void OnLegacyMessage(object? sender, WebViewLoadingEventArgs e)
+    {
+        if (e.Uri?.Scheme != "margin") return;
+        e.Cancel = true;
+        try
+        {
+            if (e.Uri.Host != "message") return;
+            await HandleMessage(Uri.UnescapeDataString(e.Uri.AbsolutePath.TrimStart('/')));
+        }
+        catch (Exception ex) { LastError = ex.Message; Rhino.RhinoApp.WriteLine("Margin studio: " + ex.Message); }
+        finally
+        {
+            try { if (!closed) await web.ExecuteScriptAsync("window.MarginLegacyAck()"); }
+            catch (Exception ex) { LastError = ex.Message; Rhino.RhinoApp.WriteLine("Margin studio: " + ex.Message); }
+        }
+    }
+#else
+    async void OnMessage(object? sender, WebViewMessageEventArgs e) => await HandleMessage(e.Message);
+#endif
+    async Task HandleMessage(string message)
     {
         if (closed) return;
         try
         {
-            if (e.Message.Length > 40_000) throw new InvalidDataException("This theme is too large.");
-            using var data = JsonDocument.Parse(e.Message);
+            if (message.Length > 40_000) throw new InvalidDataException("This theme is too large.");
+            using var data = JsonDocument.Parse(message);
             var root = data.RootElement;
             var action = root.GetProperty("action").GetString();
             if (action is "apply" or "save" or "export") Runtime.Apply(Theme.FromJson(root.GetProperty("theme").GetRawText()));

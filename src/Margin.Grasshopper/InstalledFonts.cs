@@ -15,7 +15,7 @@ internal static class InstalledFonts
         var chosen = names.FirstOrDefault(n => string.Equals(n, theme.FontFamily, StringComparison.OrdinalIgnoreCase));
         if (chosen is null)
         {
-            var preferred = OperatingSystem.IsWindows() ? "Segoe UI" : "Helvetica Neue";
+            var preferred = RuntimeSupport.IsWindows ? "Segoe UI" : "Helvetica Neue";
             chosen = names.FirstOrDefault(n => n == preferred) ?? names.FirstOrDefault(n => n == "Arial")
                 ?? names.FirstOrDefault() ?? theme.FontFamily;
         }

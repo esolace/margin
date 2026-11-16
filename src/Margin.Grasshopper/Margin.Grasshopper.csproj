@@ -8,7 +8,8 @@
     <MarginPlatform Condition="'$(MarginPlatform)' == ''">mac</MarginPlatform>
     <TargetFramework Condition="'$(MarginPlatform)' == 'mac'">net$(RuntimeVersion)</TargetFramework>
     <TargetFramework Condition="'$(MarginPlatform)' == 'win'">net$(RuntimeVersion)-windows</TargetFramework>
-    <UseWindowsForms Condition="'$(MarginPlatform)' == 'win'">true</UseWindowsForms>
+    <TargetFramework Condition="'$(RhinoMajor)' == '7'">net48</TargetFramework>
+    <UseWindowsForms Condition="'$(MarginPlatform)' == 'win' and '$(RhinoMajor)' != '7'">true</UseWindowsForms>
     <EnableWindowsTargeting Condition="'$(MarginPlatform)' == 'win'">true</EnableWindowsTargeting>
     <DefineConstants Condition="'$(MarginPlatform)' == 'mac'">$(DefineConstants);MARGIN_MAC</DefineConstants>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
@@ -52,5 +53,26 @@
     <Reference Include="System.Windows.Forms"><HintPath>$(NuGetPackageRoot)microsoft.windowsdesktop.app.ref/8.0.14/ref/net8.0/System.Windows.Forms.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="System.Windows.Forms.Primitives"><HintPath>$(NuGetPackageRoot)microsoft.windowsdesktop.app.ref/8.0.14/ref/net8.0/System.Windows.Forms.Primitives.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
+  <PropertyGroup Condition="'$(RhinoMajor)' == '7'">
+    <Version>0.5.0-alpha.9-rhino7.1</Version><AssemblyVersion>0.5.0.9</AssemblyVersion>
+    <DefineConstants>$(DefineConstants);MARGIN_RHINO7</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(RhinoMajor)' == '7'">
+    <PackageReference Include="PolySharp" Version="1.17.1" PrivateAssets="all" />
+    <Reference Include="System.Drawing" /><Reference Include="System.Windows.Forms" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(RhinoMajor)' == '7' and '$(MarginPlatform)' == 'mac'">
+    <Rhino7Resources Condition="'$(Rhino7Resources)' == ''">/Applications/Rhino 7.app/Contents/Frameworks/RhCore.framework/Versions/A/Resources</Rhino7Resources>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(RhinoMajor)' == '7' and '$(MarginPlatform)' == 'mac'">
+    <Reference Include="RhinoCommon"><HintPath>$(Rhino7Resources)/RhinoCommon.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Rhino.UI"><HintPath>$(Rhino7Resources)/Rhino.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Eto"><HintPath>$(Rhino7Resources)/Eto.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Grasshopper"><HintPath>$(Rhino7Resources)/ManagedPlugIns/GrasshopperPlugin.rhp/Grasshopper.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GH_IO"><HintPath>$(Rhino7Resources)/ManagedPlugIns/GrasshopperPlugin.rhp/GH_IO.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <Target Name="ValidateLegacyPlatform" BeforeTargets="PrepareForBuild" Condition="'$(RhinoMajor)' == '7' and '$(MarginPlatform)' != 'mac'">
+    <Error Text="The Rhino 7 candidate is Mac-only. Windows Studio needs a modern browser host before it can be packaged." />
+  </Target>
   <Target Name="PackageGha" AfterTargets="Build"><Copy SourceFiles="$(TargetPath)" DestinationFiles="$(TargetDir)Margin.gha" /></Target>
 </Project>

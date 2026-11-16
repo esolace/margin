@@ -40,10 +40,18 @@ static class AppearanceChecks
         catch (InvalidDataException) { check(true, "invalid opacity is rejected before colour resolution"); }
     }
 
+#if NETFRAMEWORK
+    public static object[] CaseMappings() => Enumerable.Range(0, 0x110000)
+        .Where(value => value < 0xd800 || value > 0xdfff).Select(char.ConvertFromUtf32)
+        .Select(letter => new { letter, upper = GroupAppearancePolicy.FormatTitle(letter, "Uppercase"), lower = GroupAppearancePolicy.FormatTitle(letter, "Lowercase") })
+        .Where(value => value.letter != value.upper || value.letter != value.lower).Cast<object>().ToArray();
+#else
     public static object[] CaseMappings() => Enumerable.Range(0, 0x110000)
         .Where(System.Text.Rune.IsValid).Select(value => new System.Text.Rune(value))
         .Where(value => System.Text.Rune.ToUpperInvariant(value) != value || System.Text.Rune.ToLowerInvariant(value) != value)
         .Select(value => (object)new { letter = value.ToString(), upper = System.Text.Rune.ToUpperInvariant(value).ToString(), lower = System.Text.Rune.ToLowerInvariant(value).ToString() }).ToArray();
+
+#endif
 
     public static object[] TitleVectors() => (from name in new[] { "gUiDe CURVES", "— ÉTUDE d'été", "Straße / GH", "ΣΑΣ", "123 guide-curves", "👋 café", "", "e\u0301tude", "𐐨 guide", "aⅣguide", "ᾀ guide", "a²b" }
         from casing in GroupAppearancePolicy.TitleCases.Keys

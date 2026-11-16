@@ -18,12 +18,12 @@ def public_files():
              'design/Studio.html', 'design/group-appearance-policy.json', 'design/group-appearance.js', 'tools/sync_studio_policy.py', 'tools/test_studio_appearance.mjs', 'docs/TESTING.md', 'docs/images/studio.png',
              'release/BUILDING.md', 'release/README.md', 'release/manifest.yml',
              'release/icon.png', 'release/icon.svg', 'tools/build_release.py',
-             'tools/build_gh2.py', 'tools/test_gh2_staging.py', 'tools/test_gh2_group_editor.py',
+             'tools/build_gh2.py', 'tools/build_rhino7.py', 'tools/test_legacy_studio.mjs', 'src/Margin.Core/LegacyUnicode.json', 'docs/RHINO7.md', 'tools/test_gh2_staging.py', 'tools/test_gh2_group_editor.py',
              'tools/test_gh2_group_outline.py', 'tools/test_gh2_group_copy.py', 'tools/test_gh2_group_defaults.py',
              'tools/test_gh1_group_defaults.py', 'tools/test_gh1_group_movement.py', 'tools/test_gh1_group_workflow.py', 'tools/test_gh1_group_editor.py',
              '.github/workflows/ci.yml', '.github/ISSUE_TEMPLATE/bug_report.yml']
     result = [ROOT / name for name in fixed]
-    for folder in ['src', 'tests', 'tools/PackageAudit']:
+    for folder in ['src', 'tests', 'tools/PackageAudit', 'tools/LegacyUnicode']:
         result += [p for p in (ROOT / folder).rglob('*') if p.is_file()
                    and not {'bin', 'obj'}.intersection(p.relative_to(ROOT).parts)
                    and p.suffix in {'.cs', '.csproj'}]

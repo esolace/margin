@@ -8,7 +8,7 @@ public readonly record struct Box(double X, double Y, double Width, double Heigh
     public double CenterY => Y + Height / 2;
     public bool Intersects(Box b) => X < b.Right && Right > b.X && Y < b.Bottom && Bottom > b.Y;
     public Box Inflate(double n) => new(X - n, Y - n, Width + 2 * n, Height + 2 * n);
-    public bool Valid => double.IsFinite(X) && double.IsFinite(Y) && double.IsFinite(Width) && double.IsFinite(Height) && Width > 0 && Height > 0;
+    public bool Valid => RuntimeSupport.IsFinite(X) && RuntimeSupport.IsFinite(Y) && RuntimeSupport.IsFinite(Width) && RuntimeSupport.IsFinite(Height) && Width > 0 && Height > 0;
 }
 
 public static class LabelLayout
@@ -20,7 +20,7 @@ public static class LabelLayout
 
     public static Box? Place(Box component, double width, double height, Theme theme, IReadOnlyList<Box> occupied, IReadOnlyList<Box> headings)
     {
-        if (!component.Valid || !double.IsFinite(width) || !double.IsFinite(height) || width <= 0 || height <= 0) return null;
+        if (!component.Valid || !RuntimeSupport.IsFinite(width) || !RuntimeSupport.IsFinite(height) || width <= 0 || height <= 0) return null;
         double x = component.CenterX - width / 2;
         var preferred = new Box(x, theme.Below ? component.Bottom + theme.Gap : component.Y - theme.Gap - height, width, height);
         if (!theme.AvoidOverlap && headings.Count == 0) return preferred;
@@ -40,8 +40,8 @@ public static class SnapEngine
 {
     public static SnapResult Find(Box moving, IEnumerable<Box> targets, double zoom, double radiusPixels = 7)
     {
-        if (!moving.Valid || !double.IsFinite(zoom) || zoom <= 0) return default;
-        double tolerance = Math.Clamp(radiusPixels, 1, 24) / zoom;
+        if (!moving.Valid || !RuntimeSupport.IsFinite(zoom) || zoom <= 0) return default;
+        double tolerance = RuntimeSupport.Clamp(radiusPixels, 1, 24) / zoom;
         double dx = 0, dy = 0, bestX = tolerance + 1e-8, bestY = tolerance + 1e-8; double? gx = null, gy = null;
         foreach (var t in targets.Where(t => t.Valid).OrderBy(t => t.X).ThenBy(t => t.Y))
         {

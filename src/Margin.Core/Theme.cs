@@ -52,8 +52,8 @@ public sealed record Theme
         Gap = Clamp(Gap, 4, 60, 12),
         MinZoom = Clamp(MinZoom, .2, 2, .55)
     };
-    private static double Clamp(double v, double min, double max, double fallback) => double.IsFinite(v) ? Math.Clamp(v, min, max) : fallback;
-    private static string Clean(string? s, string fallback, int max) => string.IsNullOrWhiteSpace(s) ? fallback : s.Trim()[..Math.Min(s.Trim().Length, max)];
+    private static double Clamp(double v, double min, double max, double fallback) => RuntimeSupport.IsFinite(v) ? RuntimeSupport.Clamp(v, min, max) : fallback;
+    private static string Clean(string? s, string fallback, int max) => string.IsNullOrWhiteSpace(s) ? fallback : s!.Trim()[..Math.Min(s.Trim().Length, max)];
     private static string Hex(string? s, string fallback) => s is not null && Regex.IsMatch(s, "^#[0-9a-fA-F]{6}$") ? s.ToUpperInvariant() : fallback;
     public string ToJson() => JsonSerializer.Serialize(Normalize(), new JsonSerializerOptions { WriteIndented = true });
     public static Theme FromJson(string json)
@@ -70,7 +70,7 @@ public static class ThemeStore
     {
         Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
         string temp = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
-        try { File.WriteAllText(temp, theme.ToJson()); File.Move(temp, path, true); }
+        try { File.WriteAllText(temp, theme.ToJson()); RuntimeSupport.ReplaceFile(temp, path); }
         finally { if (File.Exists(temp)) File.Delete(temp); }
     }
 }

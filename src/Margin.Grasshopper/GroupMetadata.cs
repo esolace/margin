@@ -9,10 +9,10 @@ namespace Margin.Native;
 static class GroupMetadata
 {
     const string Key = "Margin.GroupStyle";
-    static readonly Func<GH_DocumentObject, string, string, string> get = Accessor("GetValue")
-        .CreateDelegate<Func<GH_DocumentObject, string, string, string>>();
-    static readonly Action<GH_DocumentObject, string, string> set = Accessor("SetValue")
-        .CreateDelegate<Action<GH_DocumentObject, string, string>>();
+    static readonly Func<GH_DocumentObject, string, string, string> get = (Func<GH_DocumentObject, string, string, string>)Accessor("GetValue")
+        .CreateDelegate(typeof(Func<GH_DocumentObject, string, string, string>));
+    static readonly Action<GH_DocumentObject, string, string> set = (Action<GH_DocumentObject, string, string>)Accessor("SetValue")
+        .CreateDelegate(typeof(Action<GH_DocumentObject, string, string>));
 
     static MethodInfo Accessor(string name) => typeof(GH_DocumentObject).GetMethod(name,
         BindingFlags.Instance | BindingFlags.NonPublic, null, [typeof(string), typeof(string)], null)

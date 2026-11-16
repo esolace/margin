@@ -316,10 +316,20 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
     }
     // The native renderer has separate shape and tag passes. Keep the exact
     // shape, selection colours and zoom culling when suppressing its tags.
+#if MARGIN_RHINO7
+    static readonly System.Reflection.MethodInfo nativeOutlineValid = NativeMethod("IsOutlineValid", Type.EmptyTypes);
+    static readonly System.Reflection.MethodInfo nativeShape = NativeMethod("RenderGroupShape", [typeof(GH_Canvas)]);
+    static System.Reflection.MethodInfo NativeMethod(string name, Type[] arguments) =>
+        typeof(GH_GroupAttributes).GetMethod(name, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+            null, arguments, null) ?? throw new MissingMethodException(typeof(GH_GroupAttributes).FullName, name);
+    static bool IsNativeOutlineValid(GH_GroupAttributes attributes) => (bool)nativeOutlineValid.Invoke(attributes, null)!;
+    static void DrawNativeShape(GH_GroupAttributes attributes, GH_Canvas canvas) => nativeShape.Invoke(attributes, [canvas]);
+#else
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "IsOutlineValid")]
     static extern bool IsNativeOutlineValid(GH_GroupAttributes attributes);
     [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "RenderGroupShape")]
     static extern void DrawNativeShape(GH_GroupAttributes attributes, GH_Canvas canvas);
+#endif
 
     public new void RenderToCanvas(GH_Canvas canvas, GH_CanvasChannel channel)
     {

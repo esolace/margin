@@ -3,6 +3,10 @@ using System.Text;
 using System.Globalization;
 using System.Collections.ObjectModel;
 
+#if NETFRAMEWORK || MARGIN_LEGACY_CHECK
+using Rune = Margin.Core.LegacyRune;
+#endif
+
 namespace Margin.Core;
 
 public sealed record ResolvedGroupAppearance(string Text, string Accent, string Border, bool Band, bool Divider);
@@ -26,7 +30,12 @@ public static class GroupAppearancePolicy
         if (casing == "AsTyped") return name;
         var result = new StringBuilder();
         var initial = true;
-        foreach (var rune in name.EnumerateRunes())
+#if NETFRAMEWORK || MARGIN_LEGACY_CHECK
+        var scalars = name.EnumerateLegacyRunes();
+#else
+        var scalars = name.EnumerateRunes();
+#endif
+        foreach (var rune in scalars)
         {
             var value = casing == "Uppercase" ? Rune.ToUpperInvariant(rune) : Rune.ToLowerInvariant(rune);
             if (casing is "TitleCase" or "SentenceCase")
@@ -58,7 +67,7 @@ public static class GroupAppearancePolicy
     public static ResolvedGroupAppearance Resolve(GroupAppearance appearance, string fill, double opacity, string canvas, bool externalTitle = false)
     {
         appearance = appearance.Validate();
-        if (!double.IsFinite(opacity) || opacity < 0 || opacity > 100)
+        if (!RuntimeSupport.IsFinite(opacity) || opacity < 0 || opacity > 100)
             throw new InvalidDataException("Choose an opacity between 0 and 100.");
         var rgb = Rgb(fill);
         var edge = Hex(rgb.Select(v => Luminance(rgb) > rules.LightThreshold

@@ -23,7 +23,7 @@ public sealed record GroupAppearance
         static string? Colour(string? value) => value is null ? null
             : Regex.IsMatch(value, "^#[0-9a-fA-F]{6}$") ? value.ToUpperInvariant()
             : throw new InvalidDataException("Choose a valid six-digit colour.");
-        static bool Range(double value, double min, double max) => double.IsFinite(value) && value >= min && value <= max;
+        static bool Range(double value, double min, double max) => RuntimeSupport.IsFinite(value) && value >= min && value <= max;
         if (!Range(TitleSize, 10, 30) || !Range(Radius, 0, 24) || !Range(BorderWidth, 0, 4)
             || !GroupAppearancePolicy.IsHeading(Heading) || !GroupAppearancePolicy.TitleCases.ContainsKey(TitleCase ?? ""))
             throw new InvalidDataException("Choose a valid group title and frame appearance.");

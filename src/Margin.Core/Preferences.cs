@@ -13,7 +13,7 @@ public sealed record Preferences
     public GroupAppearance GroupAppearance { get; init; } = new();
     public Preferences Validate()
     {
-        if (!Regex.IsMatch(GroupFill ?? "", "^#[0-9a-fA-F]{6}$") || !double.IsFinite(GroupOpacity) || GroupOpacity < 0 || GroupOpacity > 100)
+        if (!Regex.IsMatch(GroupFill ?? "", "^#[0-9a-fA-F]{6}$") || !RuntimeSupport.IsFinite(GroupOpacity) || GroupOpacity < 0 || GroupOpacity > 100)
             throw new InvalidDataException("Invalid saved group appearance.");
         return this with { GroupFill = GroupFill!.ToUpperInvariant(), GroupAppearance = (GroupAppearance ?? new()).Validate() };
     }
@@ -35,7 +35,7 @@ public static class PreferencesStore
             try
             {
                 File.WriteAllText(temporary, JsonSerializer.Serialize(value, new JsonSerializerOptions { WriteIndented = true }));
-                File.Move(temporary, path, true);
+                RuntimeSupport.ReplaceFile(temporary, path);
             }
             finally { if (File.Exists(temporary)) File.Delete(temporary); }
             return value;

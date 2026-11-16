@@ -390,3 +390,34 @@ This completes the targeted Mac GH1 mouse pass, not an exhaustive interaction or
 stability certification. Windows, new GH2 interactions, multi-monitor behavior
 and prolonged use remain unverified. The package remains a local experimental
 alpha; nothing was published.
+## Rhino 7 background preparation — 2026-11-16
+
+Private candidate **0.5.0-alpha.9-rhino7.1**, Rhino 7.38 Mac/GH1, prepared
+on `compatibility/rhino7`. See `docs/RHINO7.md` for scope and the remaining
+native verification checklist. This section does not change the public alpha.8
+support claims below.
+
+Background verification:
+
+- Mac adapter and test executable compile against net48; zero warnings/errors.
+- Shared compatibility path passes 77 portable checks on .NET 10, including
+  preference/preset persistence, saved defaults and optional group titles.
+- Studio/native parity passes 1,536 appearance comparisons, 60 title-case
+  scenarios and 2,987 Unicode mappings; generated category data is checked.
+- Legacy Studio transport test verifies ordered commands, Unicode payloads,
+  acknowledgement and reuse after draining the queue. This is a JavaScript
+  simulation, not a native WebView test.
+- Candidate audit checks root-layout payload, dependency presence, Framework
+  target, embedded Studio/Unicode data, SDK private group-method signatures,
+  dependency licenses and source-archive contents. Two dependencies request
+  Unsafe 4.0.4.1 while the package includes 6.0.0.0; actual Mono binding remains
+  a native verification requirement.
+
+No Rhino session was launched or manipulated, no package was installed/published,
+and no live preferences or working definitions were changed. The bundled Mono
+CLI could not run here (“bad CPU type in executable”). Rendering, Studio commands,
+mouse gestures, persistence/restart and loader behavior inside Rhino 7 remain
+unverified. Windows Rhino 7 is excluded; shared net48 CI is not a host-support
+claim. Local logs and the private package are under `artifacts/rhino7/` and
+`dist/Margin-0.5.0-alpha.9-rhino7.1-rh7-mac/` respectively.
+

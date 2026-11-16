@@ -160,6 +160,13 @@ def verify_studio(output, adapter_name='Margin.Native', visible=False):
     try:
         studio = open_studio()
         check(studio.FontCount > 0 and studio.Visible == visible, 'native Studio loads installed fonts with the requested visibility')
+        js("const e=document.getElementById('languageChoice');e.value='auto';e.dispatchEvent(new Event('change'));return true;")
+        wait(lambda: state()['languageChoice'] == 'auto' and not json.loads(js("return JSON.stringify(document.getElementById('languageChoice').disabled)")), 'automatic language acknowledgement')
+        host = adapter.GetType('Margin.Native.NativeLanguage').GetProperty('HostLanguage', System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic).GetValue(None)
+        actual_host = System.Globalization.CultureInfo.GetCultureInfo(Rhino.ApplicationSettings.AppearanceSettings.LanguageIdentifier).Name
+        check(host == actual_host and PreferencesStore.Load(Runtime.PreferencesPath).Language == 'auto'
+              and Localization.Choice == 'auto' and Localization.Language == Localization.Resolve('auto', actual_host),
+              'automatic selection persists and resolves the actual Rhino language')
         for language in Localization.Languages.Keys:
             js("const e=document.getElementById('languageChoice');e.value=%s;e.dispatchEvent(new Event('change'));return true;" % json.dumps(language))
             wait(lambda: Localization.Choice == language, language + ': language reaches native adapter')

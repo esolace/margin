@@ -12,14 +12,17 @@ processes. Candidates were loaded from immutable private staging paths, with
 validation, not installation or publication of a new package.
 
 - Rhino 8: 198 native localization/editor checks; all 13 languages through the
-  real Studio WebView bridge (59 checks in visible mode); 63 group workflow and
+  real Studio WebView bridge (60 checks in visible mode); 63 group workflow and
   19 movement checks; 11 Studio/defaults checks using the actual native Group
   command and Studio button. Tests include outlines, picking, copy/paste,
   independent edits, rename, ungroup, undo/redo and file reopen.
-- Rhino 9 / GH2: 59 real Studio bridge checks across all 13 languages; 124 native
+- Rhino 9 / GH2: 60 real Studio bridge checks across all 13 languages; 124 native
   editor and disposal checks; native same/cross-definition/nested copy tests;
   18 Studio/defaults checks including both group creation routes, empty selection,
   hidden unnamed titles, undo and save/reopen under different defaults.
+- Both Studio suites also select automatic mode through the real bridge and
+  compare the resolved language with the running Rhino language identifier.
+  This machine runs Rhino in English; all 13 manual overrides were tested.
 - Both hosts: clean shutdown followed by a fresh process loading the identical
   module ID passed ten persistence checks each. Saved language, all 13 Unicode
   preset names, complete future-group defaults and saved Unicode group names /
@@ -47,7 +50,10 @@ workflows and Windows builds / disposed-callback regression. Windows interactive
 validation and independent native-speaker review remain outstanding. Rhino 7
 still cannot launch on this machine; these checks do not extend its host claim.
 Evidence is under `artifacts/multilingual-final/`, with explicit per-host module
-IDs, before/after process IDs and private test definitions.
+IDs, before/after process IDs and private test definitions. Both disposable hosts
+were closed. The original GH2 session was restored byte-for-byte, and a final
+file-set / SHA-256 comparison confirmed personal Margin preferences, presets
+and theme were unchanged. No package was installed or published.
 
 ## Rhino 8 compatibility candidate, 2026-11-16
 

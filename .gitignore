@@ -75,3 +75,9 @@
 !tools/build_rhino7.py
 !tools/test_legacy_studio.mjs
 !docs/RHINO7.md
+
+!design/locales.json
+!design/localization.js
+!tools/sync_locales.py
+!tools/browser/localization.mjs
+!docs/MULTILINGUAL.md

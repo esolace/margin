@@ -206,7 +206,7 @@ public sealed class StyledGroup : GroupAttributes
             const float scale = .75f;
 #endif
             using var font = new Font(SystemFonts.Default().Family, (float)appearance.TitleSize * scale, appearance.Bold ? FontStyle.Bold : FontStyle.None);
-            var name = GroupAppearancePolicy.FormatTitle(string.IsNullOrWhiteSpace(group.UserName) ? "Group" : group.UserName, appearance.TitleCase);
+            var name = GroupAppearancePolicy.FormatTitle(string.IsNullOrWhiteSpace(group.UserName) ? Localization.Text("group.unnamed") : group.UserName, appearance.TitleCase);
             var available = frame.Width - 16;
             while (name.Length > 1 && g.MeasureString(font, name).Width > available)
                 name = name[..^2] + "…";
@@ -377,7 +377,7 @@ public sealed class StyledGroup : GH_GroupAttributes, Grasshopper.Kernel.IGH_Att
             }
             if (title.IsEmpty) return;
             using var font = new Font(SystemFonts.DefaultFont.FontFamily,(float)appearance.TitleSize,appearance.Bold ? FontStyle.Bold : FontStyle.Regular,GraphicsUnit.Pixel);
-            string name = string.IsNullOrWhiteSpace(group.NickName)?"Group":group.NickName;
+            string name = string.IsNullOrWhiteSpace(group.NickName)?Localization.Text("group.unnamed"):group.NickName;
             name = GroupAppearancePolicy.FormatTitle(name, appearance.TitleCase);
             // Freeform headings sit on the canvas, not on the group's fill/band.
             var titleInk = Groups.TitleColour(group, appearance, style.Fill, colour.A / 255d * 100, canvasColour);

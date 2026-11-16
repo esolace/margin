@@ -26,7 +26,7 @@ public static class GroupAppearancePolicy
     // expanding a character into several letters or rewriting the stored name.
     public static string FormatTitle(string name, string casing)
     {
-        if (!TitleCases.ContainsKey(casing)) throw new InvalidDataException("Choose a valid title case.");
+        if (!TitleCases.ContainsKey(casing)) throw new InvalidDataException(Localization.Text("ui.choose_a_valid_title_case"));
         if (casing == "AsTyped") return name;
         var result = new StringBuilder();
         var initial = true;
@@ -56,7 +56,7 @@ public static class GroupAppearancePolicy
     static double[] Rgb(string hex)
     {
         if (hex is null || hex.Length != 7 || hex[0] != '#' || !hex[1..].All(Uri.IsHexDigit))
-            throw new InvalidDataException("Choose a valid six-digit colour.");
+            throw new InvalidDataException(Localization.Text("ui.choose_a_valid_six_digit_colour"));
         return [Convert.ToInt32(hex[1..3], 16), Convert.ToInt32(hex[3..5], 16), Convert.ToInt32(hex[5..7], 16)];
     }
     static double Luminance(double[] rgb) => rgb.Select((v, i) => v * rules.LuminanceWeights[i]).Sum() / 255;
@@ -68,7 +68,7 @@ public static class GroupAppearancePolicy
     {
         appearance = appearance.Validate();
         if (!RuntimeSupport.IsFinite(opacity) || opacity < 0 || opacity > 100)
-            throw new InvalidDataException("Choose an opacity between 0 and 100.");
+            throw new InvalidDataException(Localization.Text("ui.choose_an_opacity_between_0_and_100"));
         var rgb = Rgb(fill);
         var edge = Hex(rgb.Select(v => Luminance(rgb) > rules.LightThreshold
             ? Math.Floor(v * rules.LightEdgeScale) : Math.Min(255, v + rules.DarkEdgeOffset)));

@@ -58,8 +58,8 @@ public sealed record Theme
     public string ToJson() => JsonSerializer.Serialize(Normalize(), new JsonSerializerOptions { WriteIndented = true });
     public static Theme FromJson(string json)
     {
-        if (json.Length > 32_768) throw new InvalidDataException("Theme files must be smaller than 32 KB.");
-        return (JsonSerializer.Deserialize<Theme>(json) ?? throw new InvalidDataException("Empty theme.")).Normalize();
+        if (json.Length > 32_768) throw new InvalidDataException(Localization.Text("ui.theme_files_must_be_smaller_than_32_kb"));
+        return (JsonSerializer.Deserialize<Theme>(json) ?? throw new InvalidDataException(Localization.Text("ui.empty_theme"))).Normalize();
     }
 }
 

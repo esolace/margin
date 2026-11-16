@@ -17,6 +17,7 @@ public sealed class Inspector : Form
 {
     readonly WebView web = new() { BrowserContextMenuEnabled = false };
     bool closed;
+    int languageRevision = -1;
     bool groupsVisible;
     bool syncingGroups;
     string? lastGroupSnapshot;
@@ -44,7 +45,7 @@ public sealed class Inspector : Form
         groupSelectionTimer.Start();
         Closed += (_, _) => { closed = true; groupSelectionTimer.Stop(); groupSelectionTimer.Dispose(); };
         using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("Margin.Studio.html")
-            ?? throw new InvalidOperationException("The Margin studio resource is missing.");
+            ?? throw new InvalidOperationException(Localization.Text("ui.the_margin_studio_resource_is_missing"));
         using var reader = new StreamReader(stream);
         web.LoadHtml(reader.ReadToEnd());
     }
@@ -62,7 +63,7 @@ public sealed class Inspector : Form
             List<SavedPreset> userPresets;
             try { userPresets = PresetStore.Load(PresetsPath); }
             catch (Exception ex) { userPresets = new(); libraryError = ex.Message; }
-            var data = new { userPresets, libraryError, theme = Runtime.Current, presets = Theme.Presets.Select(InstalledFonts.Resolve), fonts = ReadInstalledFonts(), enabled = Runtime.DesiredEnabled, session = SessionSnapshot(), groups = Groups.Snapshot(), native = true };
+            var data = new { language = NativeLanguage.Snapshot(), userPresets, libraryError, theme = Runtime.Current, presets = Theme.Presets.Select(InstalledFonts.Resolve), fonts = ReadInstalledFonts(), enabled = Runtime.DesiredEnabled, session = SessionSnapshot(), groups = Groups.Snapshot(), native = true };
 #if MARGIN_RHINO7
             await web.ExecuteScriptAsync(LegacyStudioBridge.Script);
 #endif
@@ -100,71 +101,75 @@ public sealed class Inspector : Form
         if (closed) return;
         try
         {
-            if (message.Length > 40_000) throw new InvalidDataException("This theme is too large.");
+            if (message.Length > 40_000) throw new InvalidDataException(Localization.Text("ui.this_theme_is_too_large"));
             using var data = JsonDocument.Parse(message);
             var root = data.RootElement;
             var action = root.GetProperty("action").GetString();
             if (action is "apply" or "save" or "export") Runtime.Apply(Theme.FromJson(root.GetProperty("theme").GetRawText()));
             switch (action)
             {
+                case "language":
+                    NativeLanguage.Save(root.GetProperty("choice").GetString() ?? "auto");
+                    await LanguageReply(true);
+                    break;
                 case "apply":
                     if (root.GetProperty("theme").GetProperty("FontFamily").GetString() != Runtime.Current.FontFamily)
                     {
                         await web.ExecuteScriptAsync("window.MarginStudio.setTheme(" + JsonSerializer.Serialize(Runtime.Current) + ")");
-                        await Reply("That font is not installed here. Using " + Runtime.Current.FontFamily + ".");
+                        await Reply(Localization.Text("fonts.fallback", ("name", Runtime.Current.FontFamily)));
                     }
                     break;
                 case "studio-section": groupsVisible = root.GetProperty("groups").GetBoolean(); break;
                 case "groups-refresh": await GroupReply(); break;
                 case "group-create":
-                    Groups.Create(); await GroupReply("Selection grouped. Edit its appearance here in Studio."); break;
+                    Groups.Create(); await GroupReply(Localization.Text("ui.selection_grouped_edit_its_appearance_here_in_studio")); break;
                 case "group-defaults":
-                    Groups.SaveDefaults(JsonSerializer.Deserialize<GroupStyle>(root.GetProperty("style").GetRawText()) ?? throw new InvalidDataException("Missing group style."));
-                    await GroupReply("Appearance saved for future groups, including Cmd/Ctrl+G.", preserveDraft: true); break;
+                    Groups.SaveDefaults(JsonSerializer.Deserialize<GroupStyle>(root.GetProperty("style").GetRawText()) ?? throw new InvalidDataException(Localization.Text("ui.missing_group_style")));
+                    await GroupReply(Localization.Text("ui.appearance_saved_for_future_groups_including_cmd_ctrl_g"), preserveDraft: true); break;
                 case "group-apply":
                     Groups.BeginEdit(root.GetProperty("document").GetString()!, root.GetProperty("id").GetString()!,
                         root.GetProperty("revision").GetString()!).Save(root.GetProperty("name").GetString() ?? "",
-                        JsonSerializer.Deserialize<GroupStyle>(root.GetProperty("style").GetRawText()) ?? throw new InvalidDataException("Missing group style."));
-                    await GroupReply("Group updated. Save your Grasshopper file to keep it.");
+                        JsonSerializer.Deserialize<GroupStyle>(root.GetProperty("style").GetRawText()) ?? throw new InvalidDataException(Localization.Text("ui.missing_group_style")));
+                    await GroupReply(Localization.Text("ui.group_updated_save_your_grasshopper_file_to_keep_it"));
                     break;
                 case "enabled": Runtime.SetEnabled(root.GetProperty("enabled").GetBoolean()); await SessionReply(true); break;
-                case "save": Runtime.Save(); await Reply("Theme saved on this computer."); break;
+                case "save": Runtime.Save(); await Reply(Localization.Text("ui.theme_saved_on_this_computer")); break;
                 case "preset-save":
                     var saved = PresetStore.Save(PresetsPath, root.GetProperty("name").GetString() ?? "",
                         Theme.FromJson(root.GetProperty("theme").GetRawText()),
                         root.TryGetProperty("id", out var id) && id.ValueKind == JsonValueKind.String ? id.GetString() : null);
                     Runtime.Apply(saved.Theme);
-                    await PresetReply(saved.Id, saved.Theme, "Preset saved on this computer.");
+                    await PresetReply(saved.Id, saved.Theme, Localization.Text("ui.preset_saved_on_this_computer"));
                     break;
                 case "preset-rename":
                     var renameId = root.GetProperty("id").GetString();
                     var original = PresetStore.Load(PresetsPath).FirstOrDefault(p => p.Id == renameId)
-                        ?? throw new InvalidDataException("That preset no longer exists.");
+                        ?? throw new InvalidDataException(Localization.Text("ui.that_preset_no_longer_exists"));
                     var renamed = PresetStore.Save(PresetsPath, root.GetProperty("name").GetString() ?? "", original.Theme, renameId);
                     Theme? renamedCurrent = (Runtime.Current with { Name = original.Theme.Name }) == original.Theme ? renamed.Theme : null;
                     if (renamedCurrent is not null) Runtime.Apply(renamedCurrent);
-                    await PresetReply(renamed.Id, renamedCurrent, "Preset renamed.");
+                    await PresetReply(renamed.Id, renamedCurrent, Localization.Text("preset.renamed"));
                     break;
                 case "preset-delete":
                     PresetStore.Delete(PresetsPath, root.GetProperty("id").GetString() ?? "");
-                    await PresetReply(null, null, "Preset deleted. Your current style is unchanged.");
+                    await PresetReply(null, null, Localization.Text("ui.preset_deleted_your_current_style_is_unchanged"));
                     break;
                 case "fonts": await web.ExecuteScriptAsync("window.MarginStudio.setFonts(" + JsonSerializer.Serialize(ReadInstalledFonts()) + ")"); break;
                 case "export":
                     var save = new SaveFileDialog { FileName = "Margin-theme.json" };
-                    save.Filters.Add(new FileFilter("Margin theme", ".json"));
-                    if (save.ShowDialog(this) == DialogResult.Ok) { ThemeStore.Save(save.FileName, Runtime.Current); await Reply("Theme exported."); }
+                    save.Filters.Add(new FileFilter(Localization.Text("ui.margin_theme"), ".json"));
+                    if (save.ShowDialog(this) == DialogResult.Ok) { ThemeStore.Save(save.FileName, Runtime.Current); await Reply(Localization.Text("ui.theme_exported")); }
                     break;
                 case "import":
                     var open = new OpenFileDialog();
-                    open.Filters.Add(new FileFilter("Margin theme", ".json"));
+                    open.Filters.Add(new FileFilter(Localization.Text("ui.margin_theme"), ".json"));
                     if (open.ShowDialog(this) == DialogResult.Ok)
                     {
-                        if (new FileInfo(open.FileName).Length > 32_768) throw new InvalidDataException("Choose a theme smaller than 32 KB.");
+                        if (new FileInfo(open.FileName).Length > 32_768) throw new InvalidDataException(Localization.Text("ui.choose_a_theme_smaller_than_32_kb"));
                         var theme = ThemeStore.Load(open.FileName);
                         Runtime.Apply(theme);
                         await web.ExecuteScriptAsync("window.MarginStudio.setTheme(" + JsonSerializer.Serialize(Runtime.Current) + ")");
-                        await Reply("Theme imported. Save to keep it.");
+                        await Reply(Localization.Text("ui.theme_imported_save_to_keep_it"));
                     }
                     break;
             }
@@ -172,9 +177,10 @@ public sealed class Inspector : Form
         catch (Exception ex)
         {
             LastError = ex.Message;
+            if (!closed) await web.ExecuteScriptAsync("window.MarginStudio.setLanguage(" + JsonSerializer.Serialize(NativeLanguage.Snapshot()) + ")");
             await SessionReply(true);
             if (!closed) await web.ExecuteScriptAsync("window.MarginStudio.reportError(" + JsonSerializer.Serialize(ex.Message) + ")");
-            await Reply("Couldn’t apply that change: " + ex.Message);
+            await Reply(Localization.Text("change.failed", ("error", ex.Message)));
         }
     }
     async void SyncGroupSelection(object? sender, EventArgs e)
@@ -184,6 +190,7 @@ public sealed class Inspector : Form
         try
         {
             await SessionReply();
+            await LanguageReply();
             if (!groupsVisible) return;
             var snapshot = JsonSerializer.Serialize(Groups.Snapshot());
             if (snapshot == lastGroupSnapshot) return;
@@ -192,6 +199,12 @@ public sealed class Inspector : Form
         }
         catch (Exception ex) { LastError = ex.Message; }
         finally { syncingGroups = false; }
+    }
+    async Task LanguageReply(bool force = false)
+    {
+        if (closed || (!force && languageRevision == Localization.Revision)) return;
+        await web.ExecuteScriptAsync("window.MarginStudio.setLanguage(" + JsonSerializer.Serialize(NativeLanguage.Snapshot()) + ")");
+        languageRevision = Localization.Revision;
     }
     static object SessionSnapshot() => new { desired = Runtime.DesiredEnabled, effective = Runtime.Enabled,
         state = Runtime.SessionState.ToString(), error = Runtime.LastError };
@@ -203,11 +216,11 @@ public sealed class Inspector : Form
         await web.ExecuteScriptAsync("window.MarginStudio.setSession(" + snapshot + ")");
         lastSessionSnapshot = snapshot;
     }
-    async Task GroupReply(string message = "Groups refreshed.", bool preserveDraft = false)
+    async Task GroupReply(string? message = null, bool preserveDraft = false)
     {
         if (closed) return;
         var snapshot = JsonSerializer.Serialize(Groups.Snapshot());
-        await web.ExecuteScriptAsync("window.MarginStudio.setGroups(" + snapshot + "," + JsonSerializer.Serialize(message) + "," + (preserveDraft ? "true" : "false") + ")");
+        await web.ExecuteScriptAsync("window.MarginStudio.setGroups(" + snapshot + "," + JsonSerializer.Serialize(message ?? Localization.Text("group.refreshed")) + "," + (preserveDraft ? "true" : "false") + ")");
         lastGroupSnapshot = snapshot;
     }
     async Task PresetReply(string? selectedId, Theme? theme, string message)

@@ -80,9 +80,9 @@ public static class Groups
 #endif
     public static GroupEditSession BeginEdit(string document, string id, string revision)
     {
-        var d = Active ?? throw new InvalidOperationException("Open a Grasshopper definition first.");
+        var d = Active ?? throw new InvalidOperationException(Localization.Text("ui.open_a_grasshopper_definition_first"));
         return new(Entry(FindForEdit(d, document, id, revision)),
-            (currentRevision, name, style) => ApplyEdit(Active ?? throw new InvalidOperationException("Open a Grasshopper definition first."),
+            (currentRevision, name, style) => ApplyEdit(Active ?? throw new InvalidOperationException(Localization.Text("ui.open_a_grasshopper_definition_first")),
                 document, id, currentRevision, name, style), SaveDefaults);
     }
 #if MARGIN_GH2
@@ -99,15 +99,15 @@ public static class Groups
     static GH_Group FindForEdit(GH_Document d, string document, string id, string revision)
 #endif
     {
-        if (Identity(d) != document) throw new InvalidOperationException("The active definition changed. Reload the group before editing.");
+        if (Identity(d) != document) throw new InvalidOperationException(Localization.Text("ui.the_active_definition_changed_reload_the_group_before_editing"));
         var group = Items(d).FirstOrDefault(g => Entry(g).Id == id)
-            ?? throw new InvalidOperationException("That group was removed. Select another group.");
-        if (Entry(group).Revision != revision) throw new InvalidOperationException("This group changed in Grasshopper. Reload it before applying your edit.");
+            ?? throw new InvalidOperationException(Localization.Text("ui.that_group_was_removed_select_another_group"));
+        if (Entry(group).Revision != revision) throw new InvalidOperationException(Localization.Text("ui.this_group_changed_in_grasshopper_reload_it_before_applying_your_edit"));
         return group;
     }
     public static void Apply(string document, string id, string revision, string name, GroupStyle style)
     {
-        var d = Active ?? throw new InvalidOperationException("Open a Grasshopper definition first.");
+        var d = Active ?? throw new InvalidOperationException(Localization.Text("ui.open_a_grasshopper_definition_first"));
         ApplyEdit(d, document, id, revision, name, style);
     }
 #if MARGIN_GH2
@@ -124,7 +124,7 @@ public static class Groups
 #endif
     {
         style = style.Validate(); name = name.Trim();
-        if (name.Length > 120 || name.Any(char.IsControl)) throw new InvalidDataException("Use a single-line group name of up to 120 characters.");
+        if (name.Length > 120 || name.Any(char.IsControl)) throw new InvalidDataException(Localization.Text("ui.use_a_single_line_group_name_of_up_to_120_characters"));
         var g = FindForEdit(d, document, id, revision);
         var old = Entry(g);
 #if MARGIN_GH2
@@ -220,6 +220,7 @@ public static class Groups
     static extern Grasshopper2.Undo.Action RecordAction(Record record, int index);
     static void Created(object? sender, UndoNodeEventArgs e)
     {
+        // The SDK emits invariant Create/Group record tokens; these are not menu labels.
         // GH2 GroupSelection records this action after inserting the group. Paste has a
         // separate record, and reopening or moving through undo history creates no node.
         var record = e.Node.Record;
@@ -239,14 +240,14 @@ public static class Groups
     {
         if (g.Attributes?.GetType() == typeof(GroupAttributes)) g.OverrideAttributes(new StyledGroup(g));
     }
-    public static GroupObject Create() => Create(Active ?? throw new InvalidOperationException("Open a Grasshopper definition first."));
+    public static GroupObject Create() => Create(Active ?? throw new InvalidOperationException(Localization.Text("ui.open_a_grasshopper_definition_first")));
     public static GroupObject Create(Document d)
     {
         Attach(d);
         var group = d.Methods.GroupSelection(null, null, null)
-            ?? throw new InvalidOperationException("Select components on the canvas first.");
+            ?? throw new InvalidOperationException(Localization.Text("ui.select_components_on_the_canvas_first"));
         if (preferences.UseGroupColour && GroupStyle.Parse(Read(group)) != Defaults)
-            throw new InvalidOperationException("The selection was grouped, but its saved appearance could not be applied.");
+            throw new InvalidOperationException(Localization.Text("ui.the_selection_was_grouped_but_its_saved_appearance_could_not_be_applied"));
         Refresh();
         return group;
     }
@@ -296,13 +297,13 @@ public static class Groups
     }
     public static GH_Group Create()
     {
-        var d = Active ?? throw new InvalidOperationException("Open a Grasshopper definition first.");
+        var d = Active ?? throw new InvalidOperationException(Localization.Text("ui.open_a_grasshopper_definition_first"));
         return Create(d);
     }
     public static GH_Group Create(GH_Document d)
     {
         var selected = d.Objects.Where(o => o.Attributes?.Selected == true).ToArray();
-        if (selected.Length == 0) throw new InvalidOperationException("Select components on the canvas first.");
+        if (selected.Length == 0) throw new InvalidOperationException(Localization.Text("ui.select_components_on_the_canvas_first"));
         Attach(d);
         var group = new GH_Group { NickName = "" };
         foreach (var o in selected) group.AddObject(o.InstanceGuid);

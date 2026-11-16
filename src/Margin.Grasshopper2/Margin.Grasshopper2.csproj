@@ -16,6 +16,7 @@
   <ItemGroup>
     <Using Remove="System.Windows.Forms" />
     <Using Remove="System.Drawing" />
+    <Compile Include="../Margin.Grasshopper/NativeLanguage.cs" Link="NativeLanguage.cs" />
     <Compile Include="../Margin.Grasshopper/Groups.cs" Link="Groups.cs" />
     <Compile Include="../Margin.Grasshopper/GroupEditing.cs" Link="GroupEditing.cs" />
     <Compile Include="../Margin.Grasshopper/GroupEditor.cs" Link="GroupEditor.cs" />

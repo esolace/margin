@@ -6,7 +6,7 @@ public static class RuntimeSupport
     public static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
     public static double Clamp(double value, double min, double max)
     {
-        if (min > max) throw new ArgumentException("Minimum exceeds maximum.");
+        if (min > max) throw new ArgumentException(Localization.Text("ui.minimum_exceeds_maximum"));
         return Math.Min(max, Math.Max(min, value));
     }
     public static bool IsWindows => Environment.OSVersion.Platform == PlatformID.Win32NT;

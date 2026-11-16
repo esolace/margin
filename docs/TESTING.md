@@ -390,6 +390,24 @@ This completes the targeted Mac GH1 mouse pass, not an exhaustive interaction or
 stability certification. Windows, new GH2 interactions, multi-monitor behavior
 and prolonged use remain unverified. The package remains a local experimental
 alpha; nothing was published.
+## Multilingual candidate — 2026-11-16
+
+Implemented all 13 Rhino languages using 218 shared offline messages. Language
+choice is an application preference, separate from themes and group metadata.
+The language-only test slice verifies locale resolution, old preferences,
+invalid-choice protection, complete catalogs, placeholder integrity and literal
+user content. Browser workflows pass all 13 languages at 900 × 600, including
+host language selection, manual acknowledgement, saved/reopened selection,
+failed saving, typed preset names, group drafts, hidden/blank names and visible
+actions. Screenshots are in `artifacts/multilingual/screenshots/`.
+
+No live Rhino process, installed plugin, working definition or personal
+preference file was changed. No native workflow claim is made for this build.
+Rhino 7's Intel launch limitation and the Windows Rhino 7 exclusion remain.
+Independent native-speaker review is pending; completeness tests do not certify
+translation quality. Local build/verification logs are under
+`artifacts/multilingual/`. Final CI results are recorded after verification.
+
 ## Rhino 7 background preparation — 2026-11-16
 
 Private candidate **0.5.0-alpha.9-rhino7.1**, Rhino 7.38 Mac/GH1, prepared

@@ -10,7 +10,7 @@ public sealed record GroupStyle(string Fill, double Opacity, bool Designed = tru
     public GroupStyle Validate()
     {
         if (!Regex.IsMatch(Fill ?? "", "^#[0-9a-fA-F]{6}$") || !RuntimeSupport.IsFinite(Opacity) || Opacity < 0 || Opacity > 100)
-            throw new InvalidDataException("Choose a valid colour and an opacity between 0 and 100.");
+            throw new InvalidDataException(Localization.Text("ui.choose_a_valid_colour_and_an_opacity_between_0_and_100"));
         return this with { Fill = Fill!.ToUpperInvariant(), Appearance = (Appearance ?? new()).Validate() };
     }
     public static GroupStyle? Parse(string json)

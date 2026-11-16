@@ -41,13 +41,13 @@ internal static class GroupEditor
         if (entry is null) return null;
         var edit = activeOnly ? Groups.BeginEdit(snapshot.Document!, entry.Id, entry.Revision)
             : Groups.BeginEdit(doc, snapshot.Document!, entry.Id, entry.Revision);
-        var dialog = new Dialog<bool> { Title = "Edit group", Padding = new Padding(20), Resizable = false };
-        var name = new TextBox { ID = "group-name", Text = entry.Name, PlaceholderText = "Group name", Width = 320 };
+        var dialog = new Dialog<bool> { Title = Localization.Text("group.edit"), Padding = new Padding(20), Resizable = false };
+        var name = new TextBox { ID = "group-name", Text = entry.Name, PlaceholderText = Localization.Text("ui.group_name"), Width = 320 };
         var titleCase = new DropDown { ID = "group-title-case", Width = 180 };
-        foreach (var option in GroupAppearancePolicy.TitleCases) titleCase.Items.Add(new ListItem { Key = option.Key, Text = option.Value });
+        foreach (var option in GroupAppearancePolicy.TitleCases) titleCase.Items.Add(new ListItem { Key = option.Key, Text = Localization.Text("case." + option.Key) });
         titleCase.SelectedKey = entry.Style.Appearance.TitleCase;
         var colour = new ColorPicker { ID = "group-fill", Value = Color.Parse(entry.Style.Fill) };
-        var autoText = new CheckBox { ID = "group-title-auto", Text = "Automatic title contrast", Checked = entry.Style.Appearance.Text is null };
+        var autoText = new CheckBox { ID = "group-title-auto", Text = Localization.Text("ui.automatic_title_contrast"), Checked = entry.Style.Appearance.Text is null };
 #if MARGIN_GH2
         var canvasColour = Editor.Instance?.Canvas?.Skin.Canvas.Background ?? Color.Parse("#D4D0C8");
         var backdrop = group.Attributes is StyledGroup styled ? styled.TitleBackdrop(canvasColour) : canvasColour;
@@ -75,12 +75,12 @@ internal static class GroupEditor
         autoText.CheckedChanged += (_, _) => UpdateAutomaticColour();
         colour.ValueChanged += (_, _) => UpdateAutomaticColour();
         opacity.ValueChanged += (_, _) => UpdateAutomaticColour();
-        var designed = new CheckBox { Text = "Margin styling", Checked = entry.Style.Designed };
-        var showTitle = new CheckBox { ID = "group-show-title", Text = "Show title", Checked = entry.Style.Appearance.ShowTitle };
-        var defaults = new CheckBox { Text = "Use this appearance for future groups" };
+        var designed = new CheckBox { Text = Localization.Text("ui.margin_styling"), Checked = entry.Style.Designed };
+        var showTitle = new CheckBox { ID = "group-show-title", Text = Localization.Text("ui.show_title"), Checked = entry.Style.Appearance.ShowTitle };
+        var defaults = new CheckBox { Text = Localization.Text("ui.use_this_appearance_for_future_groups") };
         var error = new Label { TextColor = Colors.IndianRed, Wrap = WrapMode.Word, Width = 320 };
-        var apply = new Button { Text = "Save" };
-        var cancel = new Button { Text = "Cancel" };
+        var apply = new Button { Text = Localization.Text("ui.save") };
+        var cancel = new Button { Text = Localization.Text("ui.cancel") };
         apply.Click += (_, _) =>
         {
             try
@@ -89,21 +89,20 @@ internal static class GroupEditor
                     Appearance = entry.Style.Appearance with { ShowTitle = showTitle.Checked == true, TitleCase = titleCase.SelectedKey!, Text = autoText.Checked == true ? null : textColour.Value.ToHex(false) } };
                 var result = edit.Save(name.Text, style, defaults.Checked == true);
                 if (result.Complete) dialog.Close(true);
-                else error.Text = "Group updated. Future defaults could not be saved: " + result.DefaultsError
-                    + " Retry Save, or turn off the future-groups option to finish.";
+                else error.Text = Localization.Text("group.defaults_failed", ("error", result.DefaultsError));
             }
             catch (Exception ex) { error.Text = ex.Message; }
         };
         cancel.Click += (_, _) => dialog.Close(false);
         dialog.DefaultButton = apply; dialog.AbortButton = cancel;
         var layout = new DynamicLayout { Spacing = new Size(10, 12) };
-        layout.AddRow(new Label { Text = "Group name" }); layout.AddRow(name);
+        layout.AddRow(new Label { Text = Localization.Text("ui.group_name") }); layout.AddRow(name);
         layout.AddRow(designed); layout.AddRow(showTitle);
-        layout.AddRow(new Label { Text = "Letter case" }, titleCase);
-        layout.AddRow(new Label { Text = "Background" }, colour);
-        layout.AddRow(new Label { Text = "Opacity %" }, opacity);
-        layout.AddRow(new Label { Text = "Title colour" }, textColour); layout.AddRow(autoText);
-        layout.AddRow(new Label { Text = "Choose a title colour to switch to custom.", TextColor = SystemColors.DisabledText });
+        layout.AddRow(new Label { Text = Localization.Text("ui.letter_case") }, titleCase);
+        layout.AddRow(new Label { Text = Localization.Text("ui.background") }, colour);
+        layout.AddRow(new Label { Text = Localization.Text("ui.opacity_074aec") }, opacity);
+        layout.AddRow(new Label { Text = Localization.Text("ui.title_colour") }, textColour); layout.AddRow(autoText);
+        layout.AddRow(new Label { Text = Localization.Text("ui.choose_a_title_colour_to_switch_to_custom"), TextColor = SystemColors.DisabledText });
         layout.AddRow(defaults); layout.AddRow(error);
         layout.AddRow(null, cancel, apply); dialog.Content = layout;
         dialog.Shown += (_, _) => { name.Focus(); name.SelectAll(); };

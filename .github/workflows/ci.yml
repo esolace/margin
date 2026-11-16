@@ -56,6 +56,7 @@ jobs:
       - run: node tools/test_legacy_studio.mjs
       - run: python3 tools/test_gh2_staging.py
       - run: python3 tools/sync_studio_policy.py --check
+      - run: python3 tools/sync_locales.py --check
       - run: node tools/test_studio_appearance.mjs
 
   studio-workflows:
@@ -71,3 +72,4 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bunx playwright install --with-deps chromium
       - run: bun studio.mjs
+      - run: bun localization.mjs

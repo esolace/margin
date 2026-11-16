@@ -1,7 +1,8 @@
 # Multilingual Margin
 
-Status: scope confirmed; implementation pending. This is not a claim that the
-current binaries are translated.
+Status: implemented on `feature/multilingual`; unpublished and uninstalled.
+The shared offline catalogs contain 218 messages in all 13 languages. Native
+validation on these new binaries remains pending; see `docs/TESTING.md`.
 
 ## Confirmed requirement
 
@@ -101,3 +102,23 @@ compatibility limitation. GH2 remains a Rhino 9 target.
 2. Studio and native string extraction; fix host-menu/command dependencies.
 3. Complete all catalogs and adapt layouts, then exercise language switching.
 4. Build and native verification, translation review, release evidence.
+
+## Translation maintenance
+
+`design/locales.json` is the shared catalog, embedded in Margin.Core and bundled
+into Studio. Edit keys consistently across all catalogs, then run
+`python3 tools/sync_locales.py`. Commit the resulting Studio update. CI rejects
+stale bundles, missing messages and inconsistent named placeholders.
+
+These are authored translations, not certified translations. No independent
+native-speaker review has been completed. Product names (Margin, Studio and
+named built-in styles), font names and actual component names are intentionally
+preserved. Portuguese wording uses Brazilian Portuguese; regional Portuguese
+locales resolve to the same catalog. Numeric member summaries use a label and
+count instead of English singular/plural sentence construction.
+
+The local Rhino 9 SDK inspection confirms `EditorMainMenu.Display` is a public
+menu property. Margin now uses it directly. `DocumentMethods.GroupSelection`
+emits invariant `Create` / `Group` undo tokens, so that command-detection path
+is intentionally unchanged. These are SDK inspection findings, not interactive
+host-language testing.

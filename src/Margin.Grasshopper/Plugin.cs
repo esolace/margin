@@ -9,7 +9,7 @@ namespace Margin.Native;
 public sealed class Info : GH_AssemblyInfo
 {
     public override string Name => "Margin";
-    public override string Description => "Designed component labels for Grasshopper.";
+    public override string Description => Localization.Text("ui.designed_component_labels_for_grasshopper");
     public override Guid Id => new("1cbb85f4-a387-42a3-9da2-7c4a9a974790");
     public override string AuthorName => "Solace";
     public override string AuthorContact => "";
@@ -21,6 +21,7 @@ public sealed class Startup : GH_AssemblyPriority
 public static class Runtime
 {
     static Inspector? inspector;
+    static int languageRevision = -1;
     static ToolStripMenuItem? menu;
     static ToolStripMenuItem? labelsToggle;
     public static readonly string SettingsPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Margin", "theme.json");
@@ -35,6 +36,7 @@ public static class Runtime
     public static void Start()
     {
         if (session.Started) return;
+        NativeLanguage.Start();
         var theme = new Theme();
         try { if (File.Exists(SettingsPath)) theme = ThemeStore.Load(SettingsPath); }
         catch (Exception ex) { Rhino.RhinoApp.WriteLine("Margin: using Paper theme. " + ex.Message); }
@@ -45,6 +47,8 @@ public static class Runtime
     }
     static void Ready(object? sender, EventArgs args)
     {
+        NativeLanguage.Refresh();
+        if (languageRevision != Localization.Revision) { RemoveMenu(); languageRevision = Localization.Revision; Instances.ActiveCanvas?.Invalidate(); }
         var canvas = Instances.ActiveCanvas;
         var editor = Instances.DocumentEditor;
         session.Attach(canvas);
@@ -55,9 +59,9 @@ public static class Runtime
         if (menu is not null && !ReferenceEquals(menu.Owner, display.DropDown)) RemoveMenu();
         if (menu is null)
         {
-            menu = new ToolStripMenuItem("Margin") { Name = "MarginMenu" };
-            menu.DropDownItems.Add("Open Studio…", null, (_, _) => Show());
-            labelsToggle = new ToolStripMenuItem("Show component labels") { CheckOnClick = true, Checked = DesiredEnabled };
+            menu = new ToolStripMenuItem(Localization.Text("ui.margin")) { Name = "MarginMenu" };
+            menu.DropDownItems.Add(Localization.Text("ui.open_studio"), null, (_, _) => Show());
+            labelsToggle = new ToolStripMenuItem(Localization.Text("ui.show_component_labels")) { CheckOnClick = true, Checked = DesiredEnabled };
             labelsToggle.Click += (_, _) =>
             {
                 try { SetEnabled(labelsToggle.Checked); }

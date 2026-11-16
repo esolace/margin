@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import zipfile
 from build_gh2 import atomic_copy
 from build_release import ROOT, public_files
@@ -28,6 +29,7 @@ def main():
     if not (sdk / 'RhinoCommon.dll').is_file():
         raise SystemExit('Rhino 7 Mac SDK missing. Set MARGIN_RHINO7_RESOURCES.')
     yak = os.environ.get('MARGIN_YAK') or shutil.which('yak') or '/Applications/Rhino 9.app/Contents/Resources/bin/yak'
+    subprocess.run([sys.executable, str(ROOT / 'tools/sync_locales.py'), '--check'], check=True)
     project = ROOT / 'src/Margin.Grasshopper'
     subprocess.run([dotnet, 'build', str(project), '-c', 'Release', '-p:RhinoMajor=7', '-p:MarginPlatform=mac', f'-p:Rhino7Resources={sdk}', f'-p:PathMap={ROOT}=/_/margin'], check=True)
     stage = ROOT / 'dist' / f'Margin-{VERSION}-rh7-mac'

@@ -12,7 +12,7 @@ namespace Margin.GH2;
 public sealed class PluginInfo : Grasshopper2.Framework.Plugin
 {
     public override string Name => "Margin";
-    public override string Info => "Designed component labels and a personal style studio for Grasshopper 2.";
+    public override string Info => Localization.Text("ui.designed_component_labels_and_a_personal_style_studio_for_grasshopper_2");
     public override string Author => "Solace";
     public override string LicenceDescription => "MIT";
     public override void OnLoaded() => Runtime.Start();
@@ -20,6 +20,7 @@ public sealed class PluginInfo : Grasshopper2.Framework.Plugin
 public static class Runtime
 {
     static Inspector? inspector;
+    static int languageRevision = -1;
     static ButtonMenuItem? menu;
     static ButtonMenuItem? displayMenu;
     static CheckMenuItem? toggle;
@@ -35,6 +36,7 @@ public static class Runtime
     public static void Start()
     {
         if (session.Started) return;
+        NativeLanguage.Start();
         var theme = new Theme();
         try { if (File.Exists(SettingsPath)) theme = ThemeStore.Load(SettingsPath); }
         catch (Exception ex) { Rhino.RhinoApp.WriteLine("Margin: using Paper. " + ex.Message); }
@@ -44,20 +46,21 @@ public static class Runtime
     }
     static void Ready(object? sender, EventArgs e)
     {
+        NativeLanguage.Refresh();
+        if (languageRevision != Localization.Revision) { RemoveMenu(); languageRevision = Localization.Revision; Editor.Instance?.Canvas?.Invalidate(); }
         var editor = Editor.Instance;
         Groups.WatchCanvas(editor?.Canvas);
         session.Attach(editor?.Canvas);
         if (editor?.Canvas is null || editor.Menu is null) return;
-        var display = editor.Menu.Items.OfType<ButtonMenuItem>()
-            .FirstOrDefault(i => i.Text.Replace("&", "").Equals("Display", StringComparison.OrdinalIgnoreCase));
+        var display = (editor.Menu as EditorMainMenu)?.Display;
         if (display is null) return;
         if (menu is not null && !ReferenceEquals(displayMenu, display)) RemoveMenu();
         if (menu is not null) { if (toggle is not null) toggle.Checked = DesiredEnabled; return; }
         displayMenu = display;
-        menu = new ButtonMenuItem { Text = "Margin", ID = "MarginMenu" };
-        var open = new ButtonMenuItem { Text = "Open Studio…" };
+        menu = new ButtonMenuItem { Text = Localization.Text("ui.margin"), ID = "MarginMenu" };
+        var open = new ButtonMenuItem { Text = Localization.Text("ui.open_studio") };
         open.Click += (_, _) => Show();
-        toggle = new CheckMenuItem { Text = "Show component labels", Checked = DesiredEnabled };
+        toggle = new CheckMenuItem { Text = Localization.Text("ui.show_component_labels"), Checked = DesiredEnabled };
         toggle.Click += (_, _) =>
         {
             try { SetEnabled(toggle.Checked); }

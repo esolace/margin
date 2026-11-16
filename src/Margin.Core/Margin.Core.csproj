@@ -8,6 +8,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="../../design/locales.json" LogicalName="Margin.Locales.json" />
     <EmbeddedResource Include="../../design/group-appearance-policy.json" LogicalName="Margin.GroupAppearancePolicy.json"/>
   </ItemGroup>
   <ItemGroup Condition="'$(RhinoMajor)' == '7'">

@@ -1,6 +1,7 @@
 using Margin.Core;
 int passed=0;
 void Check(bool ok,string message) {if(!ok)throw new Exception(message);passed++;Console.WriteLine("PASS "+message);}
+if (args.Contains("--localization")) { LocalizationChecks.Run(Check); Console.WriteLine($"{passed} localization checks passed."); return; }
 if (args.Contains("--session")) { SessionChecks.Run(Check); Console.WriteLine($"{passed} session checks passed."); return; }
 if (args.Contains("--case-mappings")) { Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(AppearanceChecks.CaseMappings())); return; }
 if (args.Contains("--title-vectors")) { Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(AppearanceChecks.TitleVectors())); return; }
@@ -10,6 +11,7 @@ GroupEditingChecks.Run(Check);
 if (args.Contains("--group-editing")) { Console.WriteLine($"{passed} group editing checks passed."); return; }
 AppearanceChecks.Run(Check);
 SessionChecks.Run(Check);
+LocalizationChecks.Run(Check);
 var theme=new Theme();
 foreach(var preset in Theme.Presets) Check(Theme.FromJson(preset.ToJson())==preset.Normalize(),preset.Name+" round-trips");
 var safe=(theme with {FontSize=double.NaN,PaddingX=-100,Fill="bad",Opacity=10000,Radius=double.PositiveInfinity}).Normalize();

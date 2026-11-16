@@ -1,3 +1,4 @@
+using Margin.Core;
 using System.Reflection;
 using Grasshopper.Kernel;
 using Grasshopper.Kernel.Special;
@@ -16,7 +17,7 @@ static class GroupMetadata
 
     static MethodInfo Accessor(string name) => typeof(GH_DocumentObject).GetMethod(name,
         BindingFlags.Instance | BindingFlags.NonPublic, null, [typeof(string), typeof(string)], null)
-        ?? throw new NotSupportedException("This Grasshopper version cannot store portable Margin group appearance.");
+        ?? throw new NotSupportedException(Localization.Text("ui.this_grasshopper_version_cannot_store_portable_margin_group_appearance"));
 
     public static string Read(GH_Group group) => get(group, Key, "");
     public static void Write(GH_Group group, string value) => set(group, Key, value);

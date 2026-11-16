@@ -65,3 +65,5 @@
 !tools/test_gh2_group_outline.py
 !tools/test_gh2_group_copy.py
 !tools/test_gh2_group_defaults.py
+
+!tools/test_gh1_group_defaults.py

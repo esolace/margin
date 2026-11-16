@@ -1,14 +1,18 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <RhinoMajor Condition="'$(RhinoMajor)' == ''">9</RhinoMajor>
+    <RuntimeVersion Condition="'$(RhinoMajor)' == '8'">8.0</RuntimeVersion>
+    <RuntimeVersion Condition="'$(RhinoMajor)' != '8'">10.0</RuntimeVersion>
+    <LangVersion>latest</LangVersion>
     <MarginPlatform Condition="'$(MarginPlatform)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">win</MarginPlatform>
     <MarginPlatform Condition="'$(MarginPlatform)' == ''">mac</MarginPlatform>
-    <TargetFramework Condition="'$(MarginPlatform)' == 'mac'">net10.0</TargetFramework>
-    <TargetFramework Condition="'$(MarginPlatform)' == 'win'">net10.0-windows</TargetFramework>
+    <TargetFramework Condition="'$(MarginPlatform)' == 'mac'">net$(RuntimeVersion)</TargetFramework>
+    <TargetFramework Condition="'$(MarginPlatform)' == 'win'">net$(RuntimeVersion)-windows</TargetFramework>
     <UseWindowsForms Condition="'$(MarginPlatform)' == 'win'">true</UseWindowsForms>
     <EnableWindowsTargeting Condition="'$(MarginPlatform)' == 'win'">true</EnableWindowsTargeting>
     <DefineConstants Condition="'$(MarginPlatform)' == 'mac'">$(DefineConstants);MARGIN_MAC</DefineConstants>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
-    <AssemblyName>Margin.Native</AssemblyName><Version>0.5.0-alpha.7</Version><AssemblyVersion>0.5.0.7</AssemblyVersion>
+    <AssemblyName>Margin.Native</AssemblyName><Version>0.5.0-alpha.8</Version><AssemblyVersion>0.5.0.8</AssemblyVersion>
     <RhinoResources Condition="'$(RhinoResources)' == ''">/Applications/Rhino 9.app/Contents/Frameworks/RhCore.framework/Versions/A/Resources</RhinoResources>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
@@ -19,9 +23,10 @@
     <ProjectReference Include="../Margin.Core/Margin.Core.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(MarginPlatform)' == 'win'">
-    <PackageReference Include="Grasshopper" Version="9.0.26300.9401" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Condition="'$(RhinoMajor)' == '9'" Include="Grasshopper" Version="9.0.26300.9401" ExcludeAssets="runtime" PrivateAssets="all" />
+    <PackageReference Condition="'$(RhinoMajor)' == '8'" Include="Grasshopper" Version="8.21.25188.17001" ExcludeAssets="runtime" PrivateAssets="all" />
   </ItemGroup>
-  <ItemGroup Condition="'$(MarginPlatform)' == 'mac'">
+  <ItemGroup Condition="'$(MarginPlatform)' == 'mac' and '$(RhinoMajor)' == '9'">
     <Reference Include="RhinoCommon"><HintPath>$(RhinoResources)/RhinoCommon.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Rhino.UI"><HintPath>$(RhinoResources)/Rhino.UI.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="Microsoft.macOS"><HintPath>$(RhinoResources)/Microsoft.macOS.dll</HintPath><Private>false</Private></Reference>
@@ -30,6 +35,22 @@
     <Reference Include="Eto"><HintPath>$(RhinoResources)/Eto.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="System.Drawing.Common"><HintPath>$(RhinoResources)/System.Drawing.Common.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="System.Windows.Forms"><HintPath>$(RhinoResources)/System.Windows.Forms.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+  <PropertyGroup Condition="'$(RhinoMajor)' == '8' and '$(MarginPlatform)' == 'mac'">
+    <DefineConstants>$(DefineConstants);MARGIN_RHINO8</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(RhinoMajor)' == '8' and '$(MarginPlatform)' == 'mac'">
+    <PackageDownload Include="Grasshopper" Version="[8.21.25188.17001]" />
+    <PackageDownload Include="RhinoCommon" Version="[8.21.25188.17001]" />
+    <PackageDownload Include="Microsoft.WindowsDesktop.App.Ref" Version="[8.0.14]" />
+    <Reference Include="RhinoCommon"><HintPath>$(NuGetPackageRoot)rhinocommon/8.21.25188.17001/lib/net7.0/RhinoCommon.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Rhino.UI"><HintPath>$(NuGetPackageRoot)rhinocommon/8.21.25188.17001/lib/net7.0/Rhino.UI.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Eto"><HintPath>$(NuGetPackageRoot)rhinocommon/8.21.25188.17001/lib/net7.0/Eto.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="Grasshopper"><HintPath>$(NuGetPackageRoot)grasshopper/8.21.25188.17001/lib/net7.0/Grasshopper.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="GH_IO"><HintPath>$(NuGetPackageRoot)grasshopper/8.21.25188.17001/lib/net7.0/GH_IO.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="System.Drawing.Common"><HintPath>$(NuGetPackageRoot)microsoft.windowsdesktop.app.ref/8.0.14/ref/net8.0/System.Drawing.Common.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="System.Windows.Forms"><HintPath>$(NuGetPackageRoot)microsoft.windowsdesktop.app.ref/8.0.14/ref/net8.0/System.Windows.Forms.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="System.Windows.Forms.Primitives"><HintPath>$(NuGetPackageRoot)microsoft.windowsdesktop.app.ref/8.0.14/ref/net8.0/System.Windows.Forms.Primitives.dll</HintPath><Private>false</Private></Reference>
   </ItemGroup>
   <Target Name="PackageGha" AfterTargets="Build"><Copy SourceFiles="$(TargetPath)" DestinationFiles="$(TargetDir)Margin.gha" /></Target>
 </Project>

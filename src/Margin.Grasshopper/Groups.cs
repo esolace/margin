@@ -304,7 +304,7 @@ public static class Groups
         var selected = d.Objects.Where(o => o.Attributes?.Selected == true).ToArray();
         if (selected.Length == 0) throw new InvalidOperationException("Select components on the canvas first.");
         Attach(d);
-        var group = new GH_Group();
+        var group = new GH_Group { NickName = "" };
         foreach (var o in selected) group.AddObject(o.InstanceGuid);
         d.AddObject(group, false);
         d.UndoUtil.RecordAddObjectEvent("Group selection", group);

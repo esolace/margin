@@ -10,15 +10,16 @@ No extra component is added to your definition.
 
 ## Install
 
-In Rhino 9, open **PackageManager**, enable **Include prereleases**, search for
-**Margin**, and install **0.5.0-alpha.7**. Save your work before restarting Rhino.
+In Rhino 8.21 or newer (including Rhino 9), open **PackageManager**, enable **Include prereleases**, search for
+**Margin**, and install **0.5.0-alpha.8**. Save your work before restarting Rhino.
 In GH1 or GH2, choose **Display → Margin → Open Studio…** and turn labels on.
 The label switch is saved automatically. It retains both ON and OFF across definitions, canvas recreation and Rhino restarts. Rendering errors can still pause a faulty overlay without changing that preference.
 
-Rhino chooses the matching Mac or Windows package. Both Grasshopper adapters
-are included; GH2 must also be available in your Rhino installation.
+Rhino chooses the matching version and platform package. Rhino 8 includes
+the Grasshopper 1 adapter. Rhino 9 includes both adapters; GH2 must also be
+available in your Rhino installation.
 
-## Groups in alpha.7
+## Groups
 
 In GH1 and GH2, select components and use Grasshopper’s **Group** command
 or **Group selection** in Studio. Choose a preset or adjust the fill, opacity,
@@ -49,16 +50,17 @@ is used. GH1 and GH2 share the local preset library.
 
 ## Compatibility
 
-| Platform | Grasshopper 1 | Grasshopper 2 |
+| Host | Mac (Apple Silicon) | Windows |
 | --- | --- | --- |
-| Mac (Apple Silicon) | Tested in Rhino | Tested in Rhino |
-| Windows | Experimental | Experimental |
+| Rhino 8.21+ · Grasshopper 1 | Tested on Rhino 8.37 | Experimental |
+| Rhino 9 · Grasshopper 1 and 2 | Tested on Rhino 9 | Experimental |
 
-Use Rhino 9 with its .NET 10 runtime. The Mac build is tested against
-9.0.26300.9402; Windows uses the 9.0.26300.9401 SDK. Older Rhino 9 builds may lack
-required GH2 APIs. Rhino 8, .NET Framework mode and Linux are not supported.
-The Windows and Mac packages passed the release checks. Interactive
-Rhino testing covered Mac only.
+The Rhino 8 package targets .NET 8 and the Rhino 8.21 SDK. Native testing uses
+Rhino 8.37.26307.15002 with its bundled .NET 10 runtime; older Rhino 8 builds
+have not been tested interactively. Update Rhino 8 if Margin does not appear.
+Rhino 9 requires build 9.0.26300 or newer with .NET 10 for GH2 APIs.
+.NET Framework mode and Linux are not supported. Windows builds and package
+checks are automated; interactive Windows testing is pending.
 See [testing status](docs/TESTING.md) for coverage and remaining limits.
 A native Rhino/GH2 font-processing crash was reproduced on a large migrated
 definition with Margin removed; the testing notes describe the evidence and

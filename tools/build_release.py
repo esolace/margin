@@ -10,7 +10,7 @@ import zipfile
 from build_gh2 import atomic_copy
 
 ROOT = Path(__file__).resolve().parent.parent
-VERSION = '0.5.0-alpha.7'
+VERSION = '0.5.0-alpha.8'
 
 def public_files():
     fixed = ['GLOSSARY.md', 'docs/NEXT-RELEASE.md', 'docs/adr/0001-portable-native-group-appearance.md', '.gitignore', 'LICENSE', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
@@ -20,7 +20,7 @@ def public_files():
              'release/icon.png', 'release/icon.svg', 'tools/build_release.py',
              'tools/build_gh2.py', 'tools/test_gh2_staging.py', 'tools/test_gh2_group_editor.py',
              'tools/test_gh2_group_outline.py', 'tools/test_gh2_group_copy.py', 'tools/test_gh2_group_defaults.py',
-             'tools/test_gh1_group_movement.py', 'tools/test_gh1_group_workflow.py', 'tools/test_gh1_group_editor.py',
+             'tools/test_gh1_group_defaults.py', 'tools/test_gh1_group_movement.py', 'tools/test_gh1_group_workflow.py', 'tools/test_gh1_group_editor.py',
              '.github/workflows/ci.yml', '.github/ISSUE_TEMPLATE/bug_report.yml']
     result = [ROOT / name for name in fixed]
     for folder in ['src', 'tests', 'tools/PackageAudit']:
@@ -33,6 +33,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--platform', choices=['mac', 'win', 'all'], default='win' if sys.platform == 'win32' else 'mac')
     parser.add_argument('--package', action='store_true')
+    parser.add_argument('--rhino', choices=['8', '9', 'all'], default='9')
     args = parser.parse_args()
     dotnet = os.environ.get('MARGIN_DOTNET') or shutil.which('dotnet')
     if not dotnet:
@@ -48,35 +49,42 @@ def main():
     subprocess.run([sys.executable, str(ROOT / 'tools/test_gh2_staging.py')], check=True)
     packages = []
     platforms = ['win', 'mac'] if args.platform == 'all' else [args.platform]
-    for platform in platforms:
-        for project in ['Margin.Grasshopper', 'Margin.Grasshopper2']:
-            subprocess.run([dotnet, 'build', str(ROOT / 'src' / project), '-c', 'Release', f'-p:MarginPlatform={platform}', f'-p:PathMap={ROOT}=/_/margin', '--nologo'], check=True)
-        tfm = 'net10.0' if platform == 'mac' else 'net10.0-windows'
-        stage = ROOT / 'dist' / f'Margin-{VERSION}-{platform}'
-        stage.mkdir(parents=True, exist_ok=True)
-        allowed = {'LICENSE', 'Margin-source.zip', 'manifest.yml', 'icon.png', 'README.md', 'net10.0'}
-        if any(p.name not in allowed and p.suffix != '.yak' for p in stage.iterdir()):
-            raise SystemExit(f'Unexpected staging content in {stage}')
-        payload = stage / 'net10.0'; payload.mkdir(exist_ok=True)
-        payload_names = {'Margin.gha', 'Margin.GH2.rhp', 'Margin.GH2.rhp.grasshopper-only', 'Margin.Core.dll'}
-        if any(p.name not in payload_names for p in payload.iterdir()):
-            raise SystemExit(f'Unexpected binary payload in {payload}')
-        for project, name in [('Margin.Grasshopper', 'Margin.gha'), ('Margin.Grasshopper2', 'Margin.GH2.rhp'), ('Margin.Grasshopper2', 'Margin.Core.dll')]:
-            atomic_copy(ROOT / 'src' / project / 'bin/Release' / tfm / name, payload / name)
-        (payload / 'Margin.GH2.rhp.grasshopper-only').touch()
-        for source, name in [(ROOT / 'LICENSE', 'LICENSE'), *[(ROOT / 'release' / n, n) for n in ['manifest.yml', 'icon.png', 'README.md']]]:
-            atomic_copy(source, stage / name)
-        source_zip = stage / 'Margin-source.zip'
-        temporary = stage / '.Margin-source.zip.tmp'
-        with zipfile.ZipFile(temporary, 'w', zipfile.ZIP_DEFLATED) as archive:
-            for source in public_files(): archive.write(source, source.relative_to(ROOT))
-        os.replace(temporary, source_zip)
-        if args.package:
-            for package in stage.glob('*.yak'): package.unlink()
-            subprocess.run([yak, 'build', '--platform', platform], cwd=stage, check=True)
-            packages += [str(p) for p in stage.glob('*.yak')]
-        else:
-            subprocess.run([dotnet, 'run', '--project', str(ROOT / 'tools/PackageAudit'), '-c', 'Release', '--', '--gh2', str(payload / 'Margin.GH2.rhp')], check=True)
+    for rhino in (['8', '9'] if args.rhino == 'all' else [args.rhino]):
+        runtime = 'net8.0' if rhino == '8' else 'net10.0'
+        projects = ['Margin.Grasshopper'] + (['Margin.Grasshopper2'] if rhino == '9' else [])
+        for platform in platforms:
+            for project in projects:
+                subprocess.run([dotnet, 'build', str(ROOT / 'src' / project), '-c', 'Release', f'-p:MarginPlatform={platform}', f'-p:RhinoMajor={rhino}', f'-p:PathMap={ROOT}=/_/margin', '--nologo'], check=True)
+            tfm = runtime if platform == 'mac' else runtime + '-windows'
+            stage = ROOT / 'dist' / f'Margin-{VERSION}-rh{rhino}-{platform}'
+            stage.mkdir(parents=True, exist_ok=True)
+            allowed = {'LICENSE', 'Margin-source.zip', 'manifest.yml', 'icon.png', 'README.md', runtime}
+            if any(p.name not in allowed and p.suffix != '.yak' for p in stage.iterdir()):
+                raise SystemExit(f'Unexpected staging content in {stage}')
+            payload = stage / runtime; payload.mkdir(exist_ok=True)
+            payload_names = {'Margin.gha', 'Margin.Core.dll'}
+            if rhino == '9': payload_names.update(['Margin.GH2.rhp', 'Margin.GH2.rhp.grasshopper-only'])
+            if any(p.name not in payload_names for p in payload.iterdir()):
+                raise SystemExit(f'Unexpected binary payload in {payload}')
+            binaries = [('Margin.Grasshopper', 'Margin.gha'), ('Margin.Grasshopper', 'Margin.Core.dll')]
+            if rhino == '9': binaries.append(('Margin.Grasshopper2', 'Margin.GH2.rhp'))
+            for project, name in binaries:
+                atomic_copy(ROOT / 'src' / project / 'bin/Release' / tfm / name, payload / name)
+            if rhino == '9': (payload / 'Margin.GH2.rhp.grasshopper-only').touch()
+            for source, name in [(ROOT / 'LICENSE', 'LICENSE'), *[(ROOT / 'release' / n, n) for n in ['manifest.yml', 'icon.png', 'README.md']]]:
+                atomic_copy(source, stage / name)
+            source_zip = stage / 'Margin-source.zip'
+            temporary = stage / '.Margin-source.zip.tmp'
+            with zipfile.ZipFile(temporary, 'w', zipfile.ZIP_DEFLATED) as archive:
+                for source in public_files(): archive.write(source, source.relative_to(ROOT))
+            os.replace(temporary, source_zip)
+            if args.package:
+                for package in stage.glob('*.yak'): package.unlink()
+                subprocess.run([yak, 'build', '--platform', platform], cwd=stage, check=True)
+                packages += [str(p) for p in stage.glob('*.yak')]
+            else:
+                adapters = [str(payload / name) for _, name in binaries if name != 'Margin.Core.dll']
+                subprocess.run([dotnet, 'run', '--project', str(ROOT / 'tools/PackageAudit'), '-c', 'Release', '--', '--assemblies', rhino, platform, *adapters], check=True)
     subprocess.run([dotnet, 'run', '--project', str(ROOT / 'tests'), '-c', 'Release', '--no-launch-profile'], check=True)
     node = os.environ.get('MARGIN_NODE') or shutil.which('node') or shutil.which('bun')
     if not node and (Path.home() / '.bun/bin/bun').is_file(): node = str(Path.home() / '.bun/bin/bun')

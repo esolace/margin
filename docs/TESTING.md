@@ -3,6 +3,34 @@
 This is a preview. Compilation, package checks and live-host testing are separate
 levels of evidence; none is a claim that every host configuration is supported.
 
+## Rhino 8 compatibility candidate, 2026-11-16
+
+Alpha.8's installed Rhino 8 Mac package was tested in Rhino 8.37.26307.15002
+on Apple Silicon. Its GH1 module ID is `5f4ceb07-576b-41fb-96d9-035a699370bc`.
+The package targets .NET 8 and the Rhino 8.21.25188.17001 SDK. This installed
+Rhino 8 host uses .NET 10.0.8; older Rhino 8 hosts were not tested interactively.
+The portable suite also passed all 77 checks on .NET 8.0.34.
+
+- The installed GH1 adapter passed 63 group workflow, 21 editor and 19 movement
+  checks. These cover native outlines, independent same/cross-definition copies,
+  undo/redo, title visibility and saving/reopening.
+- Studio's real WebKit bridge saved a purple visible-title appearance and a teal
+  hidden-title appearance. The host's actual Group menu command and Studio button
+  both used those defaults, preserving member identity and blank native names.
+  Changing defaults preserved existing groups. Studio recovered an unnamed hidden
+  heading without changing defaults. All 11 before-restart checks passed.
+- A new Rhino process loaded the same installed module. Labels remained enabled,
+  Studio displayed the saved hidden-title default, and both creation routes used
+  it. All seven after-restart checks passed.
+- Package audits reject Rhino 9 code disguised as a Rhino 8 distribution, a
+  .NET 10 core library inside the .NET 8 package, and an incorrect minimum Rhino
+  minor version. Windows builds remain experimental pending native testing.
+
+The repeatable Studio/restart test is `tools/test_gh1_group_defaults.py`; it
+requires backed-up preferences and disposable Rhino processes. Detailed local
+reports are under `artifacts/rhino8/`. Mouse and release verification are recorded
+below when completed.
+
 ## Installed Mac group candidate, 2026-11-10
 
 The local alpha.7 candidate was exercised on Apple Silicon, macOS 27.0.1

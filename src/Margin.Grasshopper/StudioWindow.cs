@@ -7,7 +7,13 @@ internal static class StudioWindow
 {
     internal static void Prepare(Form form)
     {
-#if MARGIN_MAC
+#if MARGIN_MAC && MARGIN_RHINO8
+        // Rhino 8 supplies different macOS bindings across runtime updates.
+        var window = form.ControlObject;
+        var behaviour = window.GetType().GetProperty("CollectionBehavior");
+        if (behaviour is not null)
+            behaviour.SetValue(window, Enum.Parse(behaviour.PropertyType, "FullScreenAuxiliary, MoveToActiveSpace"));
+#elif MARGIN_MAC
         if (form.ControlObject is AppKit.NSWindow window)
             window.CollectionBehavior = AppKit.NSWindowCollectionBehavior.FullScreenAuxiliary
                 | AppKit.NSWindowCollectionBehavior.MoveToActiveSpace;
@@ -15,7 +21,7 @@ internal static class StudioWindow
     }
     internal static void KeepOnScreen(Form form)
     {
-#if MARGIN_MAC
+#if MARGIN_MAC && !MARGIN_RHINO8
         if (form.ControlObject is AppKit.NSWindow shown && shown.Screen is not null)
         {
             var area = shown.Screen.VisibleFrame;

@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0-alpha.8 — 2026-11-16
+
+- Add Rhino 8.21+ packages for Grasshopper 1, compiled against the Rhino 8 SDK and .NET 8. Package Manager selects the correct Rhino version and operating system.
+- Keep Rhino 9 packages with both Grasshopper adapters.
+- Leave new Studio-created GH1 group names blank, matching the native Group command; visible unnamed headings still display “Group”.
+- Support Studio window positioning across Rhino 8 Mac runtime updates.
+- Audit host and runtime dependencies before packaging; build both Windows targets in CI.
+- Mac tested on Rhino 8.37; Windows remains experimental. See the testing record for exact coverage.
+
 ## 0.5.0-alpha.7 — 2026-11-10
 
 - Create GH2 groups with the saved appearance through Studio and the native Group command. Double-click a visible group title to edit its name and styling.

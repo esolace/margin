@@ -12,7 +12,8 @@ namespace Margin.GH2;
 public sealed class PluginInfo : Grasshopper2.Framework.Plugin
 {
     public override string Name => "Margin";
-    public override string Info => Localization.Text("ui.designed_component_labels_and_a_personal_style_studio_for_grasshopper_2");
+    // Keep discovery metadata readable without loading companion assemblies.
+    public override string Info => "Designed component labels and a personal style studio for Grasshopper 2.";
     public override string Author => "Solace";
     public override string LicenceDescription => "MIT";
     public override void OnLoaded() => Runtime.Start();

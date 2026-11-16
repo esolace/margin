@@ -51,17 +51,19 @@ public static class Localization
     }
     public static object Message(string key, params (string Name, object? Value)[] values) =>
         new { key, args = values.ToDictionary(value => value.Name, value => value.Value) };
-    public static object Describe(Exception exception) => exception.Data["Margin.Message"] ?? exception.Message;
+    public static object Describe(Exception exception) => exception.Data["Margin.Message"] is string message
+        ? JsonSerializer.Deserialize<JsonElement>(message) : exception.Message;
     public static InvalidDataException InvalidData(string key, params (string Name, object? Value)[] values)
     {
         var exception = new InvalidDataException(Text(key,values));
-        exception.Data["Margin.Message"] = Message(key,values);
+        // .NET Framework requires serializable values in Exception.Data.
+        exception.Data["Margin.Message"] = JsonSerializer.Serialize(Message(key,values));
         return exception;
     }
     public static InvalidOperationException InvalidOperation(string key, params (string Name, object? Value)[] values)
     {
         var exception = new InvalidOperationException(Text(key,values));
-        exception.Data["Margin.Message"] = Message(key,values);
+        exception.Data["Margin.Message"] = JsonSerializer.Serialize(Message(key,values));
         return exception;
     }
     static Dictionary<string,Dictionary<string,string>> Load()

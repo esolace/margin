@@ -9,7 +9,8 @@ namespace Margin.Native;
 public sealed class Info : GH_AssemblyInfo
 {
     public override string Name => "Margin";
-    public override string Description => Localization.Text("ui.designed_component_labels_for_grasshopper");
+    // Yak reads discovery metadata without loading companion assemblies.
+    public override string Description => "Designed component labels for Grasshopper.";
     public override Guid Id => new("1cbb85f4-a387-42a3-9da2-7c4a9a974790");
     public override string AuthorName => "Solace";
     public override string AuthorContact => "";

@@ -18,6 +18,16 @@ static class LocalizationChecks
         check(Localization.Translate("unknown", "ui.show_title") == "Show title", "missing catalog falls back to English");
         var supplied = "<img src=x> {error} 日本語";
         check(Localization.Translate("en", "preset.use", ("name", supplied)) == "Use " + supplied, "substitution preserves literal user content without recursive expansion");
+        foreach (var exception in new Exception[] {
+            Localization.InvalidData("preset.use", ("name", supplied)),
+            Localization.InvalidOperation("preset.use", ("name", supplied)) })
+        {
+            var descriptor = System.Text.Json.JsonSerializer.SerializeToElement(Localization.Describe(exception));
+            check(descriptor.GetProperty("key").GetString() == "preset.use"
+                && descriptor.GetProperty("args").GetProperty("name").GetString() == supplied,
+                "validation errors preserve translatable messages across runtimes");
+        }
+        check((string)Localization.Describe(new Exception(supplied)) == supplied, "external errors preserve their original detail");
         var english = Localization.Catalog("en");
         foreach (var language in Localization.Languages.Keys)
         {

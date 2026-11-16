@@ -22,11 +22,11 @@ public sealed record GroupAppearance
     {
         static string? Colour(string? value) => value is null ? null
             : Regex.IsMatch(value, "^#[0-9a-fA-F]{6}$") ? value.ToUpperInvariant()
-            : throw new InvalidDataException(Localization.Text("ui.choose_a_valid_six_digit_colour"));
+            : throw Localization.InvalidData("ui.choose_a_valid_six_digit_colour");
         static bool Range(double value, double min, double max) => RuntimeSupport.IsFinite(value) && value >= min && value <= max;
         if (!Range(TitleSize, 10, 30) || !Range(Radius, 0, 24) || !Range(BorderWidth, 0, 4)
             || !GroupAppearancePolicy.IsHeading(Heading) || !GroupAppearancePolicy.TitleCases.ContainsKey(TitleCase ?? ""))
-            throw new InvalidDataException(Localization.Text("ui.choose_a_valid_group_title_and_frame_appearance"));
+            throw Localization.InvalidData("ui.choose_a_valid_group_title_and_frame_appearance");
         return this with { Text = Colour(Text), Accent = Colour(Accent), Border = Colour(Border) };
     }
     [System.Text.Json.Serialization.JsonIgnore]

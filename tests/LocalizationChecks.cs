@@ -2,8 +2,12 @@ using Margin.Core;
 
 static class LocalizationChecks
 {
+    public sealed record LocaleCase(string Choice, string? Host, string Expected);
     public static void Run(Action<bool,string> check)
     {
+        using var casesStream = typeof(LocalizationChecks).Assembly.GetManifestResourceStream("Margin.LocaleCases.json")!;
+        var cases = System.Text.Json.JsonSerializer.Deserialize<LocaleCase[]>(casesStream,new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true })!;
+        foreach(var item in cases) check(Localization.Resolve(item.Choice,item.Host)==item.Expected,"shared locale case: "+item.Choice+"/"+item.Host);
         check(Localization.Resolve("auto", "de-DE") == "de", "automatic language follows the host");
         check(Localization.Resolve("fr", "de-DE") == "fr", "manual language overrides the host");
         check(Localization.Resolve("auto", "zh-HK") == "zh-Hant" && Localization.Resolve("auto", "zh-CN") == "zh-Hans", "Chinese regions resolve to the correct script");
@@ -38,6 +42,10 @@ static class LocalizationChecks
             var saved = PreferencesStore.Load(path);
             check(saved.Language == "ja" && saved.LabelsEnabled && saved.GroupFill == "#123456", "language survives reopen without changing appearance");
             check(System.Text.Json.JsonSerializer.Deserialize<Preferences>("{}")!.Language == "auto", "old preferences follow Rhino automatically");
+            File.WriteAllText(path, "{\"Language\":\"future-locale\",\"LabelsEnabled\":true,\"GroupFill\":\"#123456\"}");
+            check(PreferencesStore.Load(path) is { Language: "auto", LabelsEnabled: true, GroupFill: "#123456" }, "unknown saved language preserves unrelated preferences");
+            PreferencesStore.Update(path, p => p with { Language = "fr" });
+            check(PreferencesStore.Load(path) is { Language: "fr", LabelsEnabled: true, GroupFill: "#123456" }, "a saved unknown language can be repaired");
             var original = File.ReadAllText(path);
             try { PreferencesStore.Update(path, p => p with { Language = "invalid" }); throw new Exception("Invalid language accepted"); }
             catch (InvalidDataException) { check(File.ReadAllText(path) == original, "invalid language cannot replace saved preferences"); }

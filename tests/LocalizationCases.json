@@ -1,0 +1,67 @@
+[
+  {
+    "choice": "auto",
+    "host": "de-DE",
+    "expected": "de"
+  },
+  {
+    "choice": "fr",
+    "host": "de-DE",
+    "expected": "fr"
+  },
+  {
+    "choice": "auto",
+    "host": "zh-CN",
+    "expected": "zh-Hans"
+  },
+  {
+    "choice": "auto",
+    "host": "zh-HK",
+    "expected": "zh-Hant"
+  },
+  {
+    "choice": "auto",
+    "host": "zh-Hans-HK",
+    "expected": "zh-Hans"
+  },
+  {
+    "choice": "auto",
+    "host": "zh-Hant-CN",
+    "expected": "zh-Hant"
+  },
+  {
+    "choice": "auto",
+    "host": "zh_TW",
+    "expected": "zh-Hant"
+  },
+  {
+    "choice": "auto",
+    "host": "pt-BR",
+    "expected": "pt"
+  },
+  {
+    "choice": "auto",
+    "host": "xx-XX",
+    "expected": "en"
+  },
+  {
+    "choice": "bad",
+    "host": "es-MX",
+    "expected": "es"
+  },
+  {
+    "choice": "auto",
+    "host": null,
+    "expected": "en"
+  },
+  {
+    "choice": "auto",
+    "host": "ja-JP",
+    "expected": "ja"
+  },
+  {
+    "choice": "auto",
+    "host": "en-GB",
+    "expected": "en"
+  }
+]

@@ -43,7 +43,7 @@ internal static class GroupEditor
             : Groups.BeginEdit(doc, snapshot.Document!, entry.Id, entry.Revision);
         var dialog = new Dialog<bool> { Title = Localization.Text("group.edit"), Padding = new Padding(20), Resizable = false };
         var name = new TextBox { ID = "group-name", Text = entry.Name, PlaceholderText = Localization.Text("ui.group_name"), Width = 320 };
-        var titleCase = new DropDown { ID = "group-title-case", Width = 180 };
+        var titleCase = new DropDown { ID = "group-title-case", Width = 320 };
         foreach (var option in GroupAppearancePolicy.TitleCases) titleCase.Items.Add(new ListItem { Key = option.Key, Text = Localization.Text("case." + option.Key) });
         titleCase.SelectedKey = entry.Style.Appearance.TitleCase;
         var colour = new ColorPicker { ID = "group-fill", Value = Color.Parse(entry.Style.Fill) };
@@ -91,7 +91,7 @@ internal static class GroupEditor
                 if (result.Complete) dialog.Close(true);
                 else error.Text = Localization.Text("group.defaults_failed", ("error", result.DefaultsError));
             }
-            catch (Exception ex) { error.Text = ex.Message; }
+            catch (Exception ex) { error.Text = Localization.Text("change.failed", ("error", ex.Message)); }
         };
         cancel.Click += (_, _) => dialog.Close(false);
         dialog.DefaultButton = apply; dialog.AbortButton = cancel;

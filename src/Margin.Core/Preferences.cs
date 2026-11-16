@@ -14,9 +14,9 @@ public sealed record Preferences
     public GroupAppearance GroupAppearance { get; init; } = new();
     public Preferences Validate()
     {
-        if (!Localization.IsChoice(Language)) throw new InvalidDataException(Localization.Text("language.invalid"));
+        if (!Localization.IsChoice(Language)) throw Localization.InvalidData("language.invalid");
         if (!Regex.IsMatch(GroupFill ?? "", "^#[0-9a-fA-F]{6}$") || !RuntimeSupport.IsFinite(GroupOpacity) || GroupOpacity < 0 || GroupOpacity > 100)
-            throw new InvalidDataException(Localization.Text("ui.invalid_saved_group_appearance"));
+            throw Localization.InvalidData("ui.invalid_saved_group_appearance");
         return this with { GroupFill = GroupFill!.ToUpperInvariant(), GroupAppearance = (GroupAppearance ?? new()).Validate() };
     }
 }
@@ -24,9 +24,15 @@ public sealed record Preferences
 public static class PreferencesStore
 {
     static readonly object gate = new();
-    public static Preferences Load(string path) => File.Exists(path)
-        ? (JsonSerializer.Deserialize<Preferences>(File.ReadAllText(path)) ?? throw new InvalidDataException(Localization.Text("ui.empty_margin_preferences"))).Validate()
-        : new();
+    public static Preferences Load(string path)
+    {
+        if (!File.Exists(path)) return new();
+        var value = JsonSerializer.Deserialize<Preferences>(File.ReadAllText(path))
+            ?? throw Localization.InvalidData("ui.empty_margin_preferences");
+        // An unknown language must not disable labels or discard valid group defaults.
+        if (!Localization.IsChoice(value.Language)) value = value with { Language = "auto" };
+        return value.Validate();
+    }
     public static Preferences Update(string path, Func<Preferences, Preferences> change)
     {
         lock (gate)

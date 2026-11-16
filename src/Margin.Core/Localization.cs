@@ -29,7 +29,7 @@ public static class Localization
     }
     public static void Use(string choice, string host)
     {
-        if (!IsChoice(choice)) throw new InvalidDataException(Text("language.invalid"));
+        if (!IsChoice(choice)) throw InvalidData("language.invalid");
         var next = Resolve(choice,host);
         if (Language == next && Choice == choice) return;
         Language = next; Choice = choice; Revision++;
@@ -48,6 +48,21 @@ public static class Localization
                 if (value.Name == match.Groups[1].Value) return Convert.ToString(value.Value,CultureInfo.InvariantCulture) ?? "";
             return match.Value;
         });
+    }
+    public static object Message(string key, params (string Name, object? Value)[] values) =>
+        new { key, args = values.ToDictionary(value => value.Name, value => value.Value) };
+    public static object Describe(Exception exception) => exception.Data["Margin.Message"] ?? exception.Message;
+    public static InvalidDataException InvalidData(string key, params (string Name, object? Value)[] values)
+    {
+        var exception = new InvalidDataException(Text(key,values));
+        exception.Data["Margin.Message"] = Message(key,values);
+        return exception;
+    }
+    public static InvalidOperationException InvalidOperation(string key, params (string Name, object? Value)[] values)
+    {
+        var exception = new InvalidOperationException(Text(key,values));
+        exception.Data["Margin.Message"] = Message(key,values);
+        return exception;
     }
     static Dictionary<string,Dictionary<string,string>> Load()
     {

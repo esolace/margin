@@ -15,7 +15,7 @@ VERSION = '0.5.0-alpha.8'
 def public_files():
     fixed = ['GLOSSARY.md', 'docs/NEXT-RELEASE.md', 'docs/adr/0001-portable-native-group-appearance.md', '.gitignore', 'LICENSE', 'README.md', 'CHANGELOG.md', 'CONTRIBUTING.md',
              'tools/browser/package.json', 'tools/browser/bun.lock', 'tools/browser/studio.mjs',
-             'design/Studio.html', 'design/locales.json', 'design/localization.js', 'tools/sync_locales.py', 'tools/browser/localization.mjs', 'docs/MULTILINGUAL.md', 'design/group-appearance-policy.json', 'design/group-appearance.js', 'tools/sync_studio_policy.py', 'tools/test_studio_appearance.mjs', 'docs/TESTING.md', 'docs/images/studio.png',
+             'design/Studio.html', 'design/locales.json', 'design/localization.js', 'tools/sync_locales.py', 'tools/browser/localization.mjs', 'docs/MULTILINGUAL.md', 'tests/LocalizationCases.json', 'design/group-appearance-policy.json', 'design/group-appearance.js', 'tools/sync_studio_policy.py', 'tools/test_studio_appearance.mjs', 'docs/TESTING.md', 'docs/images/studio.png',
              'release/BUILDING.md', 'release/README.md', 'release/manifest.yml',
              'release/icon.png', 'release/icon.svg', 'tools/build_release.py',
              'tools/build_gh2.py', 'tools/build_rhino7.py', 'tools/test_legacy_studio.mjs', 'src/Margin.Core/LegacyUnicode.json', 'docs/RHINO7.md', 'tools/test_gh2_staging.py', 'tools/test_gh2_group_editor.py',

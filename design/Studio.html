@@ -275,7 +275,8 @@ globalThis.MarginGroupAppearance = Object.freeze({
 const $ = id => document.getElementById(id);
 const tr = (key,args) => MarginI18n.text(key,args);
 const m = (key,args={}) => ({key,args});
-const messageText = value => typeof value === 'string' ? value : tr(value.key,value.args);
+const failure = (key,args={}) => Object.assign(new Error(tr(key,args)),{localized:m(key,args)});
+const messageText = value => typeof value === 'string' ? value : tr(value.key,Object.fromEntries(Object.entries(value.args||{}).map(([key,item])=>[key,item&&typeof item==='object'&&item.key?messageText(item):item])));
 const titleCaseKeys = {AsTyped:'case.AsTyped',Uppercase:'case.Uppercase',TitleCase:'case.TitleCase',SentenceCase:'case.SentenceCase',Lowercase:'case.Lowercase'};
 const headingKeys = {Rule:'ui.rule',Band:'ui.band',Plain:'ui.plain'};
 let statusMessage=m('ui.initial_status'), groupMessage=m('ui.initial_group_status'), groupError=false, presetMessage='';
@@ -292,7 +293,7 @@ const originalNames = ['Curve','Divide Curve','Move','Interpolate','Loft'];
 const nicknames = ['Crv','Divide','Move','IntCrv','Loft'];
 function clean(obj) {
   const t = {...defaults};
-  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw Error(tr("ui.choose_a_valid_margin_theme"));
+  if (!obj || typeof obj !== 'object' || Array.isArray(obj)) throw failure("ui.choose_a_valid_margin_theme");
   for (const k of Object.keys(t)) {
     const v = obj[k];
     if (typeof t[k] === 'boolean' && typeof v === 'boolean') t[k] = v;
@@ -433,7 +434,7 @@ $('presetForm').onsubmit=e=>{
       nextTheme=presetMode==='rename'&&!sameStyle(theme,selected.Theme)?null:storedTheme;
     }
     localStorage.setItem('margin-presets',JSON.stringify(items));
-    finishPresets({items,selectedId:presetMode==='delete'?null:selectedId,theme:nextTheme,message:presetMode==='delete'?tr("ui.preset_deleted_your_current_style_is_unchanged"):tr("ui.preset_saved_in_this_browser")});
+    finishPresets({items,selectedId:presetMode==='delete'?null:selectedId,theme:nextTheme,message:presetMode==='delete'?m("ui.preset_deleted_your_current_style_is_unchanged"):m("ui.preset_saved_in_this_browser")});
   }catch(e){presetError(m('preset.save_error',{error:e.message}));}
 };
 function fontChoices() {return fonts.filter(name=>name.toLocaleLowerCase().includes($('fontSearch').value.trim().toLocaleLowerCase()));}
@@ -503,8 +504,8 @@ $('export').onclick=()=>{
 };
 $('import').onclick=()=>{if(!send('import'))$('themeFile').click();};
 $('themeFile').onchange=async()=>{
-  try{const f=$('themeFile').files[0];if(!f)return;if(f.size>32768)throw Error(tr("ui.choose_a_theme_smaller_than_32_kb"));theme=clean(JSON.parse(await f.text()));render(true);apply();status(m("ui.theme_imported"));}
-  catch(e){status(e.message);}finally{$('themeFile').value='';}
+  try{const f=$('themeFile').files[0];if(!f)return;if(f.size>32768)throw failure("ui.choose_a_theme_smaller_than_32_kb");theme=clean(JSON.parse(await f.text()));render(true);apply();status(m("ui.theme_imported"));}
+  catch(e){status(e.localized||e.message);}finally{$('themeFile').value='';}
 };
 
 let groupData={Document:null,Host:'Grasshopper',Items:[]}, latestGroupData=groupData, groupId=null, groupDirty=false, groupPending=false;
@@ -585,7 +586,7 @@ $('groupLookup').onchange=()=>{
 function setGroups(data,message,preserveDraft=false){
  latestGroupData=data;
  if(preserveDraft && groupDirty && data.Document===groupData.Document){
-  groupStatus(message||tr("ui.finish_these_edits_before_changing_the_selected_group"));return;
+  groupStatus(message||m("ui.finish_these_edits_before_changing_the_selected_group"));return;
  }
  if(data.Document!==groupData.Document||selectionKey(data)!==lastCanvasSelection||!data.Items.some(g=>g.Id===pickedGroup))pickedGroup=null;
  lastCanvasSelection=selectionKey(data);
@@ -622,7 +623,7 @@ function buildGroupPresets(){
 $('groupCollection').onchange=buildGroupPresets;
 for(const el of $('groupFields').querySelectorAll('input,select'))el.addEventListener('input',()=>{for(const key of ['Text','Accent','Border'])if(el.id==='group'+key)$('groupAuto'+key).checked=false;groupDirty=!!groupId;groupPreview();groupStatus(m("ui.preview_updated_apply_to_save_it_to_your_group"));});
 buildGroupPresets();
-$('revertGroup').onclick=()=>{groupDirty=false;setGroups(latestGroupData,tr("ui.unapplied_edits_reverted"));};
+$('revertGroup').onclick=()=>{groupDirty=false;setGroups(latestGroupData,m("ui.unapplied_edits_reverted"));};
 function applyGroup(){
  const g=groupData.Items.find(g=>g.Id===groupId);if(!g||!groupDirty||groupPending)return;
  groupPending=true;groupPreview();
@@ -667,7 +668,7 @@ window.MarginStudio={
   setLanguage:renderLanguage,
   setGroups, setSession,
   reportError(message){presetError(message);groupPending=false;groupPreview();groupStatus(message,true);},
-  connect(data){if(data.language)renderLanguage(data.language);if(data.groups)setGroups(data.groups);native=!!data.native;clearTimeout(applyTimer);presets=data.presets.map(clean);userPresets=data.userPresets||[];theme=clean(data.theme);selectedPresetId=userPresets.find(p=>p.Theme.Name===theme.Name&&sameStyle(p.Theme,theme))?.Id||null;if(selectedPresetId)presetCollection='user';this.setFonts(data.fonts);buildPresets();render(true);setEnabled(data.enabled);$('connection').textContent=tr("ui.connected_to_grasshopper");if(data.session)setSession(data.session);status(data.libraryError||tr("ui.changes_apply_live_save_a_preset_to_keep_a_style_in_your_collection"));},
+  connect(data){if(data.language)renderLanguage(data.language);if(data.groups)setGroups(data.groups);native=!!data.native;clearTimeout(applyTimer);presets=data.presets.map(clean);userPresets=data.userPresets||[];theme=clean(data.theme);selectedPresetId=userPresets.find(p=>p.Theme.Name===theme.Name&&sameStyle(p.Theme,theme))?.Id||null;if(selectedPresetId)presetCollection='user';this.setFonts(data.fonts);buildPresets();render(true);setEnabled(data.enabled);$('connection').textContent=tr("ui.connected_to_grasshopper");if(data.session)setSession(data.session);status(data.libraryError||m("ui.changes_apply_live_save_a_preset_to_keep_a_style_in_your_collection"));},
   setUserPresets:finishPresets,
   presetError,
   setFonts(names){fonts=[...new Set(names)].filter(n=>typeof n==='string'&&n.trim()).sort((a,b)=>a.localeCompare(b));if(!$('fontPopover').hidden)drawFonts();},

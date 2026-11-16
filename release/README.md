@@ -53,7 +53,7 @@ is used. GH1 and GH2 share the local preset library.
 | Host | Mac (Apple Silicon) | Windows |
 | --- | --- | --- |
 | Rhino 8.21+ · Grasshopper 1 | Tested on Rhino 8.37 | Experimental |
-| Rhino 9 · Grasshopper 1 and 2 | Tested on Rhino 9 | Experimental |
+| Rhino 9 · Grasshopper 1 and 2 | Alpha.7 tested; alpha.8 build checked | Experimental |
 
 The Rhino 8 package targets .NET 8 and the Rhino 8.21 SDK. Native testing uses
 Rhino 8.37.26307.15002 with its bundled .NET 10 runtime; older Rhino 8 builds

@@ -11,7 +11,8 @@ description: >
   and restarts. Native groups support editable or hidden titles and saved appearance defaults.
 
   Mac tested on Apple Silicon in Rhino 8.37 with Grasshopper 1,
-  and Rhino 9 with Grasshopper 1 and 2.
+  Rhino 9 Grasshopper 1 and 2 have prior alpha.7 native coverage;
+  alpha.8 Rhino 9 builds passed automated checks.
   Windows experimental. The Windows package passed build and package checks.
   Interactive Windows testing is pending.
   Requires Rhino 8.21 or newer with .NET 8+, or Rhino 9.0.26300 or newer

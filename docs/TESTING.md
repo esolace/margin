@@ -28,8 +28,19 @@ The portable suite also passed all 77 checks on .NET 8.0.34.
 
 The repeatable Studio/restart test is `tools/test_gh1_group_defaults.py`; it
 requires backed-up preferences and disposable Rhino processes. Detailed local
-reports are under `artifacts/rhino8/`. Mouse and release verification are recorded
-below when completed.
+reports are under `artifacts/rhino8/`. The visible group and component labels
+were inspected in Rhino 8. The mouse tool could read the window and send keyboard
+input, but coordinate clicks failed with `noWindowsAvailable`; physical title
+double-click/drag acceptance remains unverified on Rhino 8. The user was working
+in class, so testing stopped without interrupting that work. The native editor
+and picking checks above are separate evidence, not a substitute for those gestures.
+
+The original theme, presets and preferences were restored byte for byte, and
+the disposable Rhino 8 process was closed. The user's Rhino 9 process was not
+restarted. Alpha.8 Rhino 9 builds passed host/runtime audits and CI; their native
+coverage remains the historical alpha.7 record below, not a fresh alpha.8 test.
+The local Rhino 9 installation remains on alpha.7. CI passed Windows builds for
+both hosts, .NET 8 and .NET 10 portable checks, and the Studio browser workflows.
 
 ## Installed Mac group candidate, 2026-11-10
 

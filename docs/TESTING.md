@@ -3,6 +3,36 @@
 This is a preview. Compilation, package checks and live-host testing are separate
 levels of evidence; none is a claim that every host configuration is supported.
 
+## GH1 group duplication fix — 2026-11-26
+
+Private local candidate **0.5.0-alpha.9.1** fixes frame-only copies: clicking a
+native group frame or crossing its title now selects its contents for native
+Copy. Studio-created groups also keep their contents selected. Pasted groups
+have new members and can move independently, including nested groups.
+
+- Reproduced the alpha.9 failure using selection-limited `GH_DocumentIO.Copy`
+  with its local clipboard: the pasted frame referred to the original members.
+- Final Mac Rhino 8.37 candidate: **151 workflow checks**, including 88 checks
+  for same/cross-definition copies, nested groups, frame clicks, title crossing,
+  native drag/undo, Ctrl removal, Shift addition, individual window selection
+  and inversion. Existing save/reopen, rename, ungroup and outline checks pass.
+- **19 movement checks** and **6 canvas-event checks** pass. The event suite
+  raises actual native canvas events and confirms observer ordering; it does
+  not move the physical mouse or touch the system clipboard. Test documents,
+  settings and the hidden Rhino process are disposable and separate from work.
+- Shared portable suite: **124 checks** on each of .NET 8 and .NET 10.
+  Mac Rhino 8 GH1, Rhino 9 GH1 and Rhino 9 GH2 candidates compile cleanly.
+- The separate Rhino 9 test process exited before tests could execute while
+  the user's working Rhino 9 session remained open. Native verification of
+  this candidate in Rhino 9 awaits a later restart; no Rhino 9 pass is claimed.
+  GH2 behavior is unchanged. Windows interaction remains unverified.
+- Standards and behavior reviews found no remaining actionable findings after
+  fixing drag-selection snapshots and preserving individual Ctrl-window removal.
+
+The new regression boundaries are `tools/test_gh1_group_workflow.py` and
+`tools/test_gh1_group_selection_events.py`. Local evidence is under
+`artifacts/pasted-group-drag/`. This private candidate is not a public release.
+
 ## Multilingual native follow-up — 2026-11-16
 
 The fixed multilingual candidate (production code through `4e25736`) was tested

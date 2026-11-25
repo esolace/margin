@@ -264,16 +264,83 @@ public static class Groups
     static void Refresh() => Editor.Instance?.Canvas?.Invalidate();
 #else
     static GH_Canvas? watchedCanvas;
+    static PointF? windowSelection;
     static void WatchCanvas(GH_Canvas canvas)
     {
         if (ReferenceEquals(watchedCanvas, canvas)) return;
-        if (watchedCanvas is not null) watchedCanvas.DocumentChanged -= ChangedDocument;
+        UnwatchCanvas();
         watchedCanvas = canvas;
         canvas.DocumentChanged += ChangedDocument;
+        // Native canvas handlers are registered in its constructor, so these run
+        // after native picking/rectangle selection has established the frame state.
+        canvas.MouseDown += CanvasMouseDown;
+        canvas.MouseUp += CanvasMouseUp;
+        canvas.KeyDown += CanvasKeyDown;
         if (canvas.Document is { } d) Attach(d);
     }
+    static void UnwatchCanvas()
+    {
+        if (watchedCanvas is not null)
+        {
+            watchedCanvas.DocumentChanged -= ChangedDocument;
+            watchedCanvas.MouseDown -= CanvasMouseDown;
+            watchedCanvas.MouseUp -= CanvasMouseUp;
+            watchedCanvas.KeyDown -= CanvasKeyDown;
+        }
+        windowSelection = null;
+        watchedCanvas = null;
+    }
+    static void SelectContents(GH_Group group)
+    {
+        foreach (var member in group.ObjectsRecursive())
+            member.Attributes.Selected = group.Attributes.Selected;
+    }
+    static void CanvasMouseDown(object? sender, System.Windows.Forms.MouseEventArgs e)
+    {
+        windowSelection = null;
+        if (sender is not GH_Canvas canvas || canvas.Document is not { } document ||
+            e.Button != System.Windows.Forms.MouseButtons.Left) return;
+        if (canvas.ActiveInteraction is Grasshopper.GUI.Canvas.Interaction.GH_WindowSelectInteraction)
+        {
+            windowSelection = canvas.Viewport.UnprojectPoint(e.Location);
+            return;
+        }
+        if (canvas.ActiveInteraction is not null and not Grasshopper.GUI.Canvas.Interaction.GH_DragInteraction) return;
+        var hit = document.RelevantObjectAtPoint(canvas.Viewport.UnprojectPoint(e.Location));
+        if (hit?.TopLevelObject is GH_Group group && group.Attributes is StyledGroup)
+        {
+            SelectContents(group);
+            // Native MouseDown already captured a drag selection. Rebuild it
+            // after propagation, particularly when Ctrl-click removed a group.
+            canvas.ActiveInteraction = null;
+            if (document.SelectedCount > 0)
+                canvas.ActiveInteraction = new Grasshopper.GUI.Canvas.Interaction.GH_DragInteraction(canvas,
+                    new Grasshopper.GUI.GH_CanvasMouseEvent(canvas.Viewport, e));
+            canvas.Invalidate();
+        }
+    }
+    static void CanvasMouseUp(object? sender, System.Windows.Forms.MouseEventArgs e)
+    {
+        var before = windowSelection;
+        windowSelection = null;
+        if (before is null || sender is not GH_Canvas canvas || canvas.Document is not { } document ||
+            e.Button != System.Windows.Forms.MouseButtons.Left) return;
+        var start = before.Value;
+        var end = canvas.Viewport.UnprojectPoint(e.Location);
+        var rectangle = RectangleF.FromLTRB(Math.Min(start.X, end.X), Math.Min(start.Y, end.Y),
+            Math.Max(start.X, end.X), Math.Max(start.Y, end.Y));
+        var pick = end.X < start.X ? GH_PickBox.Crossing : GH_PickBox.Window;
+        // Only propagate frames hit by this rectangle. An untouched selected
+        // frame must not reselect a member deliberately removed with Ctrl.
+        foreach (var group in Items(document).Where(g => g.Attributes.IsPickRegion(rectangle, pick))) SelectContents(group);
+        canvas.Invalidate();
+    }
+    static void CanvasKeyDown(object? sender, System.Windows.Forms.KeyEventArgs e)
+    {
+        if (e.KeyCode == System.Windows.Forms.Keys.Escape) windowSelection = null;
+    }
     static void ChangedDocument(GH_Canvas canvas, GH_CanvasDocumentChangedEventArgs e)
-    { if (e.NewDocument is { } d) Attach(d); }
+    { windowSelection = null; if (e.NewDocument is { } d) Attach(d); }
     static void Added(object sender, GH_DocObjectEventArgs e)
     {
         try
@@ -309,8 +376,8 @@ public static class Groups
         foreach (var o in selected) group.AddObject(o.InstanceGuid);
         d.AddObject(group, false);
         d.UndoUtil.RecordAddObjectEvent("Group selection", group);
-        foreach (var o in selected) o.Attributes.Selected = false;
         group.Attributes.Selected = true;
+        SelectContents(group);
         d.Modified(); Refresh();
         return group;
     }
@@ -351,8 +418,7 @@ public static class Groups
         foreach (var weak in documents) if (weak.TryGetTarget(out var doc)) doc.Undo.NodeAdded -= Created;
 #else
         Instances.CanvasCreated -= WatchCanvas;
-        if (watchedCanvas is not null) watchedCanvas.DocumentChanged -= ChangedDocument;
-        watchedCanvas = null;
+        UnwatchCanvas();
         foreach (var weak in documents) if (weak.TryGetTarget(out var doc)) doc.ObjectsAdded -= Added;
 #endif
         // Attributes are harmless when detached; restore the active document immediately.

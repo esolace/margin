@@ -54,6 +54,7 @@
 .DS_Store
 
 !tools/test_gh1_group_workflow.py
+!tools/test_gh1_group_selection_events.py
 
 !tools/browser/
 !tools/browser/package.json

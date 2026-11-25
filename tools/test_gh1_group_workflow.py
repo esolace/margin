@@ -20,6 +20,159 @@ SCRIPT = Path(unquote(urlparse(__file__).path) if __file__.startswith('file:') e
 OUTPUT = SCRIPT.resolve().parents[1] / 'artifacts' / 'group-workflow'
 
 
+def verify_selected_group_copy(Groups, GroupStyle, check):
+    from Grasshopper.Kernel import GH_Document, GH_DocumentIO, GH_ClipboardType
+    from Grasshopper.Kernel.Parameters import Param_Curve
+    from Grasshopper.Kernel.Special import GH_Group, GH_GroupBorder
+    from Grasshopper.GUI import GH_CanvasMouseEvent
+    from Grasshopper.GUI.Canvas import GH_Canvas
+    from Grasshopper.GUI.Canvas.Interaction import GH_DragInteraction, GH_WindowSelectInteraction
+    from itertools import product
+    from System.Drawing import Point, PointF, Size
+    from System.Windows.Forms import MouseButtons, Keys
+
+    def observe(canvas, name, point):
+        screen = canvas.Viewport.ProjectPoint(point)
+        event = GH_CanvasMouseEvent(Point(int(screen.X), int(screen.Y)), point, MouseButtons.Left, 1, 0)
+        method = clr.GetClrType(Groups).GetMethod(name, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
+        method.Invoke(None, System.Array[System.Object]([canvas, event.WinFormsEventArgs]))
+        return event
+
+    def click_group(canvas, group, point, modifiers=System.Enum.ToObject(Keys, 0)):
+        # Run native picking and drag setup, then Margin's post-selection handler.
+        # Explicit modifiers keep background QA independent of the user's keyboard.
+        canvas.Document.Select(canvas.Document.RelevantObjectAtPoint(point), modifiers == Keys.Shift, modifiers == Keys.Control)
+        event = GH_CanvasMouseEvent(Point(int(point.X), int(point.Y)), point, MouseButtons.Left, 1, 0)
+        canvas.ActiveInteraction = GH_DragInteraction(canvas, event) if canvas.Document.SelectedCount else None
+        observe(canvas, 'CanvasMouseDown', point)
+        return canvas.ActiveInteraction
+
+    def select_rectangle(canvas, start, end, mode='Replace'):
+        event = lambda p: GH_CanvasMouseEvent(Point(int(p.X), int(p.Y)), p, MouseButtons.Left, 1, 0)
+        interaction = GH_WindowSelectInteraction(canvas, event(start))
+        canvas.ActiveInteraction = interaction
+        observe(canvas, 'CanvasMouseDown', start)
+        interaction.RespondToMouseMove(canvas, event(end))
+        # Select Replace explicitly; never change the user's physical modifiers.
+        field = interaction.GetType().GetField('m_SelType', System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+        field.SetValue(interaction, System.Enum.Parse(field.FieldType, mode))
+        interaction.RespondToMouseUp(canvas, event(end))
+        canvas.ActiveInteraction = None
+        observe(canvas, 'CanvasMouseUp', end)
+
+    # Exercise the selection-limited Copy command, not a whole-document clone.
+    # The local clipboard uses the same serializer without touching the user's clipboard.
+    for cross_document in (False, True):
+        for nested, crossing in product((False, True), repeat=2):
+            source = GH_Document()
+            destination = GH_Document() if cross_document else source
+            canvas = GH_Canvas()
+            canvas.Size = Size(1000, 800)
+            copied = None
+            drag = None
+            label = ('cross-definition' if cross_document else 'same-definition') + (' nested' if nested else '') + (' title crossing' if crossing else ' frame click')
+            try:
+                Groups.Attach(source)
+                Groups.Attach(destination)
+                members = []
+                for x, y in ((200, 280), (450, 400)):
+                    member = Param_Curve()
+                    member.CreateAttributes()
+                    member.Attributes.Pivot = PointF(x, y)
+                    source.AddObject(member, False)
+                    member.Attributes.PerformLayout()
+                    members.append(member)
+                group = GH_Group()
+                group.Border = GH_GroupBorder.Box
+                for member in members: group.AddObject(member.InstanceGuid)
+                source.AddObject(group, False)
+                if nested:
+                    outer = GH_Group()
+                    outer.Border = GH_GroupBorder.Box
+                    outer.AddObject(group.InstanceGuid)
+                    source.AddObject(outer, False)
+                    group = outer
+                snapshot = Groups.Snapshot(source)
+                entry = next(item for item in snapshot.Items if item.Id == str(group.InstanceGuid))
+                Groups.BeginEdit(source, snapshot.Document, entry.Id, entry.Revision).Save('Copy me', GroupStyle('#6937C4', 96, True))
+                source.DeselectAll()
+                bounds = group.Attributes.Bounds
+                point = PointF(bounds.X + 35, bounds.Y + 20)
+                canvas.Document = source
+                if crossing:
+                    select_rectangle(canvas, PointF(bounds.Right + 10, bounds.Top + 5), PointF(bounds.Left - 10, bounds.Top + 30))
+                else:
+                    drag = click_group(canvas, group, point)
+                if drag is not None:
+                    canvas.ActiveInteraction = None
+                    drag = None
+                before = [member.Attributes.Pivot for member in members]
+                original_ids = {str(obj.InstanceGuid) for obj in source.Objects}
+                io = GH_DocumentIO(source)
+                check(io.Copy(GH_ClipboardType.Local, True) and io.Paste(GH_ClipboardType.Local), label + ': native selection copy/paste succeeds')
+                copied = io.Document
+                check(copied.ObjectCount == (4 if nested else 3), label + ': copying the selected frame includes all contents')
+                # Match the native Paste command, including disposing its temporary document.
+                copied.TranslateObjects(Size(10, 10), False)
+                copied.SelectAll()
+                copied.ExpireSolution()
+                copied.MutateAllIds()
+                new_objects = list(copied.Objects)
+                destination.DeselectAll()
+                destination.MergeDocument(copied)
+                copied.Dispose()
+                copied = None
+                destination.NewSolution(False)
+                pasted_members = [obj for obj in new_objects if isinstance(obj, Param_Curve)]
+                pasted_groups = [obj for obj in new_objects if isinstance(obj, GH_Group)]
+                new_ids = {str(obj.InstanceGuid) for obj in new_objects}
+                check(not new_ids.intersection(original_ids) and all(str(id_) in new_ids for g in pasted_groups for id_ in g.ObjectIDs), label + ': pasted membership refers only to new objects')
+                pasted = next(g for g in pasted_groups if g.NickName == 'Copy me')
+                destination.DeselectAll()
+                bounds = pasted.Attributes.Bounds
+                point = PointF(bounds.X + 35, bounds.Y + 20)
+                canvas.Document = destination
+                event = lambda p: GH_CanvasMouseEvent(Point(int(p.X), int(p.Y)), p, MouseButtons.Left, 1, 0)
+                start = [member.Attributes.Pivot for member in pasted_members]
+                drag = click_group(canvas, pasted, point)
+                target = PointF(point.X + 80, point.Y)
+                drag.RespondToMouseMove(canvas, event(target))
+                drag.RespondToMouseUp(canvas, event(target))
+                check(all(abs(member.Attributes.Pivot.X - p.X - 80) < .1 and abs(member.Attributes.Pivot.Y - p.Y) < .1 for member, p in zip(pasted_members, start)), label + ': native drag moves every pasted member once')
+                check(before == [member.Attributes.Pivot for member in members], label + ': dragging the copy leaves the originals untouched')
+                destination.UndoServer.PerformUndo()
+                check(start == [member.Attributes.Pivot for member in pasted_members], label + ': one undo restores all pasted members')
+                canvas.ActiveInteraction = None
+                drag = None
+                click_group(canvas, pasted, point, Keys.Control)
+                check(destination.SelectedCount == 0 and canvas.ActiveInteraction is None, label + ': control-click deselects the complete group and cancels its drag')
+                box = pasted_members[0].Attributes.Bounds
+                select_rectangle(canvas, PointF(box.Left - 2, box.Top - 2), PointF(box.Right + 2, box.Bottom + 2))
+                check(pasted_members[0].Attributes.Selected and not pasted_members[1].Attributes.Selected
+                      and all(not frame.Attributes.Selected for frame in pasted_groups),
+                      label + ': window selection can select one member independently')
+                click_group(canvas, pasted, point, Keys.Shift)
+                check(all(obj.Attributes.Selected for obj in new_objects), label + ': shift-click adds the complete group')
+                canvas.ActiveInteraction = None
+                select_rectangle(canvas, PointF(box.Left - 2, box.Top - 2), PointF(box.Right + 2, box.Bottom + 2), 'RemoveFrom')
+                check(not pasted_members[0].Attributes.Selected and pasted_members[1].Attributes.Selected
+                      and pasted.Attributes.Selected, label + ': control-window removes one member without reselecting it')
+                # Native inversion must not reselect a member as a side effect of
+                # selecting its frame later in the same pass.
+                destination.Select(destination.RelevantObjectAtPoint(pasted_members[0].Attributes.Pivot), False, False)
+                selected = {str(obj.InstanceGuid): obj.Attributes.Selected for obj in destination.Objects}
+                destination.InvertSelection()
+                check(all(obj.Attributes.Selected != selected[str(obj.InstanceGuid)] for obj in destination.Objects),
+                      label + ': invert selection toggles every object independently')
+            finally:
+                canvas.ActiveInteraction = None
+                canvas.Document = None
+                canvas.Dispose()
+                if copied is not None: copied.Dispose()
+                if destination is not source: destination.Dispose()
+                source.Dispose()
+
+
 def verify_outlines(Groups, GroupStyle, check):
     from Grasshopper.Kernel import GH_Document, GH_PickBox
     from Grasshopper.Kernel.Parameters import Param_Curve
@@ -363,6 +516,7 @@ def run():
         b = saved.Attributes.Bounds
         check(System.Object.ReferenceEquals(reopened.Document.FindAttribute(PointF(b.X + 35, b.Y + 20), True), saved.Attributes),
               'reopened pasted group remains clickable')
+        verify_selected_group_copy(Groups, GroupStyle, check)
         verify_outlines(Groups, GroupStyle, check)
         verify_cross_definition(Groups, GroupStyle, d, group, check)
         verify_legacy(Groups, GroupStyle, check)

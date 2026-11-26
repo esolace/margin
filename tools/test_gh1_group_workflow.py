@@ -554,7 +554,11 @@ def verify_delayed_canvas_startup(Groups, check):
     flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic
     register = clr.GetClrType(Grasshopper.Instances).GetMethod('SetDocumentEditor', flags)
     check(register is not None, 'native SDK editor registration is available')
+    canvas_property = clr.GetClrType(GH_DocumentEditor).GetProperty('Canvas',
+        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+    check(canvas_property is not None, 'native SDK editor canvas accessor is available')
     editor = None
+    canvas = None
     docs = []
     created = []
 
@@ -570,6 +574,10 @@ def verify_delayed_canvas_startup(Groups, check):
                   'Groups starts before a native editor or canvas exists')
             editor = GH_DocumentEditor()
             editor.Visible = False
+            # Canvas is internal in GH1; resolve the same property used by
+            # Instances.ActiveCanvas without registering the editor early.
+            canvas = canvas_property.GetValue(editor)
+            check(canvas is not None, 'unregistered native editor owns a canvas')
             author = GH_Document(); docs.append(author)
             member = Param_Curve(); member.CreateAttributes(); member.NickName = 'Author curve'
             author.AddObject(member, False)
@@ -587,7 +595,7 @@ def verify_delayed_canvas_startup(Groups, check):
             members = list(group.ObjectIDs)
             expected = Groups.Defaults
             check(not native.Appearance.Equals(expected.Appearance), 'delayed canvas fixture differs from saved defaults')
-            editor.Canvas.Document = opened
+            canvas.Document = opened
             check(Grasshopper.Instances.DocumentEditor is None and Grasshopper.Instances.ActiveCanvas is None
                   and not created and Groups.Style(group).Equals(native),
                   'unregistered editor leaves the author group unattached')
@@ -595,8 +603,8 @@ def verify_delayed_canvas_startup(Groups, check):
             # Actual SDK registration raises CanvasCreated synchronously; never
             # call Margin's Attach/WatchCanvas or manufacture the event directly.
             register.Invoke(None, System.Array[System.Object]([editor]))
-            check(len(created) == 1 and System.Object.ReferenceEquals(created[0], editor.Canvas)
-                  and System.Object.ReferenceEquals(Grasshopper.Instances.ActiveCanvas, editor.Canvas),
+            check(len(created) == 1 and System.Object.ReferenceEquals(created[0], canvas)
+                  and System.Object.ReferenceEquals(Grasshopper.Instances.ActiveCanvas, canvas),
                   'native editor registration raises CanvasCreated for the delayed canvas')
             actual = Groups.Style(group)
             check(actual.Appearance.Equals(expected.Appearance) and actual.Fill == expected.Fill
@@ -611,7 +619,8 @@ def verify_delayed_canvas_startup(Groups, check):
         finally:
             Grasshopper.Instances.CanvasCreated -= canvas_created
             if editor is not None:
-                editor.Canvas.Document = None
+                if canvas is not None:
+                    canvas.Document = None
                 if not System.Object.ReferenceEquals(Grasshopper.Instances.DocumentEditor, editor):
                     editor.Dispose()
             for doc in reversed(docs): doc.Dispose()

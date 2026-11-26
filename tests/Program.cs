@@ -7,6 +7,7 @@ if (args.Contains("--case-mappings")) { Console.WriteLine(System.Text.Json.JsonS
 if (args.Contains("--title-vectors")) { Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(AppearanceChecks.TitleVectors())); return; }
 if (args.Contains("--appearance-vectors")) { Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(AppearanceChecks.Vectors())); return; }
 if (args.Contains("--appearance")) { AppearanceChecks.Run(Check); Console.WriteLine($"{passed} appearance checks passed."); return; }
+GroupAppearanceSessionChecks.Run(Check);
 GroupEditingChecks.Run(Check);
 if (args.Contains("--group-editing")) { Console.WriteLine($"{passed} group editing checks passed."); return; }
 AppearanceChecks.Run(Check);

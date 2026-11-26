@@ -16,6 +16,27 @@ Grasshopper's native outline remains authoritative. Margin adapts rendering and 
 
 Describe validation by operating system and Grasshopper host. Builds without interactive validation remain explicitly experimental; availability must not imply tested feature parity.
 
+## Opened-file defaults and shared appearance rules — 2026-11-27
+
+On first opening or attachment, ordinary groups without saved Margin appearance
+adopt the user's explicitly saved defaults, including title visibility. Existing
+portable or legacy Margin styles remain unchanged, including unreadable nonempty
+metadata. Names, native outlines, membership and component data remain intact.
+Without explicitly saved group defaults, keep the author's native appearance.
+
+Initialization is once per group in the current document encounter. Changing
+defaults later does not restyle initialized groups, independent copies or groups
+restored by undo. Adopted styles travel with the first copy and survive saving
+and reopening. Opening never automatically saves the author's source file.
+
+GH1 and GH2 share appearance precedence and initialization decisions. Saved
+preferences load before attachment, including already-open documents and canvases
+created later. Native storage, events and undo remain host-specific. Studio's
+existing defaults help explains this behavior in all 13 languages.
+
+This is a private candidate, not a public release. Native Rhino 9/GH2 verification
+may remain pending while the user works; record that limitation explicitly.
+
 ## Mac Grasshopper 2 release requirement
 
 The next public alpha requires a passing group workflow in the installed Mac GH2 build. In a disposable definition, save a distinctive group appearance in Studio, create a group with the normal GH2 Group command, and verify its fill and title styling on the canvas. Edit and clear its title, then check the “Group” fallback. Copy the group within the file and into a second definition. Check that the copy keeps its appearance and membership, that edits to each copy are independent, and that saving and reopening the destination preserves the result. Check the outline choices that GH2 itself offers on light and dark canvases.
@@ -69,7 +90,7 @@ A group can have a blank native name. With **Show title** enabled, Margin displa
 26. As a Grasshopper user, I want existing saved appearances to remain readable, so that the update preserves earlier work.
 27. As a Grasshopper user, I want undo and redo to restore edits and membership, so that normal recovery remains dependable.
 28. As a Grasshopper user, I want ungrouping to preserve member objects, so that changing organisation does not destroy my definition.
-29. As a Grasshopper user, I want future defaults to affect new groups without restyling existing or copied groups, so that defaults remain predictable.
+29. As a Grasshopper user, I want saved defaults to affect new groups and ordinary groups when first opening a file, while preserving initialized groups and copied Margin designs, so that defaults remain predictable.
 30. As a Grasshopper user, I want ordinary Cmd/Ctrl+G creation preserved, so that Margin integrates with normal use.
 31. As a Margin user, I want component labels and presets to remain independent of group changes, so that this update preserves my label setup.
 32. As a release user, I want platform-specific validation notes, so that I can distinguish demonstrated behaviour from an unverified build.

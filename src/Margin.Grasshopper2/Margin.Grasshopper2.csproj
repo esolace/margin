@@ -19,6 +19,7 @@
     <Compile Include="../Margin.Grasshopper/NativeLanguage.cs" Link="NativeLanguage.cs" />
     <Compile Include="../Margin.Grasshopper/Groups.cs" Link="Groups.cs" />
     <Compile Include="../Margin.Grasshopper/GroupEditing.cs" Link="GroupEditing.cs" />
+    <Compile Include="../Margin.Grasshopper/GroupAppearanceSession.cs" Link="GroupAppearanceSession.cs" />
     <Compile Include="../Margin.Grasshopper/GroupEditor.cs" Link="GroupEditor.cs" />
     <Compile Include="../Margin.Grasshopper/StyledGroup.cs" Link="StyledGroup.cs" />
     <Compile Include="../Margin.Grasshopper/Inspector.cs" Link="Studio/Inspector.cs" />

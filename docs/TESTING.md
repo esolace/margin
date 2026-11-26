@@ -3,6 +3,43 @@
 This is a preview. Compilation, package checks and live-host testing are separate
 levels of evidence; none is a claim that every host configuration is supported.
 
+## Opened-file defaults — 2026-11-27
+
+Private candidate **0.5.0-alpha.9.2** applies explicitly saved defaults to ordinary
+groups when a definition first attaches, preserving existing portable/legacy
+Margin styles. Shared appearance and startup rules now serve GH1 and GH2.
+
+- Reproduced the prior failure with a native `.gh` file containing an ordinary
+  author-styled group; it retained the author's fill and title styling despite
+  explicitly saved defaults. The same probe passes on the candidate.
+- Exact private Mac Rhino 8.37 GH1 candidate: **182 workflow checks**, **19 movement
+  checks**, **6 native canvas-event checks**, **9 already-open startup checks** and
+  **16 delayed-canvas startup checks** pass. Real SDK editor registration raises
+  CanvasCreated and applies defaults before an idle scan. The editor stays hidden.
+- Native coverage includes ordinary/custom/legacy/unreadable metadata, once-only
+  adoption, first copy before editing, independent copies, native drag, undo,
+  ungrouping, save/reopen, names, membership, outlines and unchanged source bytes.
+  Canvas events are raised through the native observer path; this does not claim
+  physical mouse gestures on the new candidate.
+- Light/dark native rendering is inspected for adopted ordinary groups alongside
+  preserved custom styles. Tests use disposable files and process-local settings.
+- **146 portable checks** pass on each of .NET 8 and .NET 10. Mac Rhino 7/8/9 GH1
+  and Rhino 9 GH2 compile with zero warnings/errors. Studio workflows, locale and
+  appearance synchronization, legacy transport and all 13 language browser checks
+  pass, including the updated defaults help at 900 x 600.
+- The production/help commit `7eddf1a` passed all four jobs in
+  [GitHub run 45879941883](https://github.com/esolace/margin/actions/runs/45879941883).
+  Subsequent changes extend native startup tests and document results.
+- Fresh standards/spec review is clear after adding and executing the native
+  delayed-canvas regression. GH2's native open/copy/defaults scripts are extended
+  but **not executed for this candidate**: the user's working Rhino 9 stays open
+  and untouched. Rhino 9 native, Windows interaction and Rhino 7 host execution
+  remain unverified; shared checks and builds do not replace them.
+
+Local evidence: `artifacts/opened-defaults/`. Candidate binaries were built from
+`7eddf1a`; later changes affect native test scripts and documentation only.
+This candidate is private and does not change the public alpha.9 release.
+
 ## GH1 group duplication fix — 2026-11-26
 
 Private local candidate **0.5.0-alpha.9.1** fixes frame-only copies: clicking a

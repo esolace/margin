@@ -1,19 +1,26 @@
 """Installed Mac GH2 Studio acceptance. Run on the Rhino UI thread in Margin-QA.3dm.
 
-Call verify(output_directory) with backed-up preferences in a disposable Rhino
-process. This intentionally leaves style B saved so a new process can run
-verify(output_directory, after_restart=True). Restore the original preferences
-after both runs. Both phases create and close their own GH2 definitions.
+Call verify(output_directory) in a disposable Rhino process launched with an
+absolute MARGIN_SETTINGS_DIRECTORY. This intentionally leaves style B saved in
+that isolated directory so a new process can run verify(output_directory,
+after_restart=True). Both phases create and close their own GH2 definitions.
 """
 import json
+import os
 import time
 from pathlib import Path
+import sys
+from urllib.parse import unquote, urlparse
+
+_SCRIPT = Path(unquote(urlparse(__file__).path) if __file__.startswith('file:') else __file__)
+sys.path.insert(0, str(_SCRIPT.resolve().parent))
+from test_gh1_group_workflow import distinctive_defaults
 
 import Rhino
 import System
 from Eto.Drawing import ImageFormat, PointF, RectangleF
 from Eto.Forms import Application
-from Grasshopper2.Doc import ClipboardKind, Document, DocumentIO, FileContents, ObjectSelection, PasteBehaviour
+from Grasshopper2.Doc import IDocumentObject, ClipboardKind, Document, DocumentIO, FileContents, ObjectSelection, PasteBehaviour
 from Grasshopper2.Parameters.Standard import NumberParameter
 from Grasshopper2.SpecialObjects import GroupObject
 from Grasshopper2.UI import Editor
@@ -47,7 +54,12 @@ def verify(output_directory, after_restart=False):
     assemblies = System.AppDomain.CurrentDomain.GetAssemblies()
     adapter, = [a for a in assemblies if a.GetName().Name == 'Margin.GH2']
     host, = [a for a in assemblies if a.GetName().Name == 'Grasshopper2']
-    assert '/packages/9.0/' in adapter.Location, 'Test the installed package'
+    settings = os.environ.get('MARGIN_SETTINGS_DIRECTORY', '')
+    assert settings and Path(settings).is_absolute(), 'Launch the QA process with isolated MARGIN_SETTINGS_DIRECTORY'
+    runtime = adapter.GetType('Margin.GH2.Runtime', True)
+    actual_path = runtime.GetProperty('PreferencesPath').GetValue(None)
+    assert Path(actual_path).resolve() == (Path(settings) / 'preferences.json').resolve(), 'Adapter must use the isolated settings directory'
+
     groups = adapter.GetType('Margin.Native.Groups', True)
     styles = adapter.GetType('Margin.Native.GroupStyle', True)
     studio_type = adapter.GetType('Margin.Native.Inspector', True)
@@ -102,6 +114,49 @@ def verify(output_directory, after_restart=False):
         """ % json.dumps(fields))
         wait_for(lambda: defaults().Equals(expected[key]), 'Studio to save style ' + key)
         checks.append('Studio saved complete appearance ' + key)
+    def opened_startup():
+        # Public lifecycle and the real editor DocumentChanged event. The source
+        # remains a disposable file and is never automatically saved by Margin.
+        author = Document.NewInertDocument()
+        opened = None
+        try:
+            member = NumberParameter(); member.UserName = 'Author input'
+            author.Objects.Add(member, PointF(100, 100))
+            group = author.Methods.GroupObjects(System.Array[IDocumentObject]([member]), 'Author title', None, None)
+            path = output / 'Authors-unmodified-definition.ghz'
+            assert DocumentIO(author, False, False, False, False).Save(str(path), FileContents.All)
+            disk = path.read_bytes()
+            for already_open in (True, False):
+                reader = DocumentIO(None, False, False, False, False)
+                assert reader.Open(str(path))
+                opened = reader.Document
+                group, = list(opened.Objects.Groups)
+                ids = list(group.ContentIds)
+                groups.GetMethod('Stop').Invoke(None, None)
+                canvas.Document = opened if already_open else None
+                # Simulate stale pre-start state; Start must reload saved B before
+                # attaching the file already on the canvas.
+                with distinctive_defaults(groups, styles, show_title=True):
+                    groups.GetMethod('Start').Invoke(None, None)
+                    if not already_open:
+                        canvas.Document = opened
+                    check(read(group).Equals(expected['B']) and group.UserName == 'Author title'
+                          and list(group.ContentIds) == ids,
+                          ('Already-open startup' if already_open else 'Document arriving after startup')
+                          + ' loaded complete saved B before attaching ordinary groups')
+                    groups.GetMethod('Start').Invoke(None, None)
+                    canvas.Document = source
+                    canvas.Document = opened
+                    check(read(group).Equals(expected['B']), 'Repeated start and tab changes preserved adopted appearance')
+                canvas.Document = source
+                opened.Close(); opened = None
+            check(path.read_bytes() == disk, 'Startup and document changes left the authors disk file untouched')
+        finally:
+            canvas.Document = source
+            if opened is not None: opened.Close()
+            author.Close()
+            groups.GetMethod('Start').Invoke(None, None)
+
     def create(key, via_studio):
         member = NumberParameter()
         member.UserName = key + (' Studio' if via_studio else ' Native')
@@ -153,6 +208,7 @@ def verify(output_directory, after_restart=False):
         check(js("return document.getElementById('groupShowTitle').checked ? 'visible' : 'hidden';") == 'hidden'
               and js("return document.getElementById('groupFill').value;").upper() == STYLE_B['Fill'],
               'Reopened Studio displayed the hidden B default')
+        opened_startup()
         create('B', False)
         hidden_group, hidden_member = create('B', True)
         capture('both-routes-hidden-B' + ('-restarted' if after_restart else ''))

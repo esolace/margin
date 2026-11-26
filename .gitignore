@@ -13,6 +13,7 @@
 !tests/
 !tests/Program.cs
 !tests/GroupEditingChecks.cs
+!tests/GroupAppearanceSessionChecks.cs
 !tests/AppearanceChecks.cs
 !tests/SessionChecks.cs
 !tests/Margin.Tests.csproj

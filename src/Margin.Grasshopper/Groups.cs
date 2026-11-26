@@ -32,20 +32,15 @@ public static class Groups
     static readonly List<WeakReference<GH_Document>> documents = new();
 #endif
     static DateTime nextScan;
-    static bool started;
-    static Preferences preferences = new();
-    public static GroupStyle Defaults => new(preferences.GroupFill, preferences.GroupOpacity, preferences.StyleGroups) { Appearance = preferences.GroupAppearance };
-    public static void SaveDefaults(GroupStyle style)
-    {
-        style = style.Validate();
 #if MARGIN_GH2
-        var path = Margin.GH2.Runtime.PreferencesPath;
+    static readonly GroupAppearanceSession appearance = new(Margin.GH2.Runtime.PreferencesPath);
 #else
-        var path = Runtime.PreferencesPath;
+    static readonly GroupAppearanceSession appearance = new(Runtime.PreferencesPath);
 #endif
-        preferences = PreferencesStore.Update(path, p => p with { GroupFill = style.Fill, GroupOpacity = style.Opacity, StyleGroups = style.Designed, UseGroupColour = true, GroupAppearance = style.Appearance });
-    }
-    public static string? LastError { get; private set; }
+    static string? error;
+    public static GroupStyle Defaults => appearance.Defaults;
+    public static void SaveDefaults(GroupStyle style) => appearance.SaveDefaults(style);
+    public static string? LastError { get => error ?? appearance.LastError; private set => error = value; }
 #if MARGIN_GH2
     static Document? Active => Editor.Instance?.Canvas?.Document;
     static IEnumerable<GroupObject> Items(Document d) => d.Objects.Forwards.OfType<GroupObject>();
@@ -63,7 +58,7 @@ public static class Groups
     static string Read(GH_Group g)
     {
         var portable = GroupMetadata.Read(g);
-        return portable.Length > 0 ? portable : g.OnPingDocument()?.ValueTable.GetValue(StyleKey(g), "") ?? "";
+        return GroupAppearanceSession.Read(portable, g.OnPingDocument()?.ValueTable.GetValue(StyleKey(g), "") ?? "");
     }
     public static GroupStyle Style(GH_Group g)
     {
@@ -170,19 +165,17 @@ public static class Groups
         protected override void Internal_Redo(GH_Document d) { if (Items(d).FirstOrDefault(g => g.InstanceGuid == id) is { } g) Set(g, afterName, afterColour, afterStyle); }
     }
 #endif
-    public static void Start()
+    public static void Start() => appearance.Start(StartWatching, StopWatching);
+    static void StartWatching()
     {
-        if (started) return;
-        started = true;
+        error = null;
+        nextScan = default;
 #if MARGIN_GH2
-        var path = Margin.GH2.Runtime.PreferencesPath;
+        WatchCanvas(Editor.Instance?.Canvas);
 #else
-        var path = Runtime.PreferencesPath;
         Instances.CanvasCreated += WatchCanvas;
         if (Instances.ActiveCanvas is { } canvas) WatchCanvas(canvas);
 #endif
-        try { preferences = PreferencesStore.Load(path); }
-        catch (Exception ex) { LastError = ex.Message; }
         Rhino.RhinoApp.Idle += Scan;
     }
     static void Scan(object? sender, EventArgs e)
@@ -224,14 +217,14 @@ public static class Groups
         // GH2 GroupSelection records this action after inserting the group. Paste has a
         // separate record, and reopening or moving through undo history creates no node.
         var record = e.Node.Record;
-        if (!preferences.UseGroupColour || record.Count != 1 ||
+        if (!appearance.HasSavedDefaults || record.Count != 1 ||
             record.Name.Verbs is not ["Create"] || record.Name.Nouns is not ["Group"]) return;
         try
         {
             if (RecordAction(record, 0) is not CreateObjectAction action ||
                 e.History.Document.Objects.FindGroup(action.InstanceId) is not { } group) return;
             InstallAttributes(group);
-            SetStyle(group, Defaults);
+            Initialize(e.History.Document, group, GroupInitialization.CreatedGroup);
             Refresh();
         }
         catch (Exception ex) { LastError = ex.Message; Rhino.RhinoApp.WriteLine("Margin group defaults: " + ex.Message); }
@@ -246,20 +239,33 @@ public static class Groups
         Attach(d);
         var group = d.Methods.GroupSelection(null, null, null)
             ?? throw Localization.InvalidOperation("ui.select_components_on_the_canvas_first");
-        if (preferences.UseGroupColour && GroupStyle.Parse(Read(group)) != Defaults)
+        if (appearance.HasSavedDefaults && GroupStyle.Parse(Read(group)) != Defaults)
             throw Localization.InvalidOperation("ui.the_selection_was_grouped_but_its_saved_appearance_could_not_be_applied");
         Refresh();
         return group;
     }
+    static void Initialize(Document d, GroupObject g, GroupInitialization initialization)
+    {
+        var portable = Read(g);
+        var result = appearance.Initialize(d, g.InstanceId.ToString(), portable, "", () => Style(g), initialization);
+        if (result.AppliedStyle is { } style) SetStyle(g, style);
+        else if (portable != result.Metadata) g.CustomValues.Set(Key, result.Metadata);
+    }
     public static void Attach(Document d)
     {
+        Start();
+        var first = appearance.Attach(d);
         documents.RemoveAll(w => !w.TryGetTarget(out _));
         if (!documents.Any(w => w.TryGetTarget(out var target) && ReferenceEquals(target, d)))
         {
             documents.Add(new(d));
             d.Undo.NodeAdded += Created;
         }
-        foreach (var g in Items(d)) InstallAttributes(g);
+        foreach (var g in Items(d))
+        {
+            Initialize(d, g, first ? GroupInitialization.OpenedDocument : GroupInitialization.Observed);
+            InstallAttributes(g);
+        }
     }
     static void Refresh() => Editor.Instance?.Canvas?.Invalidate();
 #else
@@ -348,15 +354,9 @@ public static class Groups
             foreach (var g in e.Objects.OfType<GH_Group>())
             {
                 // Native Group assigns the canvas default before adding the object.
-                // Portable metadata keeps copied/restored groups out of this path.
-                if (Read(g).Length == 0 && (g.Colour.IsEmpty || g.Colour.ToArgb() == GH_Skin.group_back.ToArgb()))
-                {
-                    var style = Defaults;
-                    var colour = preferences.UseGroupColour
-                        ? Color.FromArgb((int)Math.Round(style.Opacity * 2.55), ColorTranslator.FromHtml(style.Fill))
-                        : GH_Skin.group_back;
-                    Set(g, g.NickName, colour, JsonSerializer.Serialize(style));
-                }
+                var arrival = g.Colour.IsEmpty || g.Colour.ToArgb() == GH_Skin.group_back.ToArgb()
+                    ? GroupInitialization.AddedWithDefaultColour : GroupInitialization.Observed;
+                Initialize(e.Document, g, arrival);
             }
             Attach(e.Document);
         }
@@ -381,23 +381,29 @@ public static class Groups
         d.Modified(); Refresh();
         return group;
     }
+    static void Initialize(GH_Document d, GH_Group g, GroupInitialization initialization)
+    {
+        var portable = GroupMetadata.Read(g);
+        var legacy = d.ValueTable.GetValue(StyleKey(g), "");
+        var result = appearance.Initialize(d, g.InstanceGuid.ToString(), portable, legacy, () => Style(g), initialization);
+        if (result.AppliedStyle is { } style)
+        {
+            var colour = Color.FromArgb((int)Math.Round(style.Opacity * 2.55), ColorTranslator.FromHtml(style.Fill));
+            Set(g, g.NickName, colour, result.Metadata);
+        }
+        else if (portable != result.Metadata) GroupMetadata.Write(g, result.Metadata);
+    }
     public static void Attach(GH_Document d)
     {
+        Start();
+        var first = appearance.Attach(d);
         documents.RemoveAll(w => !w.TryGetTarget(out _));
         if (!documents.Any(w => w.TryGetTarget(out var target) && ReferenceEquals(target, d)))
         { documents.Add(new(d)); d.ObjectsAdded += Added; }
         var replaced = false;
         foreach (var g in Items(d))
         {
-            // Promote old definition-owned styles before the first native copy.
-            // Keep the legacy value for older Margin installations; object values win.
-            if (GroupMetadata.Read(g).Length == 0)
-            {
-                var legacy = d.ValueTable.GetValue(StyleKey(g), "");
-                // Pin existing native appearances too: copying them must not apply
-                // the destination's defaults just because their colour is standard.
-                GroupMetadata.Write(g, legacy.Length > 0 ? legacy : JsonSerializer.Serialize(Style(g)));
-            }
+            Initialize(d, g, first ? GroupInitialization.OpenedDocument : GroupInitialization.Observed);
             if (g.Attributes?.GetType() == typeof(GH_GroupAttributes))
             {
                 g.Attributes = new StyledGroup(g) { Selected = g.Attributes.Selected };
@@ -410,9 +416,10 @@ public static class Groups
     }
     static void Refresh() => Instances.ActiveCanvas?.Invalidate();
 #endif
-    public static void Stop()
+    public static void Stop() => appearance.Stop();
+    static void StopWatching()
     {
-        Rhino.RhinoApp.Idle -= Scan; started = false;
+        Rhino.RhinoApp.Idle -= Scan;
 #if MARGIN_GH2
         WatchCanvas(null);
         foreach (var weak in documents) if (weak.TryGetTarget(out var doc)) doc.Undo.NodeAdded -= Created;

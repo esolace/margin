@@ -16,6 +16,15 @@ The way a group's name is displayed using uppercase, lowercase or other capitali
 **Copied group**:
 A duplicate of an existing group that retains its appearance and can be edited independently of the original.
 
+**Ordinary group**:
+A native group with no saved Margin appearance, either on the group or in older definition metadata. On first attachment of an opened definition, it adopts explicitly saved local group defaults; without that saved choice it retains its native appearance.
+
+**Saved group defaults**:
+The complete fill, opacity, design and title appearance explicitly saved on this computer. They apply to ordinary groups in newly attached definitions and eligible new groups, without changing groups already initialized by Margin.
+
+**Group appearance session**:
+The shared module that loads saved defaults before native attachment, protects existing appearance, and remembers initialized groups through repeated attachment, copying and undo. Native adapters own host events and storage.
+
 **Unnamed group**:
 A group without a user-supplied name. Studio identifies it as “Group”, and the canvas displays “Group” when its title is visible.
 _Avoid_: Untitled group

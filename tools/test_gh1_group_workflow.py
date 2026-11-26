@@ -1,11 +1,14 @@
 """RhinoCode regression: local copy/paste, pick, rename, move, ungroup, undo/reopen.
 
-Uses disposable documents, never assigns Instances.ActiveCanvas.Document and
-never touches the system clipboard. Optional temp/margin-group-workflow-config.json
+The default run uses disposable documents without assigning the active canvas
+and never touches the system clipboard. Optional startup helpers require an
+isolated Margin-QA.3dm host; see their preconditions before calling separately.
+Optional temp/margin-group-workflow-config.json
 selects a separately named QA assembly: {"namespace": "MarginQa.Native",
 "assemblies": ["/absolute/Core.dll", "/absolute/Native.dll"], "run": "qa"}.
 """
 import importlib
+import os
 from contextlib import contextmanager
 import json
 import tempfile
@@ -296,20 +299,26 @@ def verify_legacy(Groups, GroupStyle, check):
 
 @contextmanager
 def distinctive_defaults(Groups, GroupStyle, use_group_colour=True, show_title=True, designed=True):
-    # Swap only in-memory test state on the UI thread; never write user preferences.
-    field = clr.GetClrType(Groups).GetField('preferences', System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)
-    original = field.GetValue(None)
+    # Fixture setup only: isolate the existing session's preferences in memory.
+    # Assertions below use public Groups and native file/copy/edit workflows.
+    groups_type = Groups if isinstance(Groups, System.Type) else clr.GetClrType(Groups)
+    flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic
+    session = groups_type.GetField('appearance', flags).GetValue(None)
+    field = session.GetType().GetField('preferences', System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+    original = field.GetValue(session)
     sentinel = System.Activator.CreateInstance(field.FieldType)
-    style = GroupStyle.Parse(json.dumps({'Fill':'#742196','Opacity':72,'Designed':designed,
-        'Appearance':{'ShowTitle':show_title,'TitleSize':29,'Text':'#FFCA31','TitleCase':'Lowercase','Heading':'Band'}}))
+    parse = GroupStyle.GetMethod('Parse').Invoke if isinstance(GroupStyle, System.Type) else None
+    payload = json.dumps({'Fill':'#742196','Opacity':80,'Designed':designed,
+        'Appearance':{'ShowTitle':show_title,'TitleSize':29,'Text':'#FFCA31','TitleCase':'Lowercase','Heading':'Band'}})
+    style = parse(None, System.Array[System.Object]([payload])) if parse else GroupStyle.Parse(payload)
     for name, value in [('GroupFill',style.Fill),('GroupOpacity',style.Opacity),('StyleGroups',designed),
                         ('UseGroupColour',use_group_colour),('GroupAppearance',style.Appearance)]:
         field.FieldType.GetProperty(name).SetValue(sentinel, value)
-    field.SetValue(None, sentinel)
+    field.SetValue(session, sentinel)
     try:
-        yield
+        yield style
     finally:
-        field.SetValue(None, original)
+        field.SetValue(session, original)
 
 
 def verify_native_defaults(Groups, check, use_group_colour=True):
@@ -414,26 +423,255 @@ def verify_hidden_default_reopens(Groups, check):
         document.Dispose()
 
 
-def verify_existing_native_copy(Groups, check):
-    from Grasshopper.Kernel import GH_Document
-    from Grasshopper.Kernel.Special import GH_Group
+def verify_opened_file(Groups, GroupStyle, check, use_group_colour=True):
+    """Actual author-file open, first copy, defaults change, and save/reopen."""
+    from Grasshopper.Kernel import GH_Document, GH_DocumentIO, GH_DocumentObject
+    from Grasshopper.Kernel.Special import GH_Group, GH_GroupBorder
     from Grasshopper.Kernel.Parameters import Param_Curve
-    from Grasshopper.GUI.Canvas import GH_Skin
-    source = GH_Document(); destination = GH_Document(); duplicate = None
+    from System.Drawing import Color, PointF
+    from tempfile import TemporaryDirectory
+
+    # Native serialized object values are the file-format fixture boundary.
+    signature = System.Array[System.Type]([clr.GetClrType(System.String), clr.GetClrType(System.String)])
+    flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic
+    accessors = {name: clr.GetClrType(GH_DocumentObject).GetMethod(name, flags, None, signature, None)
+                 for name in ('GetValue', 'SetValue')}
+    def portable(group, value=None):
+        return accessors['GetValue' if value is None else 'SetValue'].Invoke(group,
+            System.Array[System.Object](['Margin.GroupStyle', '' if value is None else value]))
+    def identity(document):
+        return [(str(o.InstanceGuid), o.NickName, bool(o.Attributes.Selected)) for o in document.Objects]
+    def read_file(path):
+        io = GH_DocumentIO()
+        check(io.Open(str(path)), 'author file opens through native GH_DocumentIO')
+        docs.append(io.Document)
+        return io.Document
+    docs = []
+    with TemporaryDirectory(prefix='margin-opened-gh1-') as folder:
+        try:
+            author = GH_Document(); docs.append(author)
+            members = []
+            groups = []
+            for index, name in enumerate(('Ordinary', 'Custom', 'Legacy', 'Corrupt portable', 'Corrupt legacy', 'Portable wins')):
+                member = Param_Curve(); member.CreateAttributes(); member.NickName = 'Member ' + name
+                member.Attributes.Pivot = PointF(100 + index * 160, 200)
+                author.AddObject(member, False); members.append(member)
+                group = GH_Group(); group.NickName = name; group.Border = GH_GroupBorder.Blob
+                group.Colour = Color.FromArgb(204, 17, 119, 85)
+                group.AddObject(member.InstanceGuid); author.AddObject(group, False); groups.append(group)
+            custom = json.dumps({'Fill':'#117755','Opacity':80,'Designed':True,
+                'Appearance':{'Text':'#FFCC44','TitleSize':26,'ShowTitle':True,'TitleCase':'Uppercase'}})
+            legacy = json.dumps({'Fill':'#117755','Opacity':80,'Designed':False,
+                'Appearance':{'TitleSize':18,'ShowTitle':False}})
+            corrupt = '{future-or-corrupt-appearance'
+            portable(groups[1], custom)
+            author.ValueTable.SetValue('Margin.GroupStyle.' + groups[2].InstanceGuid.ToString('N'), legacy)
+            portable(groups[3], corrupt)
+            author.ValueTable.SetValue('Margin.GroupStyle.' + groups[4].InstanceGuid.ToString('N'), corrupt)
+            portable(groups[5], custom)
+            author.ValueTable.SetValue('Margin.GroupStyle.' + groups[5].InstanceGuid.ToString('N'), legacy)
+            path = Path(folder) / 'Authors original.gh'
+            check(GH_DocumentIO(author).SaveQuiet(str(path)), 'unattached author fixture saves')
+            disk = path.read_bytes()
+            opened = read_file(path)
+            loaded = {g.NickName: g for g in opened.Objects if isinstance(g, GH_Group)}
+            ordinary = loaded['Ordinary']
+            # Selection is set after deserialize because the host need not persist it.
+            opened.FindObject(ordinary.ObjectIDs[0], True).Attributes.Selected = True
+            before = identity(opened)
+            membership = {name: list(g.ObjectIDs) for name, g in loaded.items()}
+            native = Groups.Style(ordinary)
+            Groups.Attach(opened)
+            expected = Groups.Defaults if use_group_colour else native
+            check(Groups.Style(ordinary).Equals(expected), 'opened ordinary group ' + ('adopts complete saved defaults' if use_group_colour else 'preserves native appearance without saved defaults'))
+            check(identity(opened) == before and all(g.Border == GH_GroupBorder.Blob and list(g.ObjectIDs) == membership[name] for name,g in loaded.items()),
+                  'opening preserves identities, supplied names, selection, membership and native outlines')
+            check(Groups.Style(loaded['Custom']).Equals(GroupStyle.Parse(custom)) and Groups.Style(loaded['Legacy']).Equals(GroupStyle.Parse(legacy))
+                  and Groups.Style(loaded['Portable wins']).Equals(GroupStyle.Parse(custom)), 'portable and legacy custom appearances survive opening; portable wins')
+            check(portable(loaded['Corrupt portable']) == corrupt and portable(loaded['Corrupt legacy']) == corrupt,
+                  'nonempty unreadable portable and legacy appearances are preserved')
+            check(bool(portable(ordinary)), 'adopted appearance is portable before the first copy')
+            adopted = Groups.Style(ordinary)
+            # Different future defaults must not alter initialized or copied groups.
+            with distinctive_defaults(Groups, GroupStyle, show_title=True, designed=False):
+                Groups.Attach(opened); Groups.Snapshot(opened); Groups.Attach(opened)
+                check(Groups.Style(ordinary).Equals(adopted), 'repeated attachment and scans do not reapply newer defaults')
+                duplicate = GH_Document.DuplicateDocument(opened); docs.append(duplicate); duplicate.MutateAllIds()
+                destination = GH_Document(); docs.append(destination); Groups.Attach(destination)
+                destination.MergeDocument(duplicate)
+                copied = next(g for g in destination.Objects if isinstance(g, GH_Group) and g.NickName == 'Ordinary')
+                check(Groups.Style(copied).Equals(adopted) and copied.InstanceGuid != ordinary.InstanceGuid
+                      and copied.ObjectIDs[0] != ordinary.ObjectIDs[0], 'first native copy under newer defaults retains adopted appearance and remaps members')
+                snapshot = Groups.Snapshot(destination); entry = next(e for e in snapshot.Items if e.Id == str(copied.InstanceGuid))
+                Groups.BeginEdit(destination, snapshot.Document, entry.Id, entry.Revision).Save('Independent adopted copy', GroupStyle.Parse(custom))
+                check(ordinary.NickName == 'Ordinary' and Groups.Style(ordinary).Equals(adopted), 'editing the adopted copy leaves its source intact')
+                destination.UndoServer.PerformUndo(); Groups.Attach(destination)
+                check(Groups.Style(copied).Equals(adopted), 'undo restores adopted appearance under newer defaults')
+                saved_path = Path(folder) / 'My adopted copy.gh'
+                check(GH_DocumentIO(destination).SaveQuiet(str(saved_path)), 'adopted copy saves separately')
+                reopened = read_file(saved_path); Groups.Attach(reopened)
+                saved = next(g for g in reopened.Objects if isinstance(g, GH_Group) and g.NickName == 'Ordinary')
+                check(Groups.Style(saved).Equals(adopted), 'adopted appearance survives native save and reopen under newer defaults')
+                ungroup = clr.GetClrType(GH_Group).GetMethod('Menu_Ungroup', flags)
+                ordinary_id = ordinary.InstanceGuid
+                ungroup.Invoke(ordinary, System.Array[System.Object]([None, System.EventArgs.Empty]))
+                check(opened.FindObject(ordinary_id, True) is None, 'native ungroup removes the adopted frame')
+                opened.UndoServer.PerformUndo(); Groups.Attach(opened)
+                restored = opened.FindObject(ordinary_id, True)
+                check(restored is not None and Groups.Style(restored).Equals(adopted)
+                      and list(restored.ObjectIDs) == membership['Ordinary'],
+                      'undo-restored adopted group keeps its original style and members under newer defaults')
+            check(path.read_bytes() == disk, 'opening and styling never writes the authors source file')
+        finally:
+            for doc in reversed(docs): doc.Dispose()
+
+
+def verify_delayed_canvas_startup(Groups, check):
+    """Optional native CanvasCreated check, called on the owned QA UI thread.
+
+    Run before any GH editor exists, with an absolute MARGIN_SETTINGS_DIRECTORY
+    containing explicitly saved, distinctive defaults. Start Groups first, then
+    register a real hidden GH_DocumentEditor using the SDK's host setup method.
+    Leave that editor registered with an empty canvas for subsequent QA checks.
+    This helper never shows the editor or pumps idle (which could mask a missing
+    CanvasCreated subscription by attaching the document through an idle scan).
+    """
+    import Grasshopper
+    from Grasshopper.GUI import GH_DocumentEditor
+    from Grasshopper.Kernel import GH_Document, GH_DocumentIO
+    from Grasshopper.Kernel.Parameters import Param_Curve
+    from Grasshopper.Kernel.Special import GH_Group, GH_GroupBorder
+    from System.Drawing import Color
+    from tempfile import TemporaryDirectory
+
+    settings = os.environ.get('MARGIN_SETTINGS_DIRECTORY', '')
+    check(bool(settings) and Path(settings).is_absolute(), 'delayed canvas requires isolated absolute process settings')
+    rhino_doc = Rhino.RhinoDoc.ActiveDoc
+    check(rhino_doc is not None and Path(rhino_doc.Path).name == 'Margin-QA.3dm',
+          'delayed canvas requires owned QA Rhino document')
+    check(Grasshopper.Instances.DocumentEditor is None and Grasshopper.Instances.ActiveCanvas is None,
+          'delayed canvas begins with no native editor or canvas')
+    flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic
+    register = clr.GetClrType(Grasshopper.Instances).GetMethod('SetDocumentEditor', flags)
+    check(register is not None, 'native SDK editor registration is available')
+    canvas_property = clr.GetClrType(GH_DocumentEditor).GetProperty('Canvas',
+        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic)
+    check(canvas_property is not None, 'native SDK editor canvas accessor is available')
+    editor = None
+    canvas = None
+    docs = []
+    created = []
+
+    def canvas_created(canvas):
+        created.append(canvas)
+
+    with TemporaryDirectory(prefix='margin-delayed-canvas-gh1-') as folder:
+        Grasshopper.Instances.CanvasCreated += canvas_created
+        try:
+            Groups.Stop()
+            Groups.Start()
+            check(Grasshopper.Instances.DocumentEditor is None and Grasshopper.Instances.ActiveCanvas is None,
+                  'Groups starts before a native editor or canvas exists')
+            editor = GH_DocumentEditor()
+            editor.Visible = False
+            # Canvas is internal in GH1; resolve the same property used by
+            # Instances.ActiveCanvas without registering the editor early.
+            canvas = canvas_property.GetValue(editor)
+            check(canvas is not None, 'unregistered native editor owns a canvas')
+            author = GH_Document(); docs.append(author)
+            member = Param_Curve(); member.CreateAttributes(); member.NickName = 'Author curve'
+            author.AddObject(member, False)
+            group = GH_Group(); group.NickName = 'Delayed canvas'; group.Border = GH_GroupBorder.Blob
+            group.Colour = Color.FromArgb(204, 17, 119, 85)
+            group.AddObject(member.InstanceGuid); author.AddObject(group, False)
+            path = Path(folder) / 'Authors original.gh'
+            check(GH_DocumentIO(author).SaveQuiet(str(path)), 'delayed canvas author fixture saves')
+            disk = path.read_bytes()
+            io = GH_DocumentIO(); check(io.Open(str(path)), 'delayed canvas author file opens through native IO')
+            opened = io.Document; docs.append(opened)
+            group = opened.FindObject(group.InstanceGuid, True)
+            native = Groups.Style(group)
+            identity = group.InstanceGuid
+            members = list(group.ObjectIDs)
+            expected = Groups.Defaults
+            check(not native.Appearance.Equals(expected.Appearance), 'delayed canvas fixture differs from saved defaults')
+            canvas.Document = opened
+            check(Grasshopper.Instances.DocumentEditor is None and Grasshopper.Instances.ActiveCanvas is None
+                  and not created and Groups.Style(group).Equals(native),
+                  'unregistered editor leaves the author group unattached')
+
+            # Actual SDK registration raises CanvasCreated synchronously; never
+            # call Margin's Attach/WatchCanvas or manufacture the event directly.
+            register.Invoke(None, System.Array[System.Object]([editor]))
+            check(len(created) == 1 and System.Object.ReferenceEquals(created[0], canvas)
+                  and System.Object.ReferenceEquals(Grasshopper.Instances.ActiveCanvas, canvas),
+                  'native editor registration raises CanvasCreated for the delayed canvas')
+            actual = Groups.Style(group)
+            check(actual.Appearance.Equals(expected.Appearance) and actual.Fill == expected.Fill
+                  and actual.Designed == expected.Designed and abs(actual.Opacity - expected.Opacity) < .21,
+                  'delayed CanvasCreated applies complete saved defaults before any idle scan')
+            check(group.InstanceGuid == identity and group.NickName == 'Delayed canvas'
+                  and list(group.ObjectIDs) == members and group.Border == GH_GroupBorder.Blob
+                  and opened.FindObject(members[0], True).NickName == 'Author curve',
+                  'delayed canvas preserves author identities, names, membership and native outline')
+            check(path.read_bytes() == disk, 'delayed canvas leaves author source bytes unchanged')
+            check(not editor.Visible, 'delayed canvas editor remains hidden')
+        finally:
+            Grasshopper.Instances.CanvasCreated -= canvas_created
+            if editor is not None:
+                if canvas is not None:
+                    canvas.Document = None
+                if not System.Object.ReferenceEquals(Grasshopper.Instances.DocumentEditor, editor):
+                    editor.Dispose()
+            for doc in reversed(docs): doc.Dispose()
+
+
+def verify_already_open_startup(Groups, check):
+    """Optional owned-QA-canvas check; run separately, never on a working canvas.
+
+    Seed isolated preferences before calling. This observes Groups.Start loading
+    saved preferences before the already-open native definition is attached.
+    """
+    import Grasshopper
+    from Grasshopper.Kernel import GH_Document, GH_DocumentIO
+    from Grasshopper.Kernel.Parameters import Param_Curve
+    from Grasshopper.Kernel.Special import GH_Group
+    settings = os.environ.get('MARGIN_SETTINGS_DIRECTORY', '')
+    check(bool(settings) and Path(settings).is_absolute(), 'startup test requires isolated process settings')
+    check(Path(Rhino.RhinoDoc.ActiveDoc.Path).name == 'Margin-QA.3dm', 'startup test requires owned QA Rhino document')
+    canvas = Grasshopper.Instances.ActiveCanvas
+    check(canvas is not None and canvas.Document is None, 'startup test requires an empty QA canvas')
+    docs = []
     try:
-        member = Param_Curve(); member.CreateAttributes(); source.AddObject(member, False)
-        group = GH_Group(); group.Colour = GH_Skin.group_back; group.AddObject(member.InstanceGuid)
-        source.AddObject(group, False)
-        original = Groups.Style(group)
-        check(not original.Appearance.Equals(Groups.Defaults.Appearance), 'existing native copy fixture differs from future defaults')
-        Groups.Attach(source); Groups.Attach(destination)
-        check(Groups.Style(group).Equals(original), 'attaching an existing native group preserves its appearance')
-        duplicate = GH_Document.DuplicateDocument(source); duplicate.MutateAllIds(); destination.MergeDocument(duplicate)
-        copied = next(o for o in destination.Objects if isinstance(o, GH_Group))
-        check(Groups.Style(copied).Equals(original), 'copying an existing native-colour group does not apply future defaults')
+        Groups.Stop()
+        author = GH_Document(); docs.append(author)
+        member = Param_Curve(); member.CreateAttributes(); author.AddObject(member, False)
+        group = GH_Group(); group.NickName = 'Already open'; group.AddObject(member.InstanceGuid); author.AddObject(group, False)
+        OUTPUT.mkdir(parents=True, exist_ok=True)
+        path = OUTPUT / 'Already-open-startup.gh'
+        check(GH_DocumentIO(author).SaveQuiet(str(path)), 'startup author fixture saves')
+        disk = path.read_bytes()
+        io = GH_DocumentIO(); check(io.Open(str(path)), 'startup author file opens')
+        docs.append(io.Document); canvas.Document = io.Document
+        group = next(g for g in io.Document.Objects if isinstance(g, GH_Group))
+        native = Groups.Style(group)
+        identity = group.InstanceGuid
+        members = list(group.ObjectIDs)
+        Groups.Start()
+        check(not native.Appearance.Equals(Groups.Defaults.Appearance), 'startup fixture differs from saved defaults')
+        check(Groups.Style(group).Appearance.Equals(Groups.Defaults.Appearance)
+              and Groups.Style(group).Fill == Groups.Defaults.Fill
+              and Groups.Style(group).Designed == Groups.Defaults.Designed
+              and abs(Groups.Style(group).Opacity - Groups.Defaults.Opacity) < .21,
+              'already-open definition adopts saved preferences during Start')
+        check(path.read_bytes() == disk, 'startup leaves the source file unchanged')
+        Groups.Stop(); Groups.Start()
+        check(group.NickName == 'Already open' and group.InstanceGuid == identity and list(group.ObjectIDs) == members,
+              'stop and restart preserve the opened group identity and content')
     finally:
-        if duplicate is not None: duplicate.Dispose()
-        destination.Dispose(); source.Dispose()
+        canvas.Document = None
+        for doc in reversed(docs): doc.Dispose()
+        Groups.Start()
 
 
 def run():
@@ -522,11 +760,13 @@ def run():
         verify_legacy(Groups, GroupStyle, check)
         with distinctive_defaults(Groups, GroupStyle):
             verify_native_defaults(Groups, check)
-            verify_existing_native_copy(Groups, check)
+        with distinctive_defaults(Groups, GroupStyle, show_title=False):
+            verify_opened_file(Groups, GroupStyle, check)
         with distinctive_defaults(Groups, GroupStyle, show_title=False, designed=False):
             verify_hidden_default_reopens(Groups, check)
         with distinctive_defaults(Groups, GroupStyle, use_group_colour=False):
             verify_native_defaults(Groups, check, use_group_colour=False)
+            verify_opened_file(Groups, GroupStyle, check, use_group_colour=False)
         check(System.Object.ReferenceEquals(canvas.Document, current) and ids == [str(o.InstanceGuid) for o in current.Objects]
               if current else (canvas is None or canvas.Document is None), 'working canvas and object identities are untouched')
         report['passed'] = True
@@ -537,4 +777,5 @@ def run():
         OUTPUT.mkdir(parents=True, exist_ok=True)
         (OUTPUT / (report.get('run', 'error') + '.json')).write_text(json.dumps(report, indent=2))
 
-Rhino.RhinoApp.InvokeOnUiThread(System.Action(run))
+if __name__ == '__main__':
+    Rhino.RhinoApp.InvokeOnUiThread(System.Action(run))

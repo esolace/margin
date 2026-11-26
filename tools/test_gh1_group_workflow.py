@@ -1,7 +1,9 @@
 """RhinoCode regression: local copy/paste, pick, rename, move, ungroup, undo/reopen.
 
-Uses disposable documents, never assigns Instances.ActiveCanvas.Document and
-never touches the system clipboard. Optional temp/margin-group-workflow-config.json
+The default run uses disposable documents without assigning the active canvas
+and never touches the system clipboard. Optional startup helpers require an
+isolated Margin-QA.3dm host; see their preconditions before calling separately.
+Optional temp/margin-group-workflow-config.json
 selects a separately named QA assembly: {"namespace": "MarginQa.Native",
 "assemblies": ["/absolute/Core.dll", "/absolute/Native.dll"], "run": "qa"}.
 """
@@ -521,6 +523,97 @@ def verify_opened_file(Groups, GroupStyle, check, use_group_colour=True):
                       'undo-restored adopted group keeps its original style and members under newer defaults')
             check(path.read_bytes() == disk, 'opening and styling never writes the authors source file')
         finally:
+            for doc in reversed(docs): doc.Dispose()
+
+
+def verify_delayed_canvas_startup(Groups, check):
+    """Optional native CanvasCreated check, called on the owned QA UI thread.
+
+    Run before any GH editor exists, with an absolute MARGIN_SETTINGS_DIRECTORY
+    containing explicitly saved, distinctive defaults. Start Groups first, then
+    register a real hidden GH_DocumentEditor using the SDK's host setup method.
+    Leave that editor registered with an empty canvas for subsequent QA checks.
+    This helper never shows the editor or pumps idle (which could mask a missing
+    CanvasCreated subscription by attaching the document through an idle scan).
+    """
+    import Grasshopper
+    from Grasshopper.GUI import GH_DocumentEditor
+    from Grasshopper.Kernel import GH_Document, GH_DocumentIO
+    from Grasshopper.Kernel.Parameters import Param_Curve
+    from Grasshopper.Kernel.Special import GH_Group, GH_GroupBorder
+    from System.Drawing import Color
+    from tempfile import TemporaryDirectory
+
+    settings = os.environ.get('MARGIN_SETTINGS_DIRECTORY', '')
+    check(bool(settings) and Path(settings).is_absolute(), 'delayed canvas requires isolated absolute process settings')
+    rhino_doc = Rhino.RhinoDoc.ActiveDoc
+    check(rhino_doc is not None and Path(rhino_doc.Path).name == 'Margin-QA.3dm',
+          'delayed canvas requires owned QA Rhino document')
+    check(Grasshopper.Instances.DocumentEditor is None and Grasshopper.Instances.ActiveCanvas is None,
+          'delayed canvas begins with no native editor or canvas')
+    flags = System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic
+    register = clr.GetClrType(Grasshopper.Instances).GetMethod('SetDocumentEditor', flags)
+    check(register is not None, 'native SDK editor registration is available')
+    editor = None
+    docs = []
+    created = []
+
+    def canvas_created(canvas):
+        created.append(canvas)
+
+    with TemporaryDirectory(prefix='margin-delayed-canvas-gh1-') as folder:
+        Grasshopper.Instances.CanvasCreated += canvas_created
+        try:
+            Groups.Stop()
+            Groups.Start()
+            check(Grasshopper.Instances.DocumentEditor is None and Grasshopper.Instances.ActiveCanvas is None,
+                  'Groups starts before a native editor or canvas exists')
+            editor = GH_DocumentEditor()
+            editor.Visible = False
+            author = GH_Document(); docs.append(author)
+            member = Param_Curve(); member.CreateAttributes(); member.NickName = 'Author curve'
+            author.AddObject(member, False)
+            group = GH_Group(); group.NickName = 'Delayed canvas'; group.Border = GH_GroupBorder.Blob
+            group.Colour = Color.FromArgb(204, 17, 119, 85)
+            group.AddObject(member.InstanceGuid); author.AddObject(group, False)
+            path = Path(folder) / 'Authors original.gh'
+            check(GH_DocumentIO(author).SaveQuiet(str(path)), 'delayed canvas author fixture saves')
+            disk = path.read_bytes()
+            io = GH_DocumentIO(); check(io.Open(str(path)), 'delayed canvas author file opens through native IO')
+            opened = io.Document; docs.append(opened)
+            group = opened.FindObject(group.InstanceGuid, True)
+            native = Groups.Style(group)
+            identity = group.InstanceGuid
+            members = list(group.ObjectIDs)
+            expected = Groups.Defaults
+            check(not native.Appearance.Equals(expected.Appearance), 'delayed canvas fixture differs from saved defaults')
+            editor.Canvas.Document = opened
+            check(Grasshopper.Instances.DocumentEditor is None and Grasshopper.Instances.ActiveCanvas is None
+                  and not created and Groups.Style(group).Equals(native),
+                  'unregistered editor leaves the author group unattached')
+
+            # Actual SDK registration raises CanvasCreated synchronously; never
+            # call Margin's Attach/WatchCanvas or manufacture the event directly.
+            register.Invoke(None, System.Array[System.Object]([editor]))
+            check(len(created) == 1 and System.Object.ReferenceEquals(created[0], editor.Canvas)
+                  and System.Object.ReferenceEquals(Grasshopper.Instances.ActiveCanvas, editor.Canvas),
+                  'native editor registration raises CanvasCreated for the delayed canvas')
+            actual = Groups.Style(group)
+            check(actual.Appearance.Equals(expected.Appearance) and actual.Fill == expected.Fill
+                  and actual.Designed == expected.Designed and abs(actual.Opacity - expected.Opacity) < .21,
+                  'delayed CanvasCreated applies complete saved defaults before any idle scan')
+            check(group.InstanceGuid == identity and group.NickName == 'Delayed canvas'
+                  and list(group.ObjectIDs) == members and group.Border == GH_GroupBorder.Blob
+                  and opened.FindObject(members[0], True).NickName == 'Author curve',
+                  'delayed canvas preserves author identities, names, membership and native outline')
+            check(path.read_bytes() == disk, 'delayed canvas leaves author source bytes unchanged')
+            check(not editor.Visible, 'delayed canvas editor remains hidden')
+        finally:
+            Grasshopper.Instances.CanvasCreated -= canvas_created
+            if editor is not None:
+                editor.Canvas.Document = None
+                if not System.Object.ReferenceEquals(Grasshopper.Instances.DocumentEditor, editor):
+                    editor.Dispose()
             for doc in reversed(docs): doc.Dispose()
 
 

@@ -1,11 +1,18 @@
-"""Run with Rhino 9 Python 3 after enabling a Margin future-group appearance in GH2.
+"""Run with Rhino 9 Python 3 in a disposable QA process.
 
 Exercises GH2's normal copy/paste implementation using its app-local clipboard.
 All documents are disposable and never assigned to the editor.
+Defaults are temporary in-memory fixtures; personal settings are never written.
 """
 import json
 from contextlib import ExitStack
 from pathlib import Path
+import sys
+from urllib.parse import unquote, urlparse
+
+_SCRIPT = Path(unquote(urlparse(__file__).path) if __file__.startswith('file:') else __file__)
+sys.path.insert(0, str(_SCRIPT.resolve().parent))
+from test_gh1_group_workflow import distinctive_defaults
 from tempfile import TemporaryDirectory
 
 import clr
@@ -21,6 +28,15 @@ from Grasshopper2.UI.Skinning import Shape
 
 
 def verify():
+    adapter = next(a for a in System.AppDomain.CurrentDomain.GetAssemblies() if a.GetName().Name == "Margin.GH2")
+    groups = adapter.GetType("Margin.Native.Groups", True)
+    styles = adapter.GetType("Margin.Native.GroupStyle", True)
+    groups.GetMethod("Start").Invoke(None, None)
+    with distinctive_defaults(groups, styles, show_title=False):
+        return verify_workflows()
+
+
+def verify_workflows():
     # Both installed adapters expose Margin.Native.Groups. Choose the GH2 assembly explicitly.
     adapter = next(a for a in System.AppDomain.CurrentDomain.GetAssemblies() if a.GetName().Name == "Margin.GH2")
     groups = adapter.GetType("Margin.Native.Groups", True)
@@ -166,27 +182,75 @@ def verify():
         check_triplet(restored, "Edited copy", quiet)
         assert {key: outline(g) for key, g in restored.items()} == expected_outlines, "Reopened outline dimensions changed"
 
-        # Save a stock native definition before Margin encounters it. Opening this group
-        # with a configured default must preserve its native colour and unstyled state.
-        with ExitStack() as stock_scope:
-            stock = Document.NewInertDocument()
-            stock_scope.callback(stock.Close)
-            existing = group_objects(stock, "Existing group", number(stock, "Stock", 100, 100))
-            stock_appearance = call(groups, "Style", existing)
-            assert not stock_appearance.Designed
-            stock_file = folder / "Existing native group.ghz"
-            save_file(stock, stock_file)
-        existing_file = open_file(stock_file)
-        stack.callback(existing_file.Close)
-        call(groups, "Attach", existing_file)
-        existing = next(o for o in existing_file.Objects.Forwards if isinstance(o, GroupObject))
-        check_group(existing, "Existing group", stock_appearance)
-        assert [o.UserName for o in existing.Content] == ["Stock"]
+        # Author files are saved before Margin encounters them. Both eligibility
+        # branches are exercised through the native file boundary.
+        for saved_defaults in (True, False):
+            with distinctive_defaults(groups, style_type, use_group_colour=saved_defaults, show_title=False) as opening_default:
+                with ExitStack() as opened_scope:
+                    stock = Document.NewInertDocument()
+                    opened_scope.callback(stock.Close)
+                    existing = group_objects(stock, "Existing group", number(stock, "Stock", 100, 100))
+                    custom = group_objects(stock, "Custom", number(stock, "Custom member", 300, 100))
+                    corrupt = group_objects(stock, "Corrupt", number(stock, "Corrupt member", 500, 100))
+                    custom.CustomValues.Set("Margin.GroupStyle", json.dumps(dict(Fill="#217658", Opacity=43, Designed=True,
+                        Appearance=dict(Text="#DEEAC2", Heading="Plain", TitleCase="Lowercase"))))
+                    unreadable = "{future-or-corrupt-appearance"
+                    corrupt.CustomValues.Set("Margin.GroupStyle", unreadable)
+                    stock_file = folder / ("Existing native group-" + str(saved_defaults) + ".ghz")
+                    save_file(stock, stock_file)
+                    disk = stock_file.read_bytes()
+                    existing_file = open_file(stock_file)
+                    opened_scope.callback(existing_file.Close)
+                    loaded = {o.UserName: o for o in existing_file.Objects.Forwards if isinstance(o, GroupObject)}
+                    existing = loaded["Existing group"]
+                    native = call(groups, "Style", existing)
+                    from Grasshopper2.Doc import ObjectSelection
+                    next(iter(existing.Content)).Selection = ObjectSelection.Selected
+                    before = [(o.InstanceId, o.UserName, o.Selection) for o in existing_file.Objects.Forwards]
+                    content = {name: list(g.ContentIds) for name,g in loaded.items()}
+                    colours = {name: g.GroupColour for name,g in loaded.items()}
+                    call(groups, "Attach", existing_file)
+                    adopted = opening_default if saved_defaults else native
+                    check_group(existing, "Existing group", adopted)
+                    check_group(loaded["Custom"], "Custom", accent)
+                    assert loaded["Corrupt"].CustomValues.Get("Margin.GroupStyle", "") == unreadable, "Unreadable existing appearance was overwritten"
+                    assert before == [(o.InstanceId, o.UserName, o.Selection) for o in existing_file.Objects.Forwards], "Open changed native identities, names or selection"
+                    assert all(list(g.ContentIds) == content[name] for name,g in loaded.items()), "Open changed membership"
+                    assert all(loaded[name].GroupColour == colours[name] for name in ("Custom", "Corrupt")), "Open changed custom native colour"
+                    assert existing.CustomValues.Get("Margin.GroupStyle", ""), "Adopted appearance was not portable before first copy"
+                    with distinctive_defaults(groups, style_type, show_title=True, designed=False):
+                        call(groups, "Attach", existing_file)
+                        call(groups, "Snapshot", existing_file)
+                        call(groups, "Attach", existing_file)
+                        check_group(existing, "Existing group", adopted)
+                        first_copy = Document.NewInertDocument()
+                        opened_scope.callback(first_copy.Close)
+                        call(groups, "Attach", first_copy)
+                        existing_file.Methods.SelectAll()
+                        assert existing_file.Methods.CopySelection(ClipboardKind.Local)
+                        pasted = paste(first_copy)
+                        copied = next(g for g in pasted if isinstance(g, GroupObject) and g.UserName == "Existing group")
+                        check_group(copied, "Existing group", adopted)
+                        assert copied.InstanceId != existing.InstanceId and set(copied.ContentIds).isdisjoint(existing.ContentIds), "First copy failed to remap group membership"
+                        edit(first_copy, copied, "Independent copy", primary)
+                        check_group(existing, "Existing group", adopted)
+                        first_copy.Undo.Undo()
+                        call(groups, "Attach", first_copy)
+                        check_group(copied, "Existing group", adopted)
+                        adopted_file = folder / ("Adopted copy-" + str(saved_defaults) + ".ghz")
+                        save_file(first_copy, adopted_file)
+                        reopened_copy = open_file(adopted_file)
+                        opened_scope.callback(reopened_copy.Close)
+                        call(groups, "Attach", reopened_copy)
+                        restored = next(g for g in reopened_copy.Objects.Groups if g.UserName == "Existing group")
+                        check_group(restored, "Existing group", adopted)
+                    assert stock_file.read_bytes() == disk, "Opening wrote the authors source file"
 
     return dict(adapterMvid=str(adapter.ManifestModule.ModuleVersionId),
                 future_default=default.Fill, source_fill=primary.Fill, same_definition=True, cross_definition=True, same_named_and_nested=True,
                 blank_and_hidden_title=True, independent_edits=True, native_undo_redo=True,
-                saved_closed_reopened=True, existing_native_file=True)
+                saved_closed_reopened=True, opened_saved_defaults=True, opened_without_saved_defaults=True,
+                custom_and_corrupt_preserved=True, first_copy_portable=True, original_file_unchanged=True)
 
 
 if __name__ == "__main__":
